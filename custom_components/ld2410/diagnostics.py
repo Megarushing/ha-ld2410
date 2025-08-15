@@ -8,10 +8,9 @@ from homeassistant.components import bluetooth
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_ENCRYPTION_KEY, CONF_KEY_ID
 from .coordinator import LD2410ConfigEntry
 
-TO_REDACT = [CONF_KEY_ID, CONF_ENCRYPTION_KEY]
+TO_REDACT: list[str] = []
 
 
 async def async_get_config_entry_diagnostics(

@@ -20,7 +20,6 @@ from .const import (
 )
 from .devices.device import (
     LD2410Device,
-    LD2410EncryptedDevice,
     LD2410OperationError,
 )
 from .discovery import GetLD2410Devices
@@ -36,7 +35,6 @@ __all__ = [
     "LD2410ApiError",
     "LD2410AuthenticationError",
     "LD2410Device",
-    "LD2410EncryptedDevice",
     "LD2410Model",
     "LD2410OperationError",
     "LD2410SupportedType",
