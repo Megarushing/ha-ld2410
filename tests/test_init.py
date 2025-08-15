@@ -25,6 +25,7 @@ async def test_async_setup_entry(hass: HomeAssistant):
         unique_id="test_unique_id",
         source="user",
         discovery_keys=set(),
+        subentries_data=None
     )
 
     # Add the config entry to the hass registry
@@ -85,6 +86,7 @@ async def test_async_unload_entry(hass: HomeAssistant):
         unique_id="test_unique_id",
         source="user",
         discovery_keys=set(),
+        subentries_data=None
     )
 
     with patch(
