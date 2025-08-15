@@ -12,6 +12,7 @@ from bleak.backends.scanner import AdvertisementData
 
 from .adv_parsers.contact import process_wocontact
 from .adv_parsers.motion import process_wopresence
+from .adv_parsers.ld2410 import process_ld2410
 from .const import LD2410Model
 from .models import LD2410Advertisement
 
@@ -45,6 +46,12 @@ SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
         "modelName": LD2410Model.MOTION_SENSOR,
         "modelFriendlyName": "Motion Sensor",
         "func": process_wopresence,
+        "manufacturer_id": 2409,
+    },
+    "t": {
+        "modelName": LD2410Model.LD2410,
+        "modelFriendlyName": "HLK-LD2410",
+        "func": process_ld2410,
         "manufacturer_id": 2409,
     },
 }

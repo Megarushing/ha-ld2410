@@ -30,7 +30,7 @@ This is still a work in progress, not functional yet
   logger:
     default: warn
     logs:
-      custom_components.iqos: debug
+      custom_components.ld2410: debug
 
 # Legal Notice
 This integration is not built, maintained, provided or associated with HiLink.

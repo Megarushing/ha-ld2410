@@ -2,7 +2,7 @@
 
 - Your objective is to write code as concise and humanly readable as possible while always following the recommended best practices.
 - old_integration folder is kept only for reference, do not make changes to it nor use it in any way.
-- Read the old_integration folder if you need to understand how the ld2410 bluetooth integration works.
+- if you need to understand how the ld2410 bluetooth integration works read the old_integration folder
 
 ## The following steps are required before commiting changes:
 - Setup the environment:
