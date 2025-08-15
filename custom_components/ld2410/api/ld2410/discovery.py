@@ -37,13 +37,10 @@ class GetLD2410Devices:
 
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
-    ) -> dict:
+    ) -> dict[str, LD2410Advertisement]:
         """Find ld2410 devices and their advertisement data."""
-        devices = None
         devices = bleak.BleakScanner(
             detection_callback=self.detection_callback,
-            # TODO: Find new UUIDs to filter on. For example, see
-            # https://github.com/OpenWonderLabs/LD2410API-BLE/blob/4ad138bb09f0fbbfa41b152ca327a78c1d0b6ba9/devicetypes/meter.md
             adapter=self._interface,
         )
 
@@ -71,7 +68,7 @@ class GetLD2410Devices:
     async def _get_devices_by_model(
         self,
         model: str,
-    ) -> dict:
+    ) -> dict[str, LD2410Advertisement]:
         """Get ld2410 devices by type."""
         if not self._adv_data:
             await self.discover()
@@ -82,67 +79,9 @@ class GetLD2410Devices:
             if adv.data.get("model") == model
         }
 
-    async def get_blind_tilts(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoBlindTilt/BlindTilts devices with services data."""
-        regular_blinds = await self._get_devices_by_model("x")
-        pairing_blinds = await self._get_devices_by_model("X")
-        return {**regular_blinds, **pairing_blinds}
-
-    async def get_curtains(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoCurtain/Curtains devices with services data."""
-        regular_curtains = await self._get_devices_by_model("c")
-        pairing_curtains = await self._get_devices_by_model("C")
-        regular_curtains3 = await self._get_devices_by_model("{")
-        pairing_curtains3 = await self._get_devices_by_model("[")
-        return {
-            **regular_curtains,
-            **pairing_curtains,
-            **regular_curtains3,
-            **pairing_curtains3,
-        }
-
-    async def get_bots(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoHand/Bot devices with services data."""
-        return await self._get_devices_by_model("H")
-
-    async def get_tempsensors(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoSensorTH/Temp sensor devices with services data."""
-        base_meters = await self._get_devices_by_model("T")
-        plus_meters = await self._get_devices_by_model("i")
-        io_meters = await self._get_devices_by_model("w")
-        hub2_meters = await self._get_devices_by_model("v")
-        hubmini_matter_meters = await self._get_devices_by_model("%")
-        return {
-            **base_meters,
-            **plus_meters,
-            **io_meters,
-            **hub2_meters,
-            **hubmini_matter_meters,
-        }
-
     async def get_contactsensors(self) -> dict[str, LD2410Advertisement]:
         """Return all WoContact/Contact sensor devices with services data."""
         return await self._get_devices_by_model("d")
-
-    async def get_leakdetectors(self) -> dict[str, LD2410Advertisement]:
-        """Return all Leak Detectors with services data."""
-        return await self._get_devices_by_model("&")
-
-    async def get_locks(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoLock/Locks devices with services data."""
-        locks = await self._get_devices_by_model("o")
-        lock_pros = await self._get_devices_by_model("$")
-        return {**locks, **lock_pros}
-
-    async def get_keypads(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoKeypad/Keypad devices with services data."""
-        return await self._get_devices_by_model("y")
-
-    async def get_humidifiers(self) -> dict[str, LD2410Advertisement]:
-        """Return all humidifier devices with services data."""
-        humidifiers = await self._get_devices_by_model("e")
-        evaporative_humidifiers = await self._get_devices_by_model("#")
-        return {**humidifiers, **evaporative_humidifiers}
 
     async def get_device_data(
         self, address: str
@@ -154,6 +93,5 @@ class GetLD2410Devices:
         return {
             device: adv
             for device, adv in self._adv_data.items()
-            # MacOS uses UUIDs instead of MAC addresses
             if adv.data.get("address") == address
         }

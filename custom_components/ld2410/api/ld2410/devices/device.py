@@ -28,7 +28,6 @@ from ..api_config import LD2410_APP_API_BASE_URL, LD2410_APP_CLIENT_ID
 from ..const import (
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    ColorMode,  # noqa: F401
     LD2410AccountConnectionError,
     LD2410ApiError,
     LD2410AuthenticationError,

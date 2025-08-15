@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from .api.ld2410 import HumidifierWaterLevel
-from .api.ld2410.const.air_purifier import AirQualityLevel
-
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -105,23 +102,11 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
     ),
-    "aqi_level": SensorEntityDescription(
-        key="aqi_level",
-        translation_key="aqi_quality_level",
-        device_class=SensorDeviceClass.ENUM,
-        options=[member.name.lower() for member in AirQualityLevel],
-    ),
     "energy": SensorEntityDescription(
         key="energy",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
-    ),
-    "water_level": SensorEntityDescription(
-        key="water_level",
-        translation_key="water_level",
-        device_class=SensorDeviceClass.ENUM,
-        options=HumidifierWaterLevel.get_levels(),
     ),
 }
 
