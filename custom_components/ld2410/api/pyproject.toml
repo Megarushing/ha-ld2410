@@ -84,4 +84,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pySwitchbot", "tests"]
+known-first-party = ["pyLD2410", "tests"]

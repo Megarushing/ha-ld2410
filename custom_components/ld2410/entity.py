@@ -1,4 +1,4 @@
-"""An abstract class common to all Switchbot entities."""
+"""An abstract class common to all LD2410 entities."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
-from .api.switchbot import Switchbot, SwitchbotDevice
-from .api.switchbot.devices.device import SwitchbotOperationError
+from .api.ld2410 import LD2410, LD2410Device
+from .api.ld2410.devices.device import LD2410OperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
     PassiveBluetoothCoordinatorEntity,
@@ -20,20 +20,18 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import ToggleEntity
 
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import SwitchbotDataUpdateCoordinator
+from .coordinator import LD2410DataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SwitchbotEntity(
-    PassiveBluetoothCoordinatorEntity[SwitchbotDataUpdateCoordinator]
-):
-    """Generic entity encapsulating common features of Switchbot device."""
+class LD2410Entity(PassiveBluetoothCoordinatorEntity[LD2410DataUpdateCoordinator]):
+    """Generic entity encapsulating common features of LD2410 device."""
 
-    _device: SwitchbotDevice
+    _device: LD2410Device
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: SwitchbotDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self._device = coordinator.device
@@ -90,18 +88,18 @@ class SwitchbotEntity(
         await self._device.update()
 
 
-def exception_handler[_EntityT: SwitchbotEntity, **_P](
+def exception_handler[_EntityT: LD2410Entity, **_P](
     func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],
 ) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:
-    """Decorate Switchbot calls to handle exceptions..
+    """Decorate LD2410 calls to handle exceptions..
 
-    A decorator that wraps the passed in function, catches Switchbot errors.
+    A decorator that wraps the passed in function, catches LD2410 errors.
     """
 
     async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:
         try:
             await func(self, *args, **kwargs)
-        except SwitchbotOperationError as error:
+        except LD2410OperationError as error:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="operation_error",
@@ -111,15 +109,15 @@ def exception_handler[_EntityT: SwitchbotEntity, **_P](
     return handler
 
 
-class SwitchbotSwitchedEntity(SwitchbotEntity, ToggleEntity):
-    """Base class for Switchbot entities that can be turned on and off."""
+class LD2410SwitchedEntity(LD2410Entity, ToggleEntity):
+    """Base class for LD2410 entities that can be turned on and off."""
 
-    _device: Switchbot
+    _device: LD2410
 
     @exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn device on."""
-        _LOGGER.debug("Turn Switchbot device on %s", self._address)
+        _LOGGER.debug("Turn LD2410 device on %s", self._address)
 
         self._last_run_success = bool(await self._device.turn_on())
         if self._last_run_success:
@@ -129,7 +127,7 @@ class SwitchbotSwitchedEntity(SwitchbotEntity, ToggleEntity):
     @exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn device off."""
-        _LOGGER.debug("Turn Switchbot device off %s", self._address)
+        _LOGGER.debug("Turn LD2410 device off %s", self._address)
 
         self._last_run_success = bool(await self._device.turn_off())
         if self._last_run_success:

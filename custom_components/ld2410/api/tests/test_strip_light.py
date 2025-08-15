@@ -3,19 +3,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
-from ..switchbot.const.light import ColorMode
-from ..switchbot.devices import light_strip
-from ..switchbot.devices.base_light import SwitchbotBaseLight
-from ..switchbot.devices.device import SwitchbotEncryptedDevice, SwitchbotOperationError
+from ..ld2410 import LD2410Advertisement, LD2410Model
+from ..ld2410.const.light import ColorMode
+from ..ld2410.devices import light_strip
+from ..ld2410.devices.base_light import LD2410BaseLight
+from ..ld2410.devices.device import LD2410EncryptedDevice, LD2410OperationError
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(
-    init_data: dict | None = None, model: SwitchbotModel = SwitchbotModel.STRIP_LIGHT_3
+    init_data: dict | None = None, model: LD2410Model = LD2410Model.STRIP_LIGHT_3
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = light_strip.SwitchbotStripLight3(
+    device = light_strip.LD2410StripLight3(
         ble_device, "ff", "ffffffffffffffffffffffffffffffff", model=model
     )
     device.update_from_advertisement(make_advertisement_data(ble_device, init_data))
@@ -30,7 +30,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
     if init_data is None:
         init_data = {}
 
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"\x00\x00\x00\x00\x10\xd0\xb1",
@@ -47,7 +47,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
             "isEncrypted": False,
             "model": b"\x00\x10\xd0\xb1",
             "modelFriendlyName": "Strip Light 3",
-            "modelName": SwitchbotModel.STRIP_LIGHT_3,
+            "modelName": LD2410Model.STRIP_LIGHT_3,
         },
         device=ble_device,
         rssi=-80,
@@ -218,7 +218,7 @@ async def test_set_effect_with_invalid_effect():
     device = create_device_for_command_testing()
 
     with pytest.raises(
-        SwitchbotOperationError, match="Effect invalid_effect not supported"
+        LD2410OperationError, match="Effect invalid_effect not supported"
     ):
         await device.set_effect("invalid_effect")
 
@@ -239,7 +239,7 @@ async def test_set_effect_with_valid_effect():
 def test_effect_list_contains_lowercase_names():
     """Test that all effect names in get_effect_list are lowercase."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = light_strip.SwitchbotLightStrip(ble_device)
+    device = light_strip.LD2410LightStrip(ble_device)
     effect_list = device.get_effect_list
 
     assert effect_list is not None, "Effect list should not be None"
@@ -269,7 +269,7 @@ async def test_set_effect_normalizes_case():
 
 
 @pytest.mark.asyncio
-@patch.object(SwitchbotEncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
+@patch.object(LD2410EncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
 async def test_verify_encryption_key(mock_parent_verify):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     key_id = "ff"
@@ -277,7 +277,7 @@ async def test_verify_encryption_key(mock_parent_verify):
 
     mock_parent_verify.return_value = True
 
-    result = await light_strip.SwitchbotStripLight3.verify_encryption_key(
+    result = await light_strip.LD2410StripLight3.verify_encryption_key(
         device=ble_device,
         key_id=key_id,
         encryption_key=encryption_key,
@@ -287,7 +287,7 @@ async def test_verify_encryption_key(mock_parent_verify):
         ble_device,
         key_id,
         encryption_key,
-        SwitchbotModel.STRIP_LIGHT_3,
+        LD2410Model.STRIP_LIGHT_3,
     )
 
     assert result is True
@@ -295,7 +295,7 @@ async def test_verify_encryption_key(mock_parent_verify):
 
 def create_strip_light_device(init_data: dict | None = None):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    return light_strip.SwitchbotLightStrip(ble_device)
+    return light_strip.LD2410LightStrip(ble_device)
 
 
 @pytest.mark.asyncio
@@ -332,7 +332,7 @@ async def test_send_multiple_commands(commands, results, final_result):
 
 @pytest.mark.asyncio
 async def test_unimplemented_color_mode():
-    class TestDevice(SwitchbotBaseLight):
+    class TestDevice(LD2410BaseLight):
         pass
 
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
@@ -344,7 +344,7 @@ async def test_unimplemented_color_mode():
 
 @pytest.mark.asyncio
 async def test_exception_with_wrong_model():
-    class TestDevice(SwitchbotBaseLight):
+    class TestDevice(LD2410BaseLight):
         def __init__(self, device: BLEDevice, model: str = "unknown") -> None:
             super().__init__(device, model=model)
 
@@ -352,7 +352,7 @@ async def test_exception_with_wrong_model():
     device = TestDevice(ble_device)
 
     with pytest.raises(
-        SwitchbotOperationError,
+        LD2410OperationError,
         match="Current device aa:bb:cc:dd:ee:ff does not support this functionality",
     ):
         await device.set_rgb(100, 255, 128, 64)

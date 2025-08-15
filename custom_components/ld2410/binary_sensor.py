@@ -1,4 +1,4 @@
-"""Support for SwitchBot binary sensors."""
+"""Support for LD2410 binary sensors."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
-from .entity import SwitchbotEntity
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .entity import LD2410Entity
 
 PARALLEL_UPDATES = 0
 
@@ -74,27 +74,27 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Switchbot curtain based on a config entry."""
+    """Set up LD2410 curtain based on a config entry."""
     coordinator = entry.runtime_data
     async_add_entities(
-        SwitchBotBinarySensor(coordinator, binary_sensor)
+        LD2410BinarySensor(coordinator, binary_sensor)
         for binary_sensor in coordinator.device.parsed_data
         if binary_sensor in BINARY_SENSOR_TYPES
     )
 
 
-class SwitchBotBinarySensor(SwitchbotEntity, BinarySensorEntity):
-    """Representation of a Switchbot binary sensor."""
+class LD2410BinarySensor(LD2410Entity, BinarySensorEntity):
+    """Representation of a LD2410 binary sensor."""
 
     def __init__(
         self,
-        coordinator: SwitchbotDataUpdateCoordinator,
+        coordinator: LD2410DataUpdateCoordinator,
         binary_sensor: str,
     ) -> None:
-        """Initialize the Switchbot sensor."""
+        """Initialize the LD2410 sensor."""
         super().__init__(coordinator)
         self._sensor = binary_sensor
         self._attr_unique_id = f"{coordinator.base_unique_id}-{binary_sensor}"

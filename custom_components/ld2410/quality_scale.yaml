@@ -37,7 +37,7 @@ rules:
   reauthentication-flow:
     status: exempt
     comment: |
-      Once a cryptographic key is successfully obtained for SwitchBot devices,
+      Once a cryptographic key is successfully obtained for LD2410 devices,
       it will be granted perpetual validity with no expiration constraints.
   test-coverage:
     status: done

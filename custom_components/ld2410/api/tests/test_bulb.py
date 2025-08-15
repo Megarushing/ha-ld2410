@@ -3,18 +3,18 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
-from ..switchbot.const.light import ColorMode
-from ..switchbot.devices import bulb
-from ..switchbot.devices.device import SwitchbotOperationError
+from ..ld2410 import LD2410Advertisement, LD2410Model
+from ..ld2410.const.light import ColorMode
+from ..ld2410.devices import bulb
+from ..ld2410.devices.device import LD2410OperationError
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(
-    init_data: dict | None = None, model: SwitchbotModel = SwitchbotModel.COLOR_BULB
+    init_data: dict | None = None, model: LD2410Model = LD2410Model.COLOR_BULB
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = bulb.SwitchbotBulb(ble_device, model=model)
+    device = bulb.LD2410Bulb(ble_device, model=model)
     device.update_from_advertisement(make_advertisement_data(ble_device, init_data))
     device._send_command = AsyncMock()
     device._check_command_result = MagicMock()
@@ -27,7 +27,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
     if init_data is None:
         init_data = {}
 
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"u\x00d",
@@ -45,7 +45,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
             "isEncrypted": False,
             "model": "u",
             "modelFriendlyName": "Color Bulb",
-            "modelName": SwitchbotModel.COLOR_BULB,
+            "modelName": LD2410Model.COLOR_BULB,
         },
         device=ble_device,
         rssi=-80,
@@ -206,7 +206,7 @@ async def test_set_effect_with_invalid_effect():
     device = create_device_for_command_testing()
 
     with pytest.raises(
-        SwitchbotOperationError, match="Effect invalid_effect not supported"
+        LD2410OperationError, match="Effect invalid_effect not supported"
     ):
         await device.set_effect("invalid_effect")
 
@@ -226,7 +226,7 @@ async def test_set_effect_with_valid_effect():
 def test_effect_list_contains_lowercase_names():
     """Test that all effect names in get_effect_list are lowercase."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = bulb.SwitchbotBulb(ble_device)
+    device = bulb.LD2410Bulb(ble_device)
     effect_list = device.get_effect_list
 
     assert effect_list is not None, "Effect list should not be None"

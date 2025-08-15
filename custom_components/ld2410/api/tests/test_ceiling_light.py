@@ -3,17 +3,17 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
-from ..switchbot.const.light import ColorMode
-from ..switchbot.devices import ceiling_light
+from ..ld2410 import LD2410Advertisement, LD2410Model
+from ..ld2410.const.light import ColorMode
+from ..ld2410.devices import ceiling_light
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(
-    init_data: dict | None = None, model: SwitchbotModel = SwitchbotModel.CEILING_LIGHT
+    init_data: dict | None = None, model: LD2410Model = LD2410Model.CEILING_LIGHT
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = ceiling_light.SwitchbotCeilingLight(ble_device, model=model)
+    device = ceiling_light.LD2410CeilingLight(ble_device, model=model)
     device.update_from_advertisement(make_advertisement_data(ble_device, init_data))
     device._send_command = AsyncMock()
     device._check_command_result = MagicMock()
@@ -26,7 +26,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
     if init_data is None:
         init_data = {}
 
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"q\x00",
@@ -41,7 +41,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
             "isEncrypted": False,
             "model": b"q\x00",
             "modelFriendlyName": "Ceiling Light",
-            "modelName": SwitchbotModel.CEILING_LIGHT,
+            "modelName": LD2410Model.CEILING_LIGHT,
         },
         device=ble_device,
         rssi=-80,

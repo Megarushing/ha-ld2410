@@ -1,1 +1,0 @@
-"""Switchbot Device Library."""

@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement
-from ..switchbot.adv_parser import SUPPORTED_TYPES
-from ..switchbot.devices import vacuum
+from ..ld2410 import LD2410Advertisement
+from ..ld2410.adv_parser import SUPPORTED_TYPES
+from ..ld2410.devices import vacuum
 from .test_adv_parser import generate_ble_device
 
 common_params = [
@@ -21,7 +21,7 @@ def create_device_for_command_testing(
     protocol_version: int, rawAdvData: bytes, model: str
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = vacuum.SwitchbotVacuum(ble_device)
+    device = vacuum.LD2410Vacuum(ble_device)
     device.update_from_advertisement(
         make_advertisement_data(ble_device, protocol_version, rawAdvData, model)
     )
@@ -35,7 +35,7 @@ def make_advertisement_data(
 ):
     """Set advertisement data with defaults."""
     if protocol_version == 1:
-        return SwitchBotAdvertisement(
+        return LD2410Advertisement(
             address="aa:bb:cc:dd:ee:ff",
             data={
                 "rawAdvData": rawAdvData,
@@ -56,7 +56,7 @@ def make_advertisement_data(
             rssi=-97,
             active=True,
         )
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": rawAdvData,

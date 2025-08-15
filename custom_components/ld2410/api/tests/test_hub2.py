@@ -1,4 +1,4 @@
-from ..switchbot.adv_parsers.hub2 import calculate_light_intensity
+from ..ld2410.adv_parsers.hub2 import calculate_light_intensity
 
 
 def test_calculate_light_intensity():

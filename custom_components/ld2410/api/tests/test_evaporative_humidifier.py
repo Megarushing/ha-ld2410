@@ -4,24 +4,22 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import (
+from ..ld2410 import (
     HumidifierAction,
     HumidifierMode,
     HumidifierWaterLevel,
-    SwitchBotAdvertisement,
-    SwitchbotModel,
+    LD2410Advertisement,
+    LD2410Model,
 )
-from ..switchbot.devices import evaporative_humidifier
-from ..switchbot.devices.device import SwitchbotEncryptedDevice, SwitchbotOperationError
+from ..ld2410.devices import evaporative_humidifier
+from ..ld2410.devices.device import LD2410EncryptedDevice, LD2410OperationError
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(init_data: dict | None = None):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    evaporative_humidifier_device = (
-        evaporative_humidifier.SwitchbotEvaporativeHumidifier(
-            ble_device, "ff", "ffffffffffffffffffffffffffffffff"
-        )
+    evaporative_humidifier_device = evaporative_humidifier.LD2410EvaporativeHumidifier(
+        ble_device, "ff", "ffffffffffffffffffffffffffffffff"
     )
     evaporative_humidifier_device.update_from_advertisement(
         make_advertisement_data(ble_device, init_data)
@@ -36,7 +34,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
     if init_data is None:
         init_data = {}
     """Set advertisement data with defaults."""
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"#\x00\x00\x15\x1c\x00",
@@ -61,7 +59,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
             "isEncrypted": False,
             "model": "#",
             "modelFriendlyName": "Evaporative Humidifier",
-            "modelName": SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+            "modelName": LD2410Model.EVAPORATIVE_HUMIDIFIER,
         },
         device=ble_device,
         rssi=-80,
@@ -183,7 +181,7 @@ async def test_set_target_humidity_with_invalid_conditions(err_msg, mode, water_
     device = create_device_for_command_testing()
     device.get_mode = MagicMock(return_value=mode)
     device.get_water_level = MagicMock(return_value=water_level)
-    with pytest.raises(SwitchbotOperationError, match=err_msg):
+    with pytest.raises(LD2410OperationError, match=err_msg):
         await device.set_target_humidity(45)
 
 
@@ -222,7 +220,7 @@ async def test_set_mode_with_invalid_conditions(
     device.get_water_level = MagicMock(return_value=water_level)
     device.is_meter_binded = MagicMock(return_value=is_meter_binded)
     device.get_target_humidity = MagicMock(return_value=target_humidity)
-    with pytest.raises(SwitchbotOperationError, match=err_msg):
+    with pytest.raises(LD2410OperationError, match=err_msg):
         await device.set_mode(mode)
 
 
@@ -310,7 +308,7 @@ async def test_set_child_lock(enabled, command):
 
 
 @pytest.mark.asyncio
-@patch.object(SwitchbotEncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
+@patch.object(LD2410EncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
 async def test_verify_encryption_key(mock_parent_verify):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     key_id = "ff"
@@ -318,17 +316,19 @@ async def test_verify_encryption_key(mock_parent_verify):
 
     mock_parent_verify.return_value = True
 
-    result = await evaporative_humidifier.SwitchbotEvaporativeHumidifier.verify_encryption_key(
-        device=ble_device,
-        key_id=key_id,
-        encryption_key=encryption_key,
+    result = (
+        await evaporative_humidifier.LD2410EvaporativeHumidifier.verify_encryption_key(
+            device=ble_device,
+            key_id=key_id,
+            encryption_key=encryption_key,
+        )
     )
 
     mock_parent_verify.assert_awaited_once_with(
         ble_device,
         key_id,
         encryption_key,
-        SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+        LD2410Model.EVAPORATIVE_HUMIDIFIER,
     )
 
     assert result is True

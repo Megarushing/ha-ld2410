@@ -1,11 +1,11 @@
-"""Support for SwitchBot curtains."""
+"""Support for LD2410 curtains."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from .api import switchbot
+from .api import ld2410
 
 from homeassistant.components.cover import (
     ATTR_CURRENT_POSITION,
@@ -20,8 +20,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
-from .entity import SwitchbotEntity, exception_handler
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .entity import LD2410Entity, exception_handler
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -30,23 +30,23 @@ PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Switchbot curtain based on a config entry."""
+    """Set up LD2410 curtain based on a config entry."""
     coordinator = entry.runtime_data
-    if isinstance(coordinator.device, switchbot.SwitchbotBlindTilt):
-        async_add_entities([SwitchBotBlindTiltEntity(coordinator)])
-    elif isinstance(coordinator.device, switchbot.SwitchbotRollerShade):
-        async_add_entities([SwitchBotRollerShadeEntity(coordinator)])
+    if isinstance(coordinator.device, ld2410.LD2410BlindTilt):
+        async_add_entities([LD2410BlindTiltEntity(coordinator)])
+    elif isinstance(coordinator.device, ld2410.LD2410RollerShade):
+        async_add_entities([LD2410RollerShadeEntity(coordinator)])
     else:
-        async_add_entities([SwitchBotCurtainEntity(coordinator)])
+        async_add_entities([LD2410CurtainEntity(coordinator)])
 
 
-class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
-    """Representation of a Switchbot."""
+class LD2410CurtainEntity(LD2410Entity, CoverEntity, RestoreEntity):
+    """Representation of a LD2410."""
 
-    _device: switchbot.SwitchbotCurtain
+    _device: ld2410.LD2410Curtain
     _attr_device_class = CoverDeviceClass.CURTAIN
     _attr_supported_features = (
         CoverEntityFeature.OPEN
@@ -57,8 +57,8 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     _attr_translation_key = "cover"
     _attr_name = None
 
-    def __init__(self, coordinator: SwitchbotDataUpdateCoordinator) -> None:
-        """Initialize the Switchbot."""
+    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
+        """Initialize the LD2410."""
         super().__init__(coordinator)
         self._attr_is_closed = None
 
@@ -80,7 +80,7 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the curtain."""
 
-        _LOGGER.debug("Switchbot to open curtain %s", self._address)
+        _LOGGER.debug("LD2410 to open curtain %s", self._address)
         self._last_run_success = bool(await self._device.open())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -90,7 +90,7 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the curtain."""
 
-        _LOGGER.debug("Switchbot to close the curtain %s", self._address)
+        _LOGGER.debug("LD2410 to close the curtain %s", self._address)
         self._last_run_success = bool(await self._device.close())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -100,7 +100,7 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the moving of this device."""
 
-        _LOGGER.debug("Switchbot to stop %s", self._address)
+        _LOGGER.debug("LD2410 to stop %s", self._address)
         self._last_run_success = bool(await self._device.stop())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -111,7 +111,7 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
 
-        _LOGGER.debug("Switchbot to move at %d %s", position, self._address)
+        _LOGGER.debug("LD2410 to move at %d %s", position, self._address)
         self._last_run_success = bool(await self._device.set_position(position))
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -128,10 +128,10 @@ class SwitchBotCurtainEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
         self.async_write_ha_state()
 
 
-class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
-    """Representation of a Switchbot."""
+class LD2410BlindTiltEntity(LD2410Entity, CoverEntity, RestoreEntity):
+    """Representation of a LD2410."""
 
-    _device: switchbot.SwitchbotBlindTilt
+    _device: ld2410.LD2410BlindTilt
     _attr_device_class = CoverDeviceClass.BLIND
     _attr_supported_features = (
         CoverEntityFeature.OPEN_TILT
@@ -144,8 +144,8 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     CLOSED_UP_THRESHOLD = 80
     CLOSED_DOWN_THRESHOLD = 20
 
-    def __init__(self, coordinator: SwitchbotDataUpdateCoordinator) -> None:
-        """Initialize the Switchbot."""
+    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
+        """Initialize the LD2410."""
         super().__init__(coordinator)
         self._attr_is_closed = None
 
@@ -169,7 +169,7 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the tilt."""
 
-        _LOGGER.debug("Switchbot to open blind tilt %s", self._address)
+        _LOGGER.debug("LD2410 to open blind tilt %s", self._address)
         self._last_run_success = bool(await self._device.open())
         self.async_write_ha_state()
 
@@ -177,7 +177,7 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the tilt."""
 
-        _LOGGER.debug("Switchbot to close the blind tilt %s", self._address)
+        _LOGGER.debug("LD2410 to close the blind tilt %s", self._address)
         self._last_run_success = bool(await self._device.close())
         self.async_write_ha_state()
 
@@ -185,7 +185,7 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the moving of this device."""
 
-        _LOGGER.debug("Switchbot to stop %s", self._address)
+        _LOGGER.debug("LD2410 to stop %s", self._address)
         self._last_run_success = bool(await self._device.stop())
         self.async_write_ha_state()
 
@@ -194,7 +194,7 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
         """Move the cover tilt to a specific position."""
         position = kwargs.get(ATTR_TILT_POSITION)
 
-        _LOGGER.debug("Switchbot to move at %d %s", position, self._address)
+        _LOGGER.debug("LD2410 to move at %d %s", position, self._address)
         self._last_run_success = bool(await self._device.set_position(position))
         self.async_write_ha_state()
 
@@ -211,10 +211,10 @@ class SwitchBotBlindTiltEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
         self.async_write_ha_state()
 
 
-class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
-    """Representation of a Switchbot."""
+class LD2410RollerShadeEntity(LD2410Entity, CoverEntity, RestoreEntity):
+    """Representation of a LD2410."""
 
-    _device: switchbot.SwitchbotRollerShade
+    _device: ld2410.LD2410RollerShade
     _attr_device_class = CoverDeviceClass.SHADE
     _attr_supported_features = (
         CoverEntityFeature.OPEN
@@ -226,8 +226,8 @@ class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     _attr_translation_key = "cover"
     _attr_name = None
 
-    def __init__(self, coordinator: SwitchbotDataUpdateCoordinator) -> None:
-        """Initialize the switchbot."""
+    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
+        """Initialize the ld2410."""
         super().__init__(coordinator)
         self._attr_is_closed = None
 
@@ -249,7 +249,7 @@ class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the roller shade."""
 
-        _LOGGER.debug("Switchbot to open roller shade %s", self._address)
+        _LOGGER.debug("LD2410 to open roller shade %s", self._address)
         self._last_run_success = bool(await self._device.open())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -259,7 +259,7 @@ class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the roller shade."""
 
-        _LOGGER.debug("Switchbot to close roller shade %s", self._address)
+        _LOGGER.debug("LD2410 to close roller shade %s", self._address)
         self._last_run_success = bool(await self._device.close())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -269,7 +269,7 @@ class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the moving of roller shade."""
 
-        _LOGGER.debug("Switchbot to stop roller shade %s", self._address)
+        _LOGGER.debug("LD2410 to stop roller shade %s", self._address)
         self._last_run_success = bool(await self._device.stop())
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()
@@ -280,7 +280,7 @@ class SwitchBotRollerShadeEntity(SwitchbotEntity, CoverEntity, RestoreEntity):
         """Move the cover to a specific position."""
 
         position = kwargs.get(ATTR_POSITION)
-        _LOGGER.debug("Switchbot to move at %d %s", position, self._address)
+        _LOGGER.debug("LD2410 to move at %d %s", position, self._address)
         self._last_run_success = bool(await self._device.set_position(position))
         self._attr_is_opening = self._device.is_opening()
         self._attr_is_closing = self._device.is_closing()

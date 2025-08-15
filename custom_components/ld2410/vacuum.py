@@ -1,11 +1,11 @@
-"""Support for switchbot vacuums."""
+"""Support for ld2410 vacuums."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from .api import switchbot
-from .api.switchbot import SwitchbotModel
+from .api import ld2410
+from .api.ld2410 import LD2410Model
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,
@@ -15,14 +15,14 @@ from homeassistant.components.vacuum import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
-from .entity import SwitchbotEntity
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .entity import LD2410Entity
 
 PARALLEL_UPDATES = 0
 
 DEVICE_SUPPORT_PROTOCOL_VERSION_1 = [
-    SwitchbotModel.K10_VACUUM,
-    SwitchbotModel.K10_PRO_VACUUM,
+    LD2410Model.K10_VACUUM,
+    LD2410Model.K10_PRO_VACUUM,
 ]
 
 PROTOCOL_VERSION_1_STATE_TO_HA_STATE: dict[int, VacuumActivity] = {
@@ -67,7 +67,7 @@ PROTOCOL_VERSION_2_STATE_TO_HA_STATE: dict[int, VacuumActivity] = {
     34: VacuumActivity.CLEANING,  # working for the platform
 }
 
-SWITCHBOT_VACUUM_STATE_MAP: dict[int, dict[int, VacuumActivity]] = {
+LD2410_VACUUM_STATE_MAP: dict[int, dict[int, VacuumActivity]] = {
     1: PROTOCOL_VERSION_1_STATE_TO_HA_STATE,
     2: PROTOCOL_VERSION_2_STATE_TO_HA_STATE,
 }
@@ -75,17 +75,17 @@ SWITCHBOT_VACUUM_STATE_MAP: dict[int, dict[int, VacuumActivity]] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the switchbot vacuum."""
-    async_add_entities([SwitchbotVacuumEntity(entry.runtime_data)])
+    """Set up the ld2410 vacuum."""
+    async_add_entities([LD2410VacuumEntity(entry.runtime_data)])
 
 
-class SwitchbotVacuumEntity(SwitchbotEntity, StateVacuumEntity):
-    """Representation of a SwitchBot vacuum."""
+class LD2410VacuumEntity(LD2410Entity, StateVacuumEntity):
+    """Representation of a LD2410 vacuum."""
 
-    _device: switchbot.SwitchbotVacuum
+    _device: ld2410.LD2410Vacuum
     _attr_supported_features = (
         VacuumEntityFeature.RETURN_HOME
         | VacuumEntityFeature.START
@@ -94,8 +94,8 @@ class SwitchbotVacuumEntity(SwitchbotEntity, StateVacuumEntity):
     _attr_translation_key = "vacuum"
     _attr_name = None
 
-    def __init__(self, coordinator: SwitchbotDataUpdateCoordinator) -> None:
-        """Initialize the Switchbot."""
+    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
+        """Initialize the LD2410."""
         super().__init__(coordinator)
         self.protocol_version = (
             1 if coordinator.model in DEVICE_SUPPORT_PROTOCOL_VERSION_1 else 2
@@ -105,7 +105,7 @@ class SwitchbotVacuumEntity(SwitchbotEntity, StateVacuumEntity):
     def activity(self) -> VacuumActivity | None:
         """Return the status of the vacuum cleaner."""
         status_code = self._device.get_work_status()
-        return SWITCHBOT_VACUUM_STATE_MAP[self.protocol_version].get(status_code)
+        return LD2410_VACUUM_STATE_MAP[self.protocol_version].get(status_code)
 
     async def async_start(self) -> None:
         """Start or resume the cleaning task."""

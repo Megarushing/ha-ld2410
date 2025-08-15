@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ..switchbot import SwitchbotModel
+from ..ld2410 import LD2410Model
 
 
 @dataclass
@@ -10,4 +10,4 @@ class AdvTestCase:
     data: dict
     model: str | bytes
     modelFriendlyName: str
-    modelName: SwitchbotModel
+    modelName: LD2410Model
