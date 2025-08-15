@@ -7,7 +7,6 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.ld2410 import async_setup_entry, async_unload_entry
 from custom_components.ld2410.const import DOMAIN
-from tests.conftest import AwaitableAsyncMock
 
 
 async def test_async_setup_entry(hass: HomeAssistant):
