@@ -11,10 +11,10 @@ try:
 except ImportError:
     from homeassistant.config_entries import ConfigEntry
     from typing import Any
-    
+
     class MockConfigEntry(ConfigEntry):
         """Mock config entry for testing."""
-        
+
         def __init__(
             self,
             *,
@@ -45,7 +45,8 @@ except ImportError:
 
 from custom_components.ld2410.const import DOMAIN
 
-@pytest.fixture(autouse=True)
+
+@pytest.fixture
 def mock_bluetooth(enable_bluetooth: None) -> None:
     """Auto mock bluetooth."""
 

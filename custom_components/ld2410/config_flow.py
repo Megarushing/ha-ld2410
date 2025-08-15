@@ -20,6 +20,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import (
     CONF_ADDRESS,
+    CONF_PASSWORD,
     CONF_SENSOR_TYPE,
 )
 from homeassistant.core import callback
@@ -32,6 +33,7 @@ from .const import (
     NON_CONNECTABLE_SUPPORTED_MODEL_TYPES,
     SUPPORTED_MODEL_TYPES,
 )
+from .api.ld2410.const import CMD_BT_PASS_DEFAULT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,7 +127,13 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._set_confirm_only()
         return self.async_show_form(
             step_id="confirm",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_PASSWORD, default=CMD_BT_PASS_DEFAULT.decode()
+                    ): str,
+                }
+            ),
             description_placeholders={
                 "name": name_from_discovery(self._discovered_adv)
             },
@@ -175,7 +183,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)
-            return await self._async_create_entry_from_discovery(user_input)
+            return await self.async_step_confirm()
 
         self._async_discover_devices()
         if len(self._discovered_advs) == 1:

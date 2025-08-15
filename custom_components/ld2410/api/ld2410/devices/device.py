@@ -25,6 +25,14 @@ from bleak_retry_connector import (
 
 from ..api_config import LD2410_APP_API_BASE_URL
 from ..const import (
+    CHARACTERISTIC_NOTIFY,
+    CHARACTERISTIC_WRITE,
+    CMD_BT_PASS_DEFAULT,
+    CMD_BT_PASS_POST,
+    CMD_BT_PASS_PRE,
+    CMD_DISABLE_CONFIG,
+    CMD_ENABLE_CONFIG,
+    CMD_ENABLE_ENGINEERING_MODE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
     LD2410ApiError,
@@ -68,20 +76,6 @@ class CharacteristicMissingError(Exception):
 
 class LD2410OperationError(Exception):
     """Raised when an operation fails."""
-
-
-def _sb_uuid(comms_type: str = "service") -> UUID | str:
-    """Return LD2410 UUID."""
-    _uuid = {"tx": "002", "rx": "003", "service": "d00"}
-
-    if comms_type in _uuid:
-        return UUID(f"cba20{_uuid[comms_type]}-224d-11e6-9fb8-0002a5d5c51b")
-
-    return "Incorrect type, choose between: tx, rx or service"
-
-
-READ_CHAR_UUID = _sb_uuid(comms_type="rx")
-WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
 
 WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
@@ -142,12 +136,12 @@ class LD2410BaseDevice:
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
-        if password is None or password == "":
-            self._password_encoded = None
-        else:
-            self._password_encoded = "%08x" % (
-                binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
-            )
+        if not password:
+            password = CMD_BT_PASS_DEFAULT.decode()
+        self._password = password
+        self._password_encoded = "%08x" % (
+            binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
+        )
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -270,6 +264,37 @@ class LD2410BaseDevice:
                 key, command, retry, max_attempts
             )
 
+    async def send_command(self, command: bytes) -> None:
+        """Send a raw command to the device."""
+        await self._ensure_connected()
+        assert self._client is not None
+        assert self._write_char is not None
+        _LOGGER.debug("%s: Sending raw command %s", self.name, command.hex())
+        await self._client.write_gatt_char(self._write_char, command, False)
+
+    async def send_password(self, password: str) -> None:
+        """Send the Bluetooth password to the device."""
+        await self.send_command(CMD_BT_PASS_PRE + password.encode() + CMD_BT_PASS_POST)
+
+    async def enable_config(self) -> None:
+        """Enable configuration mode on the device."""
+        await self.send_command(CMD_ENABLE_CONFIG)
+
+    async def enable_engineering_mode(self) -> None:
+        """Enable engineering mode on the device."""
+        await self.send_command(CMD_ENABLE_ENGINEERING_MODE)
+
+    async def disable_config(self) -> None:
+        """Disable configuration mode on the device."""
+        await self.send_command(CMD_DISABLE_CONFIG)
+
+    async def initialise(self) -> None:
+        """Send initial commands to prepare the device."""
+        await self.send_password(self._password)
+        await self.enable_config()
+        await self.enable_engineering_mode()
+        await self.disable_config()
+
     @property
     def name(self) -> str:
         """Return device name."""
@@ -357,12 +382,12 @@ class LD2410BaseDevice:
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve characteristics."""
-        self._read_char = services.get_characteristic(READ_CHAR_UUID)
+        self._read_char = services.get_characteristic(UUID(CHARACTERISTIC_NOTIFY))
         if not self._read_char:
-            raise CharacteristicMissingError(READ_CHAR_UUID)
-        self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
+            raise CharacteristicMissingError(CHARACTERISTIC_NOTIFY)
+        self._write_char = services.get_characteristic(UUID(CHARACTERISTIC_WRITE))
         if not self._write_char:
-            raise CharacteristicMissingError(WRITE_CHAR_UUID)
+            raise CharacteristicMissingError(CHARACTERISTIC_WRITE)
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""

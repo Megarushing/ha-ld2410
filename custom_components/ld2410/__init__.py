@@ -84,6 +84,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         retry_count=entry.options[CONF_RETRY_COUNT],
     )
 
+    try:
+        await device.initialise()
+    except Exception as err:  # pragma: no cover - defensive
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN,
+            translation_key="value_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
     coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
         hass,
         _LOGGER,
