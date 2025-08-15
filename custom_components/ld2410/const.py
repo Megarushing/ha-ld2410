@@ -5,7 +5,7 @@ from enum import StrEnum
 from .api import switchbot
 from .api.switchbot import SwitchbotModel
 
-DOMAIN = "switchbot"
+DOMAIN = "ld2410"
 MANUFACTURER = "switchbot"
 
 # Config Attributes
@@ -51,6 +51,7 @@ class SupportedModels(StrEnum):
     EVAPORATIVE_HUMIDIFIER = "evaporative_humidifier"
     FLOOR_LAMP = "floor_lamp"
     STRIP_LIGHT_3 = "strip_light_3"
+    LD2410 = "ld2410"
 
 
 CONNECTABLE_SUPPORTED_MODEL_TYPES = {
@@ -94,6 +95,7 @@ NON_CONNECTABLE_SUPPORTED_MODEL_TYPES = {
     SwitchbotModel.REMOTE: SupportedModels.REMOTE,
     SwitchbotModel.HUBMINI_MATTER: SupportedModels.HUBMINI_MATTER,
     SwitchbotModel.HUB3: SupportedModels.HUB3,
+    SwitchbotModel.LD2410: SupportedModels.LD2410,
 }
 
 SUPPORTED_MODEL_TYPES = (
