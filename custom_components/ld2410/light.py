@@ -1,12 +1,12 @@
-"""Switchbot integration light platform."""
+"""LD2410 integration light platform."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any, cast
 
-from .api import switchbot
-from .api.switchbot import ColorMode as SwitchBotColorMode
+from .api import ld2410
+from .api.ld2410 import ColorMode as LD2410ColorMode
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -20,12 +20,12 @@ from homeassistant.components.light import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import SwitchbotConfigEntry
-from .entity import SwitchbotEntity, exception_handler
+from .coordinator import LD2410ConfigEntry
+from .entity import LD2410Entity, exception_handler
 
-SWITCHBOT_COLOR_MODE_TO_HASS = {
-    SwitchBotColorMode.RGB: ColorMode.RGB,
-    SwitchBotColorMode.COLOR_TEMP: ColorMode.COLOR_TEMP,
+LD2410_COLOR_MODE_TO_HASS = {
+    LD2410ColorMode.RGB: ColorMode.RGB,
+    LD2410ColorMode.COLOR_TEMP: ColorMode.COLOR_TEMP,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,17 +34,17 @@ PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the switchbot light."""
-    async_add_entities([SwitchbotLightEntity(entry.runtime_data)])
+    """Set up the ld2410 light."""
+    async_add_entities([LD2410LightEntity(entry.runtime_data)])
 
 
-class SwitchbotLightEntity(SwitchbotEntity, LightEntity):
-    """Representation of switchbot light bulb."""
+class LD2410LightEntity(LD2410Entity, LightEntity):
+    """Representation of ld2410 light bulb."""
 
-    _device: switchbot.SwitchbotBaseLight
+    _device: ld2410.LD2410BaseLight
     _attr_name = None
     _attr_translation_key = "light"
 
@@ -61,7 +61,7 @@ class SwitchbotLightEntity(SwitchbotEntity, LightEntity):
     @property
     def supported_color_modes(self) -> set[ColorMode]:
         """Return the supported color modes."""
-        return {SWITCHBOT_COLOR_MODE_TO_HASS[mode] for mode in self._device.color_modes}
+        return {LD2410_COLOR_MODE_TO_HASS[mode] for mode in self._device.color_modes}
 
     @property
     def supported_features(self) -> LightEntityFeature:
@@ -76,9 +76,7 @@ class SwitchbotLightEntity(SwitchbotEntity, LightEntity):
     @property
     def color_mode(self) -> ColorMode | None:
         """Return the color mode of the light."""
-        return SWITCHBOT_COLOR_MODE_TO_HASS.get(
-            self._device.color_mode, ColorMode.UNKNOWN
-        )
+        return LD2410_COLOR_MODE_TO_HASS.get(self._device.color_mode, ColorMode.UNKNOWN)
 
     @property
     def effect_list(self) -> list[str] | None:

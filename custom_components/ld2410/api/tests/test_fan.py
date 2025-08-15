@@ -3,17 +3,17 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
-from ..switchbot.const.fan import FanMode
-from ..switchbot.devices import fan
+from ..ld2410 import LD2410Advertisement, LD2410Model
+from ..ld2410.const.fan import FanMode
+from ..ld2410.devices import fan
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(
-    init_data: dict | None = None, model: SwitchbotModel = SwitchbotModel.CIRCULATOR_FAN
+    init_data: dict | None = None, model: LD2410Model = LD2410Model.CIRCULATOR_FAN
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    fan_device = fan.SwitchbotFan(ble_device, model=model)
+    fan_device = fan.LD2410Fan(ble_device, model=model)
     fan_device.update_from_advertisement(make_advertisement_data(ble_device, init_data))
     fan_device._send_command = AsyncMock()
     fan_device._check_command_result = MagicMock()
@@ -26,7 +26,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
     if init_data is None:
         init_data = {}
 
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"~\x00R",
@@ -42,7 +42,7 @@ def make_advertisement_data(ble_device: BLEDevice, init_data: dict | None = None
             "isEncrypted": False,
             "model": ",",
             "modelFriendlyName": "Circulator Fan",
-            "modelName": SwitchbotModel.CIRCULATOR_FAN,
+            "modelName": LD2410Model.CIRCULATOR_FAN,
         },
         device=ble_device,
         rssi=-80,

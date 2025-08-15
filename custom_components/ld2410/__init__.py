@@ -1,8 +1,8 @@
-"""Support for Switchbot devices."""
+"""Support for LD2410 devices."""
 
 import logging
 
-from .api import switchbot
+from .api import ld2410
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
@@ -26,10 +26,10 @@ from .const import (
     DEFAULT_RETRY_COUNT,
     DOMAIN,
     ENCRYPTED_MODELS,
-    HASS_SENSOR_TYPE_TO_SWITCHBOT_MODEL,
+    HASS_SENSOR_TYPE_TO_LD2410_MODEL,
     SupportedModels,
 )
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
 
 PLATFORMS_BY_TYPE = {
     SupportedModels.BULB.value: [Platform.SENSOR, Platform.LIGHT],
@@ -98,40 +98,40 @@ PLATFORMS_BY_TYPE = {
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
 }
 CLASS_BY_DEVICE = {
-    SupportedModels.CEILING_LIGHT.value: switchbot.SwitchbotCeilingLight,
-    SupportedModels.CURTAIN.value: switchbot.SwitchbotCurtain,
-    SupportedModels.BOT.value: switchbot.Switchbot,
-    SupportedModels.PLUG.value: switchbot.SwitchbotPlugMini,
-    SupportedModels.BULB.value: switchbot.SwitchbotBulb,
-    SupportedModels.LIGHT_STRIP.value: switchbot.SwitchbotLightStrip,
-    SupportedModels.HUMIDIFIER.value: switchbot.SwitchbotHumidifier,
-    SupportedModels.LOCK.value: switchbot.SwitchbotLock,
-    SupportedModels.LOCK_PRO.value: switchbot.SwitchbotLock,
-    SupportedModels.BLIND_TILT.value: switchbot.SwitchbotBlindTilt,
-    SupportedModels.RELAY_SWITCH_1PM.value: switchbot.SwitchbotRelaySwitch,
-    SupportedModels.RELAY_SWITCH_1.value: switchbot.SwitchbotRelaySwitch,
-    SupportedModels.ROLLER_SHADE.value: switchbot.SwitchbotRollerShade,
-    SupportedModels.CIRCULATOR_FAN.value: switchbot.SwitchbotFan,
-    SupportedModels.K20_VACUUM.value: switchbot.SwitchbotVacuum,
-    SupportedModels.S10_VACUUM.value: switchbot.SwitchbotVacuum,
-    SupportedModels.K10_VACUUM.value: switchbot.SwitchbotVacuum,
-    SupportedModels.K10_PRO_VACUUM.value: switchbot.SwitchbotVacuum,
-    SupportedModels.K10_PRO_COMBO_VACUUM.value: switchbot.SwitchbotVacuum,
-    SupportedModels.LOCK_LITE.value: switchbot.SwitchbotLock,
-    SupportedModels.LOCK_ULTRA.value: switchbot.SwitchbotLock,
-    SupportedModels.AIR_PURIFIER.value: switchbot.SwitchbotAirPurifier,
-    SupportedModels.AIR_PURIFIER_TABLE.value: switchbot.SwitchbotAirPurifier,
-    SupportedModels.EVAPORATIVE_HUMIDIFIER: switchbot.SwitchbotEvaporativeHumidifier,
-    SupportedModels.FLOOR_LAMP.value: switchbot.SwitchbotStripLight3,
-    SupportedModels.STRIP_LIGHT_3.value: switchbot.SwitchbotStripLight3,
+    SupportedModels.CEILING_LIGHT.value: ld2410.LD2410CeilingLight,
+    SupportedModels.CURTAIN.value: ld2410.LD2410Curtain,
+    SupportedModels.BOT.value: ld2410.LD2410,
+    SupportedModels.PLUG.value: ld2410.LD2410PlugMini,
+    SupportedModels.BULB.value: ld2410.LD2410Bulb,
+    SupportedModels.LIGHT_STRIP.value: ld2410.LD2410LightStrip,
+    SupportedModels.HUMIDIFIER.value: ld2410.LD2410Humidifier,
+    SupportedModels.LOCK.value: ld2410.LD2410Lock,
+    SupportedModels.LOCK_PRO.value: ld2410.LD2410Lock,
+    SupportedModels.BLIND_TILT.value: ld2410.LD2410BlindTilt,
+    SupportedModels.RELAY_SWITCH_1PM.value: ld2410.LD2410RelaySwitch,
+    SupportedModels.RELAY_SWITCH_1.value: ld2410.LD2410RelaySwitch,
+    SupportedModels.ROLLER_SHADE.value: ld2410.LD2410RollerShade,
+    SupportedModels.CIRCULATOR_FAN.value: ld2410.LD2410Fan,
+    SupportedModels.K20_VACUUM.value: ld2410.LD2410Vacuum,
+    SupportedModels.S10_VACUUM.value: ld2410.LD2410Vacuum,
+    SupportedModels.K10_VACUUM.value: ld2410.LD2410Vacuum,
+    SupportedModels.K10_PRO_VACUUM.value: ld2410.LD2410Vacuum,
+    SupportedModels.K10_PRO_COMBO_VACUUM.value: ld2410.LD2410Vacuum,
+    SupportedModels.LOCK_LITE.value: ld2410.LD2410Lock,
+    SupportedModels.LOCK_ULTRA.value: ld2410.LD2410Lock,
+    SupportedModels.AIR_PURIFIER.value: ld2410.LD2410AirPurifier,
+    SupportedModels.AIR_PURIFIER_TABLE.value: ld2410.LD2410AirPurifier,
+    SupportedModels.EVAPORATIVE_HUMIDIFIER: ld2410.LD2410EvaporativeHumidifier,
+    SupportedModels.FLOOR_LAMP.value: ld2410.LD2410StripLight3,
+    SupportedModels.STRIP_LIGHT_3.value: ld2410.LD2410StripLight3,
 }
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: SwitchbotConfigEntry) -> bool:
-    """Set up Switchbot from a config entry."""
+async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bool:
+    """Set up LD2410 from a config entry."""
     assert entry.unique_id is not None
     if CONF_ADDRESS not in entry.data and CONF_MAC in entry.data:
         # Bleak uses addresses not mac addresses which are actually
@@ -151,12 +151,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SwitchbotConfigEntry) ->
         )
 
     sensor_type: str = entry.data[CONF_SENSOR_TYPE]
-    switchbot_model = HASS_SENSOR_TYPE_TO_SWITCHBOT_MODEL[sensor_type]
+    ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL[sensor_type]
     # connectable means we can make connections to the device
-    connectable = switchbot_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
+    connectable = ld2410_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
     address: str = entry.data[CONF_ADDRESS]
 
-    await switchbot.close_stale_connections_by_address(address)
+    await ld2410.close_stale_connections_by_address(address)
 
     ble_device = bluetooth.async_ble_device_from_address(
         hass, address.upper(), connectable
@@ -168,15 +168,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SwitchbotConfigEntry) ->
             translation_placeholders={"sensor_type": sensor_type, "address": address},
         )
 
-    cls = CLASS_BY_DEVICE.get(sensor_type, switchbot.SwitchbotDevice)
-    if switchbot_model in ENCRYPTED_MODELS:
+    cls = CLASS_BY_DEVICE.get(sensor_type, ld2410.LD2410Device)
+    if ld2410_model in ENCRYPTED_MODELS:
         try:
             device = cls(
                 device=ble_device,
                 key_id=entry.data.get(CONF_KEY_ID),
                 encryption_key=entry.data.get(CONF_ENCRYPTION_KEY),
                 retry_count=entry.options[CONF_RETRY_COUNT],
-                model=switchbot_model,
+                model=ld2410_model,
             )
         except ValueError as error:
             raise ConfigEntryNotReady(
@@ -191,7 +191,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SwitchbotConfigEntry) ->
             retry_count=entry.options[CONF_RETRY_COUNT],
         )
 
-    coordinator = entry.runtime_data = SwitchbotDataUpdateCoordinator(
+    coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
         hass,
         _LOGGER,
         ble_device,
@@ -199,7 +199,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SwitchbotConfigEntry) ->
         entry.unique_id,
         entry.data.get(CONF_NAME, entry.title),
         connectable,
-        switchbot_model,
+        ld2410_model,
     )
     entry.async_on_unload(coordinator.async_start())
     if not await coordinator.async_wait_ready():

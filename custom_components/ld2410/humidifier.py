@@ -1,12 +1,12 @@
-"""Support for Switchbot humidifier."""
+"""Support for LD2410 humidifier."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from .api import switchbot
-from .api.switchbot import HumidifierAction as SwitchbotHumidifierAction, HumidifierMode
+from .api import ld2410
+from .api.ld2410 import HumidifierAction as LD2410HumidifierAction, HumidifierMode
 
 from homeassistant.components.humidifier import (
     MODE_AUTO,
@@ -19,38 +19,38 @@ from homeassistant.components.humidifier import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import SwitchbotConfigEntry
-from .entity import SwitchbotSwitchedEntity, exception_handler
+from .coordinator import LD2410ConfigEntry
+from .entity import LD2410SwitchedEntity, exception_handler
 
 _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 EVAPORATIVE_HUMIDIFIER_ACTION_MAP: dict[int, HumidifierAction] = {
-    SwitchbotHumidifierAction.OFF: HumidifierAction.OFF,
-    SwitchbotHumidifierAction.HUMIDIFYING: HumidifierAction.HUMIDIFYING,
-    SwitchbotHumidifierAction.DRYING: HumidifierAction.DRYING,
+    LD2410HumidifierAction.OFF: HumidifierAction.OFF,
+    LD2410HumidifierAction.HUMIDIFYING: HumidifierAction.HUMIDIFYING,
+    LD2410HumidifierAction.DRYING: HumidifierAction.DRYING,
 }
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Switchbot based on a config entry."""
+    """Set up LD2410 based on a config entry."""
     coordinator = entry.runtime_data
-    if isinstance(coordinator.device, switchbot.SwitchbotEvaporativeHumidifier):
-        async_add_entities([SwitchBotEvaporativeHumidifier(coordinator)])
+    if isinstance(coordinator.device, ld2410.LD2410EvaporativeHumidifier):
+        async_add_entities([LD2410EvaporativeHumidifier(coordinator)])
     else:
-        async_add_entities([SwitchBotHumidifier(coordinator)])
+        async_add_entities([LD2410Humidifier(coordinator)])
 
 
-class SwitchBotHumidifier(SwitchbotSwitchedEntity, HumidifierEntity):
-    """Representation of a Switchbot humidifier."""
+class LD2410Humidifier(LD2410SwitchedEntity, HumidifierEntity):
+    """Representation of a LD2410 humidifier."""
 
     _attr_supported_features = HumidifierEntityFeature.MODES
     _attr_device_class = HumidifierDeviceClass.HUMIDIFIER
     _attr_available_modes = [MODE_NORMAL, MODE_AUTO]
-    _device: switchbot.SwitchbotHumidifier
+    _device: ld2410.LD2410Humidifier
     _attr_min_humidity = 1
     _attr_translation_key = "humidifier"
     _attr_name = None
@@ -86,10 +86,10 @@ class SwitchBotHumidifier(SwitchbotSwitchedEntity, HumidifierEntity):
         self.async_write_ha_state()
 
 
-class SwitchBotEvaporativeHumidifier(SwitchbotSwitchedEntity, HumidifierEntity):
-    """Representation of a Switchbot evaporative humidifier."""
+class LD2410EvaporativeHumidifier(LD2410SwitchedEntity, HumidifierEntity):
+    """Representation of a LD2410 evaporative humidifier."""
 
-    _device: switchbot.SwitchbotEvaporativeHumidifier
+    _device: ld2410.LD2410EvaporativeHumidifier
     _attr_device_class = HumidifierDeviceClass.HUMIDIFIER
     _attr_supported_features = HumidifierEntityFeature.MODES
     _attr_available_modes = HumidifierMode.get_modes()

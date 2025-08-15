@@ -1,4 +1,4 @@
-"""Tests for SwitchbotEncryptedDevice base class."""
+"""Tests for LD2410EncryptedDevice base class."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from bleak.exc import BleakDBusError
 
-from ..switchbot import SwitchbotModel
-from ..switchbot.devices.device import (
-    SwitchbotEncryptedDevice,
+from ..ld2410 import LD2410Model
+from ..ld2410.devices.device import (
+    LD2410EncryptedDevice,
 )
 from .test_adv_parser import generate_ble_device
 
 
-class MockEncryptedDevice(SwitchbotEncryptedDevice):
+class MockEncryptedDevice(LD2410EncryptedDevice):
     """Mock encrypted device for testing."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -28,7 +28,7 @@ class MockEncryptedDevice(SwitchbotEncryptedDevice):
 
 
 def create_encrypted_device(
-    model: SwitchbotModel = SwitchbotModel.LOCK,
+    model: LD2410Model = LD2410Model.LOCK,
 ) -> MockEncryptedDevice:
     """Create an encrypted device for testing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "Test Device")
@@ -57,22 +57,22 @@ async def test_encrypted_device_init_validation() -> None:
     # Test empty key_id
     with pytest.raises(ValueError, match="key_id is missing"):
         MockEncryptedDevice(
-            ble_device, "", "0123456789abcdef0123456789abcdef", SwitchbotModel.LOCK
+            ble_device, "", "0123456789abcdef0123456789abcdef", LD2410Model.LOCK
         )
 
     # Test invalid key_id length
     with pytest.raises(ValueError, match="key_id is invalid"):
         MockEncryptedDevice(
-            ble_device, "1", "0123456789abcdef0123456789abcdef", SwitchbotModel.LOCK
+            ble_device, "1", "0123456789abcdef0123456789abcdef", LD2410Model.LOCK
         )
 
     # Test empty encryption_key
     with pytest.raises(ValueError, match="encryption_key is missing"):
-        MockEncryptedDevice(ble_device, "01", "", SwitchbotModel.LOCK)
+        MockEncryptedDevice(ble_device, "01", "", LD2410Model.LOCK)
 
     # Test invalid encryption_key length
     with pytest.raises(ValueError, match="encryption_key is invalid"):
-        MockEncryptedDevice(ble_device, "01", "0123456789abcdef", SwitchbotModel.LOCK)
+        MockEncryptedDevice(ble_device, "01", "0123456789abcdef", LD2410Model.LOCK)
 
 
 @pytest.mark.asyncio

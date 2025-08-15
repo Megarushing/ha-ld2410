@@ -1,9 +1,9 @@
-"""Support for SwitchBot sensors."""
+"""Support for LD2410 sensors."""
 
 from __future__ import annotations
 
-from .api.switchbot import HumidifierWaterLevel
-from .api.switchbot.const.air_purifier import AirQualityLevel
+from .api.ld2410 import HumidifierWaterLevel
+from .api.ld2410.const.air_purifier import AirQualityLevel
 
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
@@ -27,8 +27,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
-from .entity import SwitchbotEntity
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .entity import LD2410Entity
 
 PARALLEL_UPDATES = 0
 
@@ -128,29 +128,29 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Switchbot sensor based on a config entry."""
+    """Set up LD2410 sensor based on a config entry."""
     coordinator = entry.runtime_data
     entities = [
-        SwitchBotSensor(coordinator, sensor)
+        LD2410Sensor(coordinator, sensor)
         for sensor in coordinator.device.parsed_data
         if sensor in SENSOR_TYPES
     ]
-    entities.append(SwitchbotRSSISensor(coordinator, "rssi"))
+    entities.append(LD2410RSSISensor(coordinator, "rssi"))
     async_add_entities(entities)
 
 
-class SwitchBotSensor(SwitchbotEntity, SensorEntity):
-    """Representation of a Switchbot sensor."""
+class LD2410Sensor(LD2410Entity, SensorEntity):
+    """Representation of a LD2410 sensor."""
 
     def __init__(
         self,
-        coordinator: SwitchbotDataUpdateCoordinator,
+        coordinator: LD2410DataUpdateCoordinator,
         sensor: str,
     ) -> None:
-        """Initialize the Switchbot sensor."""
+        """Initialize the LD2410 sensor."""
         super().__init__(coordinator)
         self._sensor = sensor
         self._attr_unique_id = f"{coordinator.base_unique_id}-{sensor}"
@@ -162,13 +162,13 @@ class SwitchBotSensor(SwitchbotEntity, SensorEntity):
         return self.parsed_data[self._sensor]
 
 
-class SwitchbotRSSISensor(SwitchBotSensor):
-    """Representation of a Switchbot RSSI sensor."""
+class LD2410RSSISensor(LD2410Sensor):
+    """Representation of a LD2410 RSSI sensor."""
 
     @property
     def native_value(self) -> str | int | None:
         """Return the state of the sensor."""
-        # Switchbot supports both connectable and non-connectable devices
+        # LD2410 supports both connectable and non-connectable devices
         # so we need to request the rssi value based on the connectable instead
         # of the nearest scanner since that is the RSSI that matters for controlling
         # the device.

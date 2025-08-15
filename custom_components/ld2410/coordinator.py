@@ -1,4 +1,4 @@
-"""Provides the switchbot DataUpdateCoordinator."""
+"""Provides the ld2410 DataUpdateCoordinator."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
-from .api import switchbot
-from .api.switchbot import SwitchbotModel
+from .api import ld2410
+from .api.ld2410 import LD2410Model
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.active_update_coordinator import (
@@ -25,24 +25,24 @@ _LOGGER = logging.getLogger(__name__)
 
 DEVICE_STARTUP_TIMEOUT = 30
 
-type SwitchbotConfigEntry = ConfigEntry[SwitchbotDataUpdateCoordinator]
+type LD2410ConfigEntry = ConfigEntry[LD2410DataUpdateCoordinator]
 
 
-class SwitchbotDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
-    """Class to manage fetching switchbot data."""
+class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
+    """Class to manage fetching ld2410 data."""
 
     def __init__(
         self,
         hass: HomeAssistant,
         logger: logging.Logger,
         ble_device: BLEDevice,
-        device: switchbot.SwitchbotDevice,
+        device: ld2410.LD2410Device,
         base_unique_id: str,
         device_name: str,
         connectable: bool,
-        model: SwitchbotModel,
+        model: LD2410Model,
     ) -> None:
-        """Initialize global switchbot data updater."""
+        """Initialize global ld2410 data updater."""
         super().__init__(
             hass=hass,
             logger=logger,
@@ -102,16 +102,14 @@ class SwitchbotDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None])
         """Handle a Bluetooth event."""
         self.ble_device = service_info.device
         if not (
-            adv := switchbot.parse_advertisement_data(
+            adv := ld2410.parse_advertisement_data(
                 service_info.device, service_info.advertisement, self.model
             )
         ):
             return
         if "modelName" in adv.data:
             self._ready_event.set()
-        _LOGGER.debug(
-            "%s: Switchbot data: %s", self.ble_device.address, self.device.data
-        )
+        _LOGGER.debug("%s: LD2410 data: %s", self.ble_device.address, self.device.data)
         if not self.device.advertisement_changed(adv) and not self._was_unavailable:
             return
         self._was_unavailable = False

@@ -2,7 +2,7 @@
 import getpass
 import sys
 
-from ..switchbot import SwitchbotLock
+from ..ld2410 import LD2410Lock
 
 
 def main():
@@ -13,9 +13,7 @@ def main():
     password = getpass.getpass() if len(sys.argv) == 3 else sys.argv[3]
 
     try:
-        result = SwitchbotLock.retrieve_encryption_key(
-            sys.argv[1], sys.argv[2], password
-        )
+        result = LD2410Lock.retrieve_encryption_key(sys.argv[1], sys.argv[2], password)
     except RuntimeError as e:
         print(e)
         sys.exit(1)

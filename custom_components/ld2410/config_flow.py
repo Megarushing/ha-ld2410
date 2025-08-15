@@ -1,16 +1,16 @@
-"""Config flow for Switchbot."""
+"""Config flow for LD2410."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from .api.switchbot import (
-    SwitchbotAccountConnectionError,
-    SwitchBotAdvertisement,
-    SwitchbotApiError,
-    SwitchbotAuthenticationError,
-    SwitchbotModel,
+from .api.ld2410 import (
+    LD2410AccountConnectionError,
+    LD2410Advertisement,
+    LD2410ApiError,
+    LD2410AuthenticationError,
+    LD2410Model,
     parse_advertisement_data,
 )
 import voluptuous as vol
@@ -45,7 +45,7 @@ from .const import (
     DEFAULT_RETRY_COUNT,
     DOMAIN,
     ENCRYPTED_MODELS,
-    ENCRYPTED_SWITCHBOT_MODEL_TO_CLASS,
+    ENCRYPTED_LD2410_MODEL_TO_CLASS,
     NON_CONNECTABLE_SUPPORTED_MODEL_TYPES,
     SUPPORTED_MODEL_TYPES,
     SupportedModels,
@@ -55,7 +55,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def format_unique_id(address: str) -> str:
-    """Format the unique ID for a switchbot."""
+    """Format the unique ID for a ld2410."""
     return address.replace(":", "").lower()
 
 
@@ -65,13 +65,13 @@ def short_address(address: str) -> str:
     return f"{results[-2].upper()}{results[-1].upper()}"[-4:]
 
 
-def name_from_discovery(discovery: SwitchBotAdvertisement) -> str:
+def name_from_discovery(discovery: LD2410Advertisement) -> str:
     """Get the name from a discovery."""
     return f"{discovery.data['modelFriendlyName']} {short_address(discovery.address)}"
 
 
-class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Switchbot."""
+class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for LD2410."""
 
     VERSION = 1
 
@@ -79,14 +79,14 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: ConfigEntry,
-    ) -> SwitchbotOptionsFlowHandler:
+    ) -> LD2410OptionsFlowHandler:
         """Get the options flow for this handler."""
-        return SwitchbotOptionsFlowHandler()
+        return LD2410OptionsFlowHandler()
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        self._discovered_adv: SwitchBotAdvertisement | None = None
-        self._discovered_advs: dict[str, SwitchBotAdvertisement] = {}
+        self._discovered_adv: LD2410Advertisement | None = None
+        self._discovered_advs: dict[str, LD2410Advertisement] = {}
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -175,13 +175,13 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_encrypted_auth(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the SwitchBot API auth step."""
+        """Handle the LD2410 API auth step."""
         errors = {}
         assert self._discovered_adv is not None
         description_placeholders = {}
         if user_input is not None:
-            model: SwitchbotModel = self._discovered_adv.data["modelName"]
-            cls = ENCRYPTED_SWITCHBOT_MODEL_TO_CLASS[model]
+            model: LD2410Model = self._discovered_adv.data["modelName"]
+            cls = ENCRYPTED_LD2410_MODEL_TO_CLASS[model]
             try:
                 key_details = await cls.async_retrieve_encryption_key(
                     async_get_clientsession(self.hass),
@@ -189,14 +189,12 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
                     user_input[CONF_USERNAME],
                     user_input[CONF_PASSWORD],
                 )
-            except (SwitchbotApiError, SwitchbotAccountConnectionError) as ex:
-                _LOGGER.debug(
-                    "Failed to connect to SwitchBot API: %s", ex, exc_info=True
-                )
+            except (LD2410ApiError, LD2410AccountConnectionError) as ex:
+                _LOGGER.debug("Failed to connect to LD2410 API: %s", ex, exc_info=True)
                 raise AbortFlow(
                     "api_error", description_placeholders={"error_detail": str(ex)}
                 ) from ex
-            except SwitchbotAuthenticationError as ex:
+            except LD2410AuthenticationError as ex:
                 _LOGGER.debug("Authentication failed: %s", ex, exc_info=True)
                 errors = {"base": "auth_failed"}
                 description_placeholders = {"error_detail": str(ex)}
@@ -224,7 +222,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_encrypted_choose_method(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the SwitchBot API chose method step."""
+        """Handle the LD2410 API chose method step."""
         assert self._discovered_adv is not None
 
         return self.async_show_menu(
@@ -242,8 +240,8 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         errors = {}
         assert self._discovered_adv is not None
         if user_input is not None:
-            model: SwitchbotModel = self._discovered_adv.data["modelName"]
-            cls = ENCRYPTED_SWITCHBOT_MODEL_TO_CLASS[model]
+            model: LD2410Model = self._discovered_adv.data["modelName"]
+            cls = ENCRYPTED_LD2410_MODEL_TO_CLASS[model]
             if not await cls.verify_encryption_key(
                 self._discovered_adv.device,
                 user_input[CONF_KEY_ID],
@@ -296,7 +294,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         if not self._discovered_advs:
             raise AbortFlow("no_devices_found")
 
-    async def _async_set_device(self, discovery: SwitchBotAdvertisement) -> None:
+    async def _async_set_device(self, discovery: LD2410Advertisement) -> None:
         """Set the device to work with."""
         self._discovered_adv = discovery
         address = discovery.address
@@ -310,7 +308,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the user step to pick discovered device."""
         errors: dict[str, str] = {}
-        device_adv: SwitchBotAdvertisement | None = None
+        device_adv: LD2410Advertisement | None = None
         if user_input is not None:
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)
@@ -348,13 +346,13 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class SwitchbotOptionsFlowHandler(OptionsFlow):
-    """Handle Switchbot options."""
+class LD2410OptionsFlowHandler(OptionsFlow):
+    """Handle LD2410 options."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage Switchbot options."""
+        """Manage LD2410 options."""
         if user_input is not None:
             # Update common entity options for all other entities.
             return self.async_create_entry(title="", data=user_input)

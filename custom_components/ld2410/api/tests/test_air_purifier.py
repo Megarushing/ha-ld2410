@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotEncryptedDevice, SwitchbotModel
-from ..switchbot.const.air_purifier import AirPurifierMode
-from ..switchbot.devices import air_purifier
+from ..ld2410 import LD2410Advertisement, LD2410EncryptedDevice, LD2410Model
+from ..ld2410.const.air_purifier import AirPurifierMode
+from ..ld2410.devices import air_purifier
 from .test_adv_parser import generate_ble_device
 
 common_params = [
@@ -20,7 +20,7 @@ def create_device_for_command_testing(
     rawAdvData: bytes, model: str, init_data: dict | None = None
 ):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    device = air_purifier.SwitchbotAirPurifier(
+    device = air_purifier.LD2410AirPurifier(
         ble_device, "ff", "ffffffffffffffffffffffffffffffff"
     )
     device.update_from_advertisement(
@@ -39,7 +39,7 @@ def make_advertisement_data(
     if init_data is None:
         init_data = {}
 
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": rawAdvData,
@@ -58,7 +58,7 @@ def make_advertisement_data(
             "isEncrypted": False,
             "model": model,
             "modelFriendlyName": "Air Purifier",
-            "modelName": SwitchbotModel.AIR_PURIFIER,
+            "modelName": LD2410Model.AIR_PURIFIER,
         },
         device=ble_device,
         rssi=-80,
@@ -195,7 +195,7 @@ async def test_get_basic_info(rawAdvData, model, basic_info, result):
 
 
 @pytest.mark.asyncio
-@patch.object(SwitchbotEncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
+@patch.object(LD2410EncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
 async def test_verify_encryption_key(mock_parent_verify):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     key_id = "ff"
@@ -203,7 +203,7 @@ async def test_verify_encryption_key(mock_parent_verify):
 
     mock_parent_verify.return_value = True
 
-    result = await air_purifier.SwitchbotAirPurifier.verify_encryption_key(
+    result = await air_purifier.LD2410AirPurifier.verify_encryption_key(
         device=ble_device,
         key_id=key_id,
         encryption_key=encryption_key,
@@ -213,7 +213,7 @@ async def test_verify_encryption_key(mock_parent_verify):
         ble_device,
         key_id,
         encryption_key,
-        SwitchbotModel.AIR_PURIFIER,
+        LD2410Model.AIR_PURIFIER,
     )
 
     assert result is True

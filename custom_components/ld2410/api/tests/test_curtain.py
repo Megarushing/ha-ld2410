@@ -3,15 +3,15 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
-from ..switchbot.devices import curtain
-from ..switchbot.devices.base_cover import COVER_EXT_SUM_KEY
+from ..ld2410 import LD2410Advertisement, LD2410Model
+from ..ld2410.devices import curtain
+from ..ld2410.devices.base_cover import COVER_EXT_SUM_KEY
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(calibration=True, reverse_mode=False):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 50, calibration)
     )
@@ -24,7 +24,7 @@ def make_advertisement_data(
     ble_device: BLEDevice, in_motion: bool, position: int, calibration: bool = True
 ):
     """Set advertisement data with defaults."""
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0X\x00\x11\x04",
@@ -39,7 +39,7 @@ def make_advertisement_data(
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -51,7 +51,7 @@ def make_advertisement_data(
 def test_device_passive_not_in_motion(reverse_mode):
     """Test passive not in motion advertisement."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, False, 0)
     )
@@ -64,7 +64,7 @@ def test_device_passive_not_in_motion(reverse_mode):
 def test_device_passive_opening(reverse_mode):
     """Test passive opening advertisement."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )
@@ -80,7 +80,7 @@ def test_device_passive_opening(reverse_mode):
 def test_device_passive_closing(reverse_mode):
     """Test passive closing advertisement."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 100)
     )
@@ -96,7 +96,7 @@ def test_device_passive_closing(reverse_mode):
 def test_device_passive_opening_then_stop(reverse_mode):
     """Test passive stopped after opening advertisement."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )
@@ -115,7 +115,7 @@ def test_device_passive_opening_then_stop(reverse_mode):
 def test_device_passive_closing_then_stop(reverse_mode):
     """Test passive stopped after closing advertisement."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 100)
     )
@@ -135,7 +135,7 @@ def test_device_passive_closing_then_stop(reverse_mode):
 async def test_device_active_not_in_motion(reverse_mode):
     """Test active not in motion."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, False, 0)
     )
@@ -158,7 +158,7 @@ async def test_device_active_not_in_motion(reverse_mode):
 async def test_device_active_opening(reverse_mode):
     """Test active opening."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )
@@ -181,7 +181,7 @@ async def test_device_active_opening(reverse_mode):
 async def test_device_active_closing(reverse_mode):
     """Test active closing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 100)
     )
@@ -204,7 +204,7 @@ async def test_device_active_closing(reverse_mode):
 async def test_device_active_opening_then_stop(reverse_mode):
     """Test active stopped after opening."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )
@@ -231,7 +231,7 @@ async def test_device_active_opening_then_stop(reverse_mode):
 async def test_device_active_closing_then_stop(reverse_mode):
     """Test active stopped after closing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
+    curtain_device = curtain.LD2410Curtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 100)
     )
@@ -256,7 +256,7 @@ async def test_device_active_closing_then_stop(reverse_mode):
 @pytest.mark.asyncio
 async def test_get_basic_info_returns_none_when_no_data():
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device)
+    curtain_device = curtain.LD2410Curtain(ble_device)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )
@@ -278,7 +278,7 @@ async def test_get_basic_info_returns_none_when_no_data():
 )
 async def test_get_basic_info(data, result):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    curtain_device = curtain.SwitchbotCurtain(ble_device)
+    curtain_device = curtain.LD2410Curtain(ble_device)
     curtain_device.update_from_advertisement(
         make_advertisement_data(ble_device, True, 0)
     )

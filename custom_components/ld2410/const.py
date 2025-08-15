@@ -1,20 +1,20 @@
-"""Constants for the switchbot integration."""
+"""Constants for the ld2410 integration."""
 
 from enum import StrEnum
 
-from .api import switchbot
-from .api.switchbot import SwitchbotModel
+from .api import ld2410
+from .api.ld2410 import LD2410Model
 
 DOMAIN = "ld2410"
-MANUFACTURER = "switchbot"
+MANUFACTURER = "ld2410"
 
 # Config Attributes
 
-DEFAULT_NAME = "Switchbot"
+DEFAULT_NAME = "LD2410"
 
 
 class SupportedModels(StrEnum):
-    """Supported Switchbot models."""
+    """Supported LD2410 models."""
 
     BOT = "bot"
     BULB = "bulb"
@@ -55,47 +55,47 @@ class SupportedModels(StrEnum):
 
 
 CONNECTABLE_SUPPORTED_MODEL_TYPES = {
-    SwitchbotModel.BOT: SupportedModels.BOT,
-    SwitchbotModel.CURTAIN: SupportedModels.CURTAIN,
-    SwitchbotModel.PLUG_MINI: SupportedModels.PLUG,
-    SwitchbotModel.COLOR_BULB: SupportedModels.BULB,
-    SwitchbotModel.LIGHT_STRIP: SupportedModels.LIGHT_STRIP,
-    SwitchbotModel.CEILING_LIGHT: SupportedModels.CEILING_LIGHT,
-    SwitchbotModel.HUMIDIFIER: SupportedModels.HUMIDIFIER,
-    SwitchbotModel.LOCK: SupportedModels.LOCK,
-    SwitchbotModel.LOCK_PRO: SupportedModels.LOCK_PRO,
-    SwitchbotModel.BLIND_TILT: SupportedModels.BLIND_TILT,
-    SwitchbotModel.HUB2: SupportedModels.HUB2,
-    SwitchbotModel.RELAY_SWITCH_1PM: SupportedModels.RELAY_SWITCH_1PM,
-    SwitchbotModel.RELAY_SWITCH_1: SupportedModels.RELAY_SWITCH_1,
-    SwitchbotModel.ROLLER_SHADE: SupportedModels.ROLLER_SHADE,
-    SwitchbotModel.CIRCULATOR_FAN: SupportedModels.CIRCULATOR_FAN,
-    SwitchbotModel.K20_VACUUM: SupportedModels.K20_VACUUM,
-    SwitchbotModel.S10_VACUUM: SupportedModels.S10_VACUUM,
-    SwitchbotModel.K10_VACUUM: SupportedModels.K10_VACUUM,
-    SwitchbotModel.K10_PRO_VACUUM: SupportedModels.K10_PRO_VACUUM,
-    SwitchbotModel.K10_PRO_COMBO_VACUUM: SupportedModels.K10_PRO_COMBO_VACUUM,
-    SwitchbotModel.LOCK_LITE: SupportedModels.LOCK_LITE,
-    SwitchbotModel.LOCK_ULTRA: SupportedModels.LOCK_ULTRA,
-    SwitchbotModel.AIR_PURIFIER: SupportedModels.AIR_PURIFIER,
-    SwitchbotModel.AIR_PURIFIER_TABLE: SupportedModels.AIR_PURIFIER_TABLE,
-    SwitchbotModel.EVAPORATIVE_HUMIDIFIER: SupportedModels.EVAPORATIVE_HUMIDIFIER,
-    SwitchbotModel.FLOOR_LAMP: SupportedModels.FLOOR_LAMP,
-    SwitchbotModel.STRIP_LIGHT_3: SupportedModels.STRIP_LIGHT_3,
+    LD2410Model.BOT: SupportedModels.BOT,
+    LD2410Model.CURTAIN: SupportedModels.CURTAIN,
+    LD2410Model.PLUG_MINI: SupportedModels.PLUG,
+    LD2410Model.COLOR_BULB: SupportedModels.BULB,
+    LD2410Model.LIGHT_STRIP: SupportedModels.LIGHT_STRIP,
+    LD2410Model.CEILING_LIGHT: SupportedModels.CEILING_LIGHT,
+    LD2410Model.HUMIDIFIER: SupportedModels.HUMIDIFIER,
+    LD2410Model.LOCK: SupportedModels.LOCK,
+    LD2410Model.LOCK_PRO: SupportedModels.LOCK_PRO,
+    LD2410Model.BLIND_TILT: SupportedModels.BLIND_TILT,
+    LD2410Model.HUB2: SupportedModels.HUB2,
+    LD2410Model.RELAY_SWITCH_1PM: SupportedModels.RELAY_SWITCH_1PM,
+    LD2410Model.RELAY_SWITCH_1: SupportedModels.RELAY_SWITCH_1,
+    LD2410Model.ROLLER_SHADE: SupportedModels.ROLLER_SHADE,
+    LD2410Model.CIRCULATOR_FAN: SupportedModels.CIRCULATOR_FAN,
+    LD2410Model.K20_VACUUM: SupportedModels.K20_VACUUM,
+    LD2410Model.S10_VACUUM: SupportedModels.S10_VACUUM,
+    LD2410Model.K10_VACUUM: SupportedModels.K10_VACUUM,
+    LD2410Model.K10_PRO_VACUUM: SupportedModels.K10_PRO_VACUUM,
+    LD2410Model.K10_PRO_COMBO_VACUUM: SupportedModels.K10_PRO_COMBO_VACUUM,
+    LD2410Model.LOCK_LITE: SupportedModels.LOCK_LITE,
+    LD2410Model.LOCK_ULTRA: SupportedModels.LOCK_ULTRA,
+    LD2410Model.AIR_PURIFIER: SupportedModels.AIR_PURIFIER,
+    LD2410Model.AIR_PURIFIER_TABLE: SupportedModels.AIR_PURIFIER_TABLE,
+    LD2410Model.EVAPORATIVE_HUMIDIFIER: SupportedModels.EVAPORATIVE_HUMIDIFIER,
+    LD2410Model.FLOOR_LAMP: SupportedModels.FLOOR_LAMP,
+    LD2410Model.STRIP_LIGHT_3: SupportedModels.STRIP_LIGHT_3,
 }
 
 NON_CONNECTABLE_SUPPORTED_MODEL_TYPES = {
-    SwitchbotModel.METER: SupportedModels.HYGROMETER,
-    SwitchbotModel.IO_METER: SupportedModels.HYGROMETER,
-    SwitchbotModel.METER_PRO: SupportedModels.HYGROMETER,
-    SwitchbotModel.METER_PRO_C: SupportedModels.HYGROMETER_CO2,
-    SwitchbotModel.CONTACT_SENSOR: SupportedModels.CONTACT,
-    SwitchbotModel.MOTION_SENSOR: SupportedModels.MOTION,
-    SwitchbotModel.LEAK: SupportedModels.LEAK,
-    SwitchbotModel.REMOTE: SupportedModels.REMOTE,
-    SwitchbotModel.HUBMINI_MATTER: SupportedModels.HUBMINI_MATTER,
-    SwitchbotModel.HUB3: SupportedModels.HUB3,
-    SwitchbotModel.LD2410: SupportedModels.LD2410,
+    LD2410Model.METER: SupportedModels.HYGROMETER,
+    LD2410Model.IO_METER: SupportedModels.HYGROMETER,
+    LD2410Model.METER_PRO: SupportedModels.HYGROMETER,
+    LD2410Model.METER_PRO_C: SupportedModels.HYGROMETER_CO2,
+    LD2410Model.CONTACT_SENSOR: SupportedModels.CONTACT,
+    LD2410Model.MOTION_SENSOR: SupportedModels.MOTION,
+    LD2410Model.LEAK: SupportedModels.LEAK,
+    LD2410Model.REMOTE: SupportedModels.REMOTE,
+    LD2410Model.HUBMINI_MATTER: SupportedModels.HUBMINI_MATTER,
+    LD2410Model.HUB3: SupportedModels.HUB3,
+    LD2410Model.LD2410: SupportedModels.LD2410,
 }
 
 SUPPORTED_MODEL_TYPES = (
@@ -103,38 +103,34 @@ SUPPORTED_MODEL_TYPES = (
 )
 
 ENCRYPTED_MODELS = {
-    SwitchbotModel.RELAY_SWITCH_1,
-    SwitchbotModel.RELAY_SWITCH_1PM,
-    SwitchbotModel.LOCK,
-    SwitchbotModel.LOCK_PRO,
-    SwitchbotModel.LOCK_LITE,
-    SwitchbotModel.LOCK_ULTRA,
-    SwitchbotModel.AIR_PURIFIER,
-    SwitchbotModel.AIR_PURIFIER_TABLE,
-    SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
-    SwitchbotModel.FLOOR_LAMP,
-    SwitchbotModel.STRIP_LIGHT_3,
+    LD2410Model.RELAY_SWITCH_1,
+    LD2410Model.RELAY_SWITCH_1PM,
+    LD2410Model.LOCK,
+    LD2410Model.LOCK_PRO,
+    LD2410Model.LOCK_LITE,
+    LD2410Model.LOCK_ULTRA,
+    LD2410Model.AIR_PURIFIER,
+    LD2410Model.AIR_PURIFIER_TABLE,
+    LD2410Model.EVAPORATIVE_HUMIDIFIER,
+    LD2410Model.FLOOR_LAMP,
+    LD2410Model.STRIP_LIGHT_3,
 }
 
-ENCRYPTED_SWITCHBOT_MODEL_TO_CLASS: dict[
-    SwitchbotModel, switchbot.SwitchbotEncryptedDevice
-] = {
-    SwitchbotModel.LOCK: switchbot.SwitchbotLock,
-    SwitchbotModel.LOCK_PRO: switchbot.SwitchbotLock,
-    SwitchbotModel.RELAY_SWITCH_1PM: switchbot.SwitchbotRelaySwitch,
-    SwitchbotModel.RELAY_SWITCH_1: switchbot.SwitchbotRelaySwitch,
-    SwitchbotModel.LOCK_LITE: switchbot.SwitchbotLock,
-    SwitchbotModel.LOCK_ULTRA: switchbot.SwitchbotLock,
-    SwitchbotModel.AIR_PURIFIER: switchbot.SwitchbotAirPurifier,
-    SwitchbotModel.AIR_PURIFIER_TABLE: switchbot.SwitchbotAirPurifier,
-    SwitchbotModel.EVAPORATIVE_HUMIDIFIER: switchbot.SwitchbotEvaporativeHumidifier,
-    SwitchbotModel.FLOOR_LAMP: switchbot.SwitchbotStripLight3,
-    SwitchbotModel.STRIP_LIGHT_3: switchbot.SwitchbotStripLight3,
+ENCRYPTED_LD2410_MODEL_TO_CLASS: dict[LD2410Model, ld2410.LD2410EncryptedDevice] = {
+    LD2410Model.LOCK: ld2410.LD2410Lock,
+    LD2410Model.LOCK_PRO: ld2410.LD2410Lock,
+    LD2410Model.RELAY_SWITCH_1PM: ld2410.LD2410RelaySwitch,
+    LD2410Model.RELAY_SWITCH_1: ld2410.LD2410RelaySwitch,
+    LD2410Model.LOCK_LITE: ld2410.LD2410Lock,
+    LD2410Model.LOCK_ULTRA: ld2410.LD2410Lock,
+    LD2410Model.AIR_PURIFIER: ld2410.LD2410AirPurifier,
+    LD2410Model.AIR_PURIFIER_TABLE: ld2410.LD2410AirPurifier,
+    LD2410Model.EVAPORATIVE_HUMIDIFIER: ld2410.LD2410EvaporativeHumidifier,
+    LD2410Model.FLOOR_LAMP: ld2410.LD2410StripLight3,
+    LD2410Model.STRIP_LIGHT_3: ld2410.LD2410StripLight3,
 }
 
-HASS_SENSOR_TYPE_TO_SWITCHBOT_MODEL = {
-    str(v): k for k, v in SUPPORTED_MODEL_TYPES.items()
-}
+HASS_SENSOR_TYPE_TO_LD2410_MODEL = {str(v): k for k, v in SUPPORTED_MODEL_TYPES.items()}
 
 # Config Defaults
 DEFAULT_RETRY_COUNT = 3

@@ -3,15 +3,15 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from ..switchbot import SwitchbotModel
-from ..switchbot.const.lock import LockStatus
-from ..switchbot.devices import lock
+from ..ld2410 import LD2410Model
+from ..ld2410.const.lock import LockStatus
+from ..ld2410.devices import lock
 from .test_adv_parser import generate_ble_device
 
 
 def create_device_for_command_testing(model: str):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    return lock.SwitchbotLock(
+    return lock.LD2410Lock(
         ble_device, "ff", "ffffffffffffffffffffffffffffffff", model=model
     )
 
@@ -19,10 +19,10 @@ def create_device_for_command_testing(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_lock_init(model: str):
@@ -34,13 +34,13 @@ def test_lock_init(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.AIR_PURIFIER,
+        LD2410Model.AIR_PURIFIER,
     ],
 )
 def test_lock_init_with_invalid_model(model: str):
     """Test that initializing with an invalid model raises ValueError."""
     with pytest.raises(
-        ValueError, match="initializing SwitchbotLock with a non-lock model"
+        ValueError, match="initializing LD2410Lock with a non-lock model"
     ):
         create_device_for_command_testing(model)
 
@@ -49,18 +49,18 @@ def test_lock_init_with_invalid_model(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_verify_encryption_key(model: str):
     """Test verify_encryption_key method."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    with patch("switchbot.devices.lock.super") as mock_super:
+    with patch("ld2410.devices.lock.super") as mock_super:
         mock_super().verify_encryption_key = AsyncMock(return_value=True)
-        result = await lock.SwitchbotLock.verify_encryption_key(
+        result = await lock.LD2410Lock.verify_encryption_key(
             ble_device, "key_id", "encryption_key", model
         )
         assert result is True
@@ -70,10 +70,10 @@ async def test_verify_encryption_key(model: str):
 @pytest.mark.parametrize(
     ("model", "command"),
     [
-        (SwitchbotModel.LOCK, b"W\x0fN\x01\x01\x10\x80"),
-        (SwitchbotModel.LOCK_LITE, b"W\x0fN\x01\x01\x10\x81"),
-        (SwitchbotModel.LOCK_PRO, b"W\x0fN\x01\x01\x10\x85"),
-        (SwitchbotModel.LOCK_ULTRA, b"W\x0fN\x01\x01\x10\x86"),
+        (LD2410Model.LOCK, b"W\x0fN\x01\x01\x10\x80"),
+        (LD2410Model.LOCK_LITE, b"W\x0fN\x01\x01\x10\x81"),
+        (LD2410Model.LOCK_PRO, b"W\x0fN\x01\x01\x10\x85"),
+        (LD2410Model.LOCK_ULTRA, b"W\x0fN\x01\x01\x10\x86"),
     ],
 )
 async def test_lock(model: str, command: bytes):
@@ -93,10 +93,10 @@ async def test_lock(model: str, command: bytes):
 @pytest.mark.parametrize(
     ("model", "command"),
     [
-        (SwitchbotModel.LOCK, b"W\x0fN\x01\x01\x10\x80"),
-        (SwitchbotModel.LOCK_LITE, b"W\x0fN\x01\x01\x10\x81"),
-        (SwitchbotModel.LOCK_PRO, b"W\x0fN\x01\x01\x10\x84"),
-        (SwitchbotModel.LOCK_ULTRA, b"W\x0fN\x01\x01\x10\x83"),
+        (LD2410Model.LOCK, b"W\x0fN\x01\x01\x10\x80"),
+        (LD2410Model.LOCK_LITE, b"W\x0fN\x01\x01\x10\x81"),
+        (LD2410Model.LOCK_PRO, b"W\x0fN\x01\x01\x10\x84"),
+        (LD2410Model.LOCK_ULTRA, b"W\x0fN\x01\x01\x10\x83"),
     ],
 )
 async def test_unlock(model: str, command: bytes):
@@ -116,10 +116,10 @@ async def test_unlock(model: str, command: bytes):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_unlock_without_unlatch(model: str):
@@ -139,10 +139,10 @@ async def test_unlock_without_unlatch(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_get_basic_info(model: str):
@@ -166,10 +166,10 @@ async def test_get_basic_info(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_get_basic_info_no_lock_data(model: str):
@@ -184,10 +184,10 @@ async def test_get_basic_info_no_lock_data(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_get_basic_info_no_basic_data(model: str):
@@ -204,7 +204,7 @@ async def test_get_basic_info_no_basic_data(model: str):
 
 def test_parse_basic_data():
     """Test _parse_basic_data method."""
-    device = create_device_for_command_testing(SwitchbotModel.LOCK)
+    device = create_device_for_command_testing(LD2410Model.LOCK)
     basic_data = b"\x00\x64\x01"
     result = device._parse_basic_data(basic_data)
     assert result["battery"] == 100
@@ -214,10 +214,10 @@ def test_parse_basic_data():
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_is_calibrated(model: str):
@@ -230,10 +230,10 @@ def test_is_calibrated(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_get_lock_status(model: str):
@@ -246,9 +246,9 @@ def test_get_lock_status(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_is_door_open(model: str):
@@ -261,9 +261,9 @@ def test_is_door_open(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_is_unclosed_alarm_on(model: str):
@@ -276,10 +276,10 @@ def test_is_unclosed_alarm_on(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_is_unlocked_alarm_on(model: str):
@@ -292,7 +292,7 @@ def test_is_unlocked_alarm_on(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
+        LD2410Model.LOCK,
     ],
 )
 def test_is_auto_lock_paused(model: str):
@@ -305,10 +305,10 @@ def test_is_auto_lock_paused(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_is_night_latch_enabled(model: str):
@@ -322,10 +322,10 @@ def test_is_night_latch_enabled(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_get_lock_info(model: str):
@@ -341,10 +341,10 @@ async def test_get_lock_info(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_get_lock_info_failure(model: str):
@@ -359,10 +359,10 @@ async def test_get_lock_info_failure(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_enable_notifications(model: str):
@@ -377,10 +377,10 @@ async def test_enable_notifications(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_disable_notifications(model: str):
@@ -397,10 +397,10 @@ async def test_disable_notifications(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_disable_notifications_already_disabled(model: str):
@@ -416,10 +416,10 @@ async def test_disable_notifications_already_disabled(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_notification_handler(model: str):
@@ -435,10 +435,10 @@ def test_notification_handler(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_notification_handler_not_enabled(model: str):
@@ -460,10 +460,10 @@ def test_notification_handler_not_enabled(model: str):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_notification_handler_during_disconnect(
@@ -488,10 +488,10 @@ def test_notification_handler_during_disconnect(
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 def test_update_lock_status(model: str):
@@ -511,7 +511,7 @@ def test_update_lock_status(model: str):
     ("model", "data", "expected"),
     [
         (
-            SwitchbotModel.LOCK,
+            LD2410Model.LOCK,
             b"\x80\x00\x00\x00\x00\x00",
             {
                 "calibration": True,
@@ -522,7 +522,7 @@ def test_update_lock_status(model: str):
             },
         ),
         (
-            SwitchbotModel.LOCK_LITE,
+            LD2410Model.LOCK_LITE,
             b"\x80\x00\x00\x00\x00\x00",
             {
                 "calibration": True,
@@ -531,7 +531,7 @@ def test_update_lock_status(model: str):
             },
         ),
         (
-            SwitchbotModel.LOCK_PRO,
+            LD2410Model.LOCK_PRO,
             b"\x80\x00\x00\x00\x00\x00",
             {
                 "calibration": True,
@@ -542,7 +542,7 @@ def test_update_lock_status(model: str):
             },
         ),
         (
-            SwitchbotModel.LOCK_ULTRA,
+            LD2410Model.LOCK_ULTRA,
             b"\x88\x10\x00\x00\x00\xc0",
             {
                 "calibration": True,
@@ -556,7 +556,7 @@ def test_update_lock_status(model: str):
 )
 def test_parse_lock_data(model: str, data: bytes, expected: dict):
     """Test _parse_lock_data static method."""
-    result = lock.SwitchbotLock._parse_lock_data(data, model)
+    result = lock.LD2410Lock._parse_lock_data(data, model)
     assert result == expected
 
 
@@ -565,7 +565,7 @@ def test_parse_lock_data(model: str, data: bytes, expected: dict):
     [
         # Test LOCK with different status bits and flags
         (
-            SwitchbotModel.LOCK,
+            LD2410Model.LOCK,
             b"\x94\x00\x00\x00\x00\x00",  # Unlocked status (0x10 >> 4 = 1) with door open
             {
                 "calibration": True,
@@ -577,7 +577,7 @@ def test_parse_lock_data(model: str, data: bytes, expected: dict):
         ),
         # Test LOCK_LITE without door_open field
         (
-            SwitchbotModel.LOCK_LITE,
+            LD2410Model.LOCK_LITE,
             b"\x90\x10\x00\x00\x00\x00",  # Unlocked with unlocked alarm
             {
                 "calibration": True,
@@ -587,7 +587,7 @@ def test_parse_lock_data(model: str, data: bytes, expected: dict):
         ),
         # Test LOCK_PRO with new bit positions
         (
-            SwitchbotModel.LOCK_PRO,
+            LD2410Model.LOCK_PRO,
             b"\x90\x10\x00\x00\x00\xc0",  # New format: status bits 3-6, door open bit 4 of byte 1
             {
                 "calibration": True,
@@ -599,7 +599,7 @@ def test_parse_lock_data(model: str, data: bytes, expected: dict):
         ),
         # Test LOCK_ULTRA with same format as PRO
         (
-            SwitchbotModel.LOCK_ULTRA,
+            LD2410Model.LOCK_ULTRA,
             b"\x88\x00\x00\x00\x00\x40",  # Unlocked with unlocked alarm only
             {
                 "calibration": True,
@@ -613,7 +613,7 @@ def test_parse_lock_data(model: str, data: bytes, expected: dict):
 )
 def test_parse_lock_data_new_formats(model: str, data: bytes, expected: dict):
     """Test _parse_lock_data with new format changes."""
-    result = lock.SwitchbotLock._parse_lock_data(data, model)
+    result = lock.LD2410Lock._parse_lock_data(data, model)
     assert result == expected
 
 
@@ -621,10 +621,10 @@ def test_parse_lock_data_new_formats(model: str, data: bytes, expected: dict):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_lock_with_update(model: str):
@@ -645,10 +645,10 @@ async def test_lock_with_update(model: str):
 @pytest.mark.parametrize(
     ("model", "status"),
     [
-        (SwitchbotModel.LOCK, LockStatus.LOCKED),
-        (SwitchbotModel.LOCK_LITE, LockStatus.LOCKING),
-        (SwitchbotModel.LOCK_PRO, LockStatus.LOCKED),
-        (SwitchbotModel.LOCK_ULTRA, LockStatus.LOCKING),
+        (LD2410Model.LOCK, LockStatus.LOCKED),
+        (LD2410Model.LOCK_LITE, LockStatus.LOCKING),
+        (LD2410Model.LOCK_PRO, LockStatus.LOCKED),
+        (LD2410Model.LOCK_ULTRA, LockStatus.LOCKING),
     ],
 )
 async def test_lock_already_locked(model: str, status: LockStatus):
@@ -665,10 +665,10 @@ async def test_lock_already_locked(model: str, status: LockStatus):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.LOCK,
-        SwitchbotModel.LOCK_LITE,
-        SwitchbotModel.LOCK_PRO,
-        SwitchbotModel.LOCK_ULTRA,
+        LD2410Model.LOCK,
+        LD2410Model.LOCK_LITE,
+        LD2410Model.LOCK_PRO,
+        LD2410Model.LOCK_ULTRA,
     ],
 )
 async def test_lock_with_invalid_basic_data(model: str):

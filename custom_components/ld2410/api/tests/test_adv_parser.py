@@ -7,10 +7,10 @@ import pytest
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from ..switchbot import HumidifierMode, SwitchbotModel
-from ..switchbot.adv_parser import parse_advertisement_data
-from ..switchbot.const.lock import LockStatus
-from ..switchbot.models import SwitchBotAdvertisement
+from ..ld2410 import HumidifierMode, LD2410Model
+from ..ld2410.adv_parser import parse_advertisement_data
+from ..ld2410.const.lock import LockStatus
+from ..ld2410.models import LD2410Advertisement
 from . import AdvTestCase
 
 ADVERTISEMENT_DATA_DEFAULTS = {
@@ -69,7 +69,7 @@ def test_parse_advertisement_data_curtain():
         rssi=-80,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0X\x00\x11\x04",
@@ -84,7 +84,7 @@ def test_parse_advertisement_data_curtain():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -100,8 +100,8 @@ def test_parse_advertisement_data_curtain_passive():
         service_data={},
         rssi=-80,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CURTAIN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -116,7 +116,7 @@ def test_parse_advertisement_data_curtain_passive():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -132,8 +132,8 @@ def test_parse_advertisement_data_curtain_passive_12_bytes():
         service_data={},
         rssi=-80,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CURTAIN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -148,7 +148,7 @@ def test_parse_advertisement_data_curtain_passive_12_bytes():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -171,7 +171,7 @@ def test_parse_advertisement_data_curtain_position_zero():
         rssi=-52,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xd0\xced\x11\x04",
@@ -186,7 +186,7 @@ def test_parse_advertisement_data_curtain_position_zero():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-52,
@@ -215,7 +215,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100():
         rssi=-62,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b'c\xc0G\x00"\x04',
@@ -230,7 +230,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-62,
@@ -259,7 +259,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi()
         rssi=-67,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b'c\xc0Gc"\x04',
@@ -274,7 +274,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi()
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-67,
@@ -297,7 +297,7 @@ def test_parse_advertisement_data_curtain_fully_closed():
         rssi=1,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0Sd\x11\x04",
@@ -312,7 +312,7 @@ def test_parse_advertisement_data_curtain_fully_closed():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=1,
@@ -335,7 +335,7 @@ def test_parse_advertisement_data_curtain_fully_open():
         rssi=1,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0S\x00\x11\x04",
@@ -350,7 +350,7 @@ def test_parse_advertisement_data_curtain_fully_open():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=1,
@@ -370,7 +370,7 @@ def test_parse_advertisement_data_curtain3():
     )
 
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"{\xc0\x49\x00\x11\x04",
@@ -385,7 +385,7 @@ def test_parse_advertisement_data_curtain3():
             "isEncrypted": False,
             "model": "{",
             "modelFriendlyName": "Curtain 3",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -403,8 +403,8 @@ def test_parse_advertisement_data_curtain3_passive():
         service_data={},
         rssi=-80,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CURTAIN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -419,7 +419,7 @@ def test_parse_advertisement_data_curtain3_passive():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-80,
@@ -438,7 +438,7 @@ def test_parse_advertisement_data_contact():
         rssi=-80,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"d@d\x05\x00u\x00\xf8\x12",
@@ -454,7 +454,7 @@ def test_parse_advertisement_data_contact():
             "isEncrypted": False,
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "modelName": LD2410Model.CONTACT_SENSOR,
         },
         device=ble_device,
         rssi=-80,
@@ -483,7 +483,7 @@ def test_new_bot_firmware():
         rssi=-90,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"H\x10\xe1",
@@ -491,7 +491,7 @@ def test_new_bot_firmware():
             "model": "H",
             "isEncrypted": False,
             "modelFriendlyName": "Bot",
-            "modelName": SwitchbotModel.BOT,
+            "modelName": LD2410Model.BOT,
         },
         device=ble_device,
         rssi=-90,
@@ -520,7 +520,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
         rssi=-2,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0dd\x12\x04",
@@ -535,7 +535,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-2,
@@ -564,7 +564,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_open():
         rssi=-2,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"c\xc0d\x00\x12\x04",
@@ -579,7 +579,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_open():
             "isEncrypted": False,
             "model": "c",
             "modelFriendlyName": "Curtain",
-            "modelName": SwitchbotModel.CURTAIN,
+            "modelName": LD2410Model.CURTAIN,
         },
         device=ble_device,
         rssi=-2,
@@ -599,7 +599,7 @@ def test_contact_sensor_mfr():
         rssi=-70,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -614,7 +614,7 @@ def test_contact_sensor_mfr():
             "isEncrypted": False,
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "modelName": LD2410Model.CONTACT_SENSOR,
             "rawAdvData": b"d\x00\xda\x04\x00F\x01\x8f\xc4",
         },
         device=ble_device,
@@ -634,7 +634,7 @@ def test_contact_sensor_mfr_no_service_data():
     )
     result = parse_advertisement_data(ble_device, adv_data)
     # Passive detection of contact sensor is not supported
-    # anymore since the Switchbot Curtain v3 was released
+    # anymore since the LD2410 Curtain v3 was released
     # which uses the heuristics for the contact sensor.
     assert result is None
 
@@ -650,7 +650,7 @@ def test_contact_sensor_srv():
         rssi=-70,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -665,7 +665,7 @@ def test_contact_sensor_srv():
             "isEncrypted": False,
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "modelName": LD2410Model.CONTACT_SENSOR,
             "rawAdvData": b"d\x00\xda\x04\x00F\x01\x8f\xc4",
         },
         device=ble_device,
@@ -686,7 +686,7 @@ def test_contact_sensor_open():
         rssi=-59,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -701,7 +701,7 @@ def test_contact_sensor_open():
             "isEncrypted": False,
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "modelName": LD2410Model.CONTACT_SENSOR,
             "rawAdvData": b"d@\xda\x02\x00\x17\x00QD",
         },
         device=ble_device,
@@ -722,7 +722,7 @@ def test_contact_sensor_closed():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -737,7 +737,7 @@ def test_contact_sensor_closed():
             "isEncrypted": False,
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "modelName": LD2410Model.CONTACT_SENSOR,
             "rawAdvData": b"d@\xda\x00\x00+\x00\x19\x84",
         },
         device=ble_device,
@@ -746,8 +746,8 @@ def test_contact_sensor_closed():
     )
 
 
-def test_switchbot_passive():
-    """Test parsing switchbot as passive."""
+def test_ld2410_passive():
+    """Test parsing ld2410 as passive."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={89: bytes.fromhex("d51cfb397856")},
@@ -755,8 +755,8 @@ def test_switchbot_passive():
         tx_power=-127,
         rssi=-50,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.BOT)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -767,7 +767,7 @@ def test_switchbot_passive():
             "isEncrypted": False,
             "model": "H",
             "modelFriendlyName": "Bot",
-            "modelName": SwitchbotModel.BOT,
+            "modelName": LD2410Model.BOT,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -786,7 +786,7 @@ def test_bulb_active():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -802,7 +802,7 @@ def test_bulb_active():
             "isEncrypted": False,
             "model": "u",
             "modelFriendlyName": "Color Bulb",
-            "modelName": SwitchbotModel.COLOR_BULB,
+            "modelName": LD2410Model.COLOR_BULB,
             "rawAdvData": b"u\x00d",
         },
         device=ble_device,
@@ -821,7 +821,7 @@ def test_wosensor_passive_and_active():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -834,7 +834,7 @@ def test_wosensor_passive_and_active():
             "isEncrypted": False,
             "model": "T",
             "modelFriendlyName": "Meter",
-            "modelName": SwitchbotModel.METER,
+            "modelName": LD2410Model.METER,
             "rawAdvData": b"T\x00\xe4\x06\x985",
         },
         device=ble_device,
@@ -853,7 +853,7 @@ def test_wosensor_active():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -866,7 +866,7 @@ def test_wosensor_active():
             "isEncrypted": False,
             "model": "T",
             "modelFriendlyName": "Meter",
-            "modelName": SwitchbotModel.METER,
+            "modelName": LD2410Model.METER,
             "rawAdvData": b"T\x00\xe4\x06\x985",
         },
         device=ble_device,
@@ -884,8 +884,8 @@ def test_wosensor_passive_only():
         tx_power=-127,
         rssi=-50,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.METER)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -898,7 +898,7 @@ def test_wosensor_passive_only():
             "isEncrypted": False,
             "model": "T",
             "modelFriendlyName": "Meter",
-            "modelName": SwitchbotModel.METER,
+            "modelName": LD2410Model.METER,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -917,7 +917,7 @@ def test_wosensor_active_zero_data():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {},
@@ -943,7 +943,7 @@ def test_wohub2_passive_and_active():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -957,7 +957,7 @@ def test_wohub2_passive_and_active():
             "isEncrypted": False,
             "model": "v",
             "modelFriendlyName": "Hub 2",
-            "modelName": SwitchbotModel.HUB2,
+            "modelName": LD2410Model.HUB2,
             "rawAdvData": b"v\x00",
         },
         device=ble_device,
@@ -976,7 +976,7 @@ def test_woiosensor_passive_and_active():
         rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -989,7 +989,7 @@ def test_woiosensor_passive_and_active():
             "isEncrypted": False,
             "model": "w",
             "modelFriendlyName": "Indoor/Outdoor Meter",
-            "modelName": SwitchbotModel.IO_METER,
+            "modelName": LD2410Model.IO_METER,
             "rawAdvData": b"w\x00\xe4",
         },
         device=ble_device,
@@ -1007,8 +1007,8 @@ def test_woiosensor_passive_only():
         tx_power=-127,
         rssi=-50,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.IO_METER)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.IO_METER)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1021,7 +1021,7 @@ def test_woiosensor_passive_only():
             "isEncrypted": False,
             "model": "w",
             "modelFriendlyName": "Indoor/Outdoor Meter",
-            "modelName": SwitchbotModel.IO_METER,
+            "modelName": LD2410Model.IO_METER,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1039,10 +1039,8 @@ def test_motion_sensor_clear():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1058,7 +1056,7 @@ def test_motion_sensor_clear():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": b"s\x00\xe2\x00f\x01",
         },
         device=ble_device,
@@ -1076,10 +1074,8 @@ def test_motion_sensor_clear_passive():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1095,7 +1091,7 @@ def test_motion_sensor_clear_passive():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1113,10 +1109,8 @@ def test_motion_sensor_motion():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1132,7 +1126,7 @@ def test_motion_sensor_motion():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": b"s@\xe2\x008\x01",
         },
         device=ble_device,
@@ -1150,10 +1144,8 @@ def test_motion_sensor_motion_passive():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1169,7 +1161,7 @@ def test_motion_sensor_motion_passive():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1187,10 +1179,8 @@ def test_motion_sensor_is_light_passive():
         tx_power=-127,
         rssi=-93,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1206,7 +1196,7 @@ def test_motion_sensor_is_light_passive():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": b"s\x00\xe2\x04g\x02",
         },
         device=ble_device,
@@ -1224,10 +1214,8 @@ def test_motion_sensor_is_light_active():
         tx_power=-127,
         rssi=-93,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1243,7 +1231,7 @@ def test_motion_sensor_is_light_active():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": b"s\x00\xe2\x04g\x02",
         },
         device=ble_device,
@@ -1260,10 +1248,8 @@ def test_motion_with_light_detected():
         tx_power=-127,
         rssi=-84,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.MOTION_SENSOR)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1279,7 +1265,7 @@ def test_motion_with_light_detected():
             "isEncrypted": False,
             "model": "s",
             "modelFriendlyName": "Motion Sensor",
-            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "modelName": LD2410Model.MOTION_SENSOR,
             "rawAdvData": b"s@\xe2\x00,\x02",
         },
         device=ble_device,
@@ -1296,7 +1282,7 @@ def test_meter_pro_active() -> None:
         rssi=-67,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1309,7 +1295,7 @@ def test_meter_pro_active() -> None:
             "isEncrypted": False,
             "model": "4",
             "modelFriendlyName": "Meter Pro",
-            "modelName": SwitchbotModel.METER_PRO,
+            "modelName": LD2410Model.METER_PRO,
             "rawAdvData": b"4\x00d",
         },
         device=ble_device,
@@ -1324,8 +1310,8 @@ def test_meter_pro_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfeR\xdd\x84\x06d\x08\x97,\x00\x05"},
         rssi=-67,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.METER_PRO)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1338,7 +1324,7 @@ def test_meter_pro_passive() -> None:
             "isEncrypted": False,
             "model": "4",
             "modelFriendlyName": "Meter Pro",
-            "modelName": SwitchbotModel.METER_PRO,
+            "modelName": LD2410Model.METER_PRO,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1357,7 +1343,7 @@ def test_meter_pro_c_active() -> None:
         rssi=-67,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1371,7 +1357,7 @@ def test_meter_pro_c_active() -> None:
             "isEncrypted": False,
             "model": "5",
             "modelFriendlyName": "Meter Pro CO2",
-            "modelName": SwitchbotModel.METER_PRO_C,
+            "modelName": LD2410Model.METER_PRO_C,
             "rawAdvData": b"5\x00d",
         },
         device=ble_device,
@@ -1388,8 +1374,8 @@ def test_meter_pro_c_passive() -> None:
         },
         rssi=-67,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO_C)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.METER_PRO_C)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1403,7 +1389,7 @@ def test_meter_pro_c_passive() -> None:
             "isEncrypted": False,
             "model": "5",
             "modelFriendlyName": "Meter Pro CO2",
-            "modelName": SwitchbotModel.METER_PRO_C,
+            "modelName": LD2410Model.METER_PRO_C,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1420,15 +1406,15 @@ def test_parse_advertisement_data_keypad():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"y\x00d"},
         rssi=-67,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.KEYPAD)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.KEYPAD)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {"attempt_state": 143, "battery": 100},
             "isEncrypted": False,
             "model": "y",
             "modelFriendlyName": "Keypad",
-            "modelName": SwitchbotModel.KEYPAD,
+            "modelName": LD2410Model.KEYPAD,
             "rawAdvData": b"y\x00d",
         },
         device=ble_device,
@@ -1445,8 +1431,8 @@ def test_leak_active():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00N"},
         rssi=-72,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1458,7 +1444,7 @@ def test_leak_active():
             "isEncrypted": False,
             "model": "&",
             "modelFriendlyName": "Leak Detector",
-            "modelName": SwitchbotModel.LEAK,
+            "modelName": LD2410Model.LEAK,
             "rawAdvData": b"&\x00N",
         },
         device=ble_device,
@@ -1474,8 +1460,8 @@ def test_leak_passive():
         manufacturer_data={2409: b"\xc4407Lz\x18N\x98g^\x94Q<\x05\x00\x00\x00\x00"},
         rssi=-72,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {},
@@ -1499,8 +1485,8 @@ def test_leak_no_leak_detected():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00d"},
         rssi=-73,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1512,7 +1498,7 @@ def test_leak_no_leak_detected():
             "isEncrypted": False,
             "model": "&",
             "modelFriendlyName": "Leak Detector",
-            "modelName": SwitchbotModel.LEAK,
+            "modelName": LD2410Model.LEAK,
             "rawAdvData": b"&\x00d",
         },
         device=ble_device,
@@ -1531,8 +1517,8 @@ def test_leak_leak_detected():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00d"},
         rssi=-73,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1544,7 +1530,7 @@ def test_leak_leak_detected():
             "isEncrypted": False,
             "model": "&",
             "modelFriendlyName": "Leak Detector",
-            "modelName": SwitchbotModel.LEAK,
+            "modelName": LD2410Model.LEAK,
             "rawAdvData": b"&\x00d",
         },
         device=ble_device,
@@ -1563,8 +1549,8 @@ def test_leak_low_battery():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00d"},
         rssi=-73,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1576,7 +1562,7 @@ def test_leak_low_battery():
             "isEncrypted": False,
             "model": "&",
             "modelFriendlyName": "Leak Detector",
-            "modelName": SwitchbotModel.LEAK,
+            "modelName": LD2410Model.LEAK,
             "rawAdvData": b"&\x00d",
         },
         device=ble_device,
@@ -1595,8 +1581,8 @@ def test_leak_real_data_from_ha():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\\x00V"},
         rssi=-73,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.LEAK)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1608,7 +1594,7 @@ def test_leak_real_data_from_ha():
             "isEncrypted": False,
             "model": "&",
             "modelFriendlyName": "Leak Detector",
-            "modelName": SwitchbotModel.LEAK,
+            "modelName": LD2410Model.LEAK,
             "rawAdvData": b"&\\x00V",
         },
         device=ble_device,
@@ -1626,7 +1612,7 @@ def test_remote_active() -> None:
         rssi=-95,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1635,7 +1621,7 @@ def test_remote_active() -> None:
             "isEncrypted": False,
             "model": "b",
             "modelFriendlyName": "Remote",
-            "modelName": SwitchbotModel.REMOTE,
+            "modelName": LD2410Model.REMOTE,
             "rawAdvData": b"b V\x00",
         },
         device=ble_device,
@@ -1650,8 +1636,8 @@ def test_remote_passive() -> None:
         manufacturer_data={89: b"\xaa\xbb\xcc\xdd\xee\xff"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.REMOTE)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.REMOTE)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1660,7 +1646,7 @@ def test_remote_passive() -> None:
             "isEncrypted": False,
             "model": "b",
             "modelFriendlyName": "Remote",
-            "modelName": SwitchbotModel.REMOTE,
+            "modelName": LD2410Model.REMOTE,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1679,10 +1665,8 @@ def test_parse_advertisement_data_hubmini_matter():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"%\x00"},
         rssi=-67,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.HUBMINI_MATTER
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.HUBMINI_MATTER)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1694,7 +1678,7 @@ def test_parse_advertisement_data_hubmini_matter():
             "isEncrypted": False,
             "model": "%",
             "modelFriendlyName": "HubMini Matter",
-            "modelName": SwitchbotModel.HUBMINI_MATTER,
+            "modelName": LD2410Model.HUBMINI_MATTER,
             "rawAdvData": b"%\x00",
         },
         device=ble_device,
@@ -1711,8 +1695,8 @@ def test_parse_advertisement_data_roller_shade():
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b",\x00'\x9f\x11\x04"},
         rssi=-80,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.ROLLER_SHADE)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.ROLLER_SHADE)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b",\x00'\x9f\x11\x04",
@@ -1728,7 +1712,7 @@ def test_parse_advertisement_data_roller_shade():
             "isEncrypted": False,
             "model": ",",
             "modelFriendlyName": "Roller Shade",
-            "modelName": SwitchbotModel.ROLLER_SHADE,
+            "modelName": LD2410Model.ROLLER_SHADE,
         },
         device=ble_device,
         rssi=-80,
@@ -1745,10 +1729,8 @@ def test_hubmini_matter_passive() -> None:
         },
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.HUBMINI_MATTER
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.HUBMINI_MATTER)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "data": {
@@ -1760,7 +1742,7 @@ def test_hubmini_matter_passive() -> None:
             "isEncrypted": False,
             "model": "%",
             "modelFriendlyName": "HubMini Matter",
-            "modelName": SwitchbotModel.HUBMINI_MATTER,
+            "modelName": LD2410Model.HUBMINI_MATTER,
             "rawAdvData": None,
         },
         device=ble_device,
@@ -1776,8 +1758,8 @@ def test_roller_shade_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfeT\x90\x1b,\x08\x9f\x11\x04'\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.ROLLER_SHADE)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.ROLLER_SHADE)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -1793,7 +1775,7 @@ def test_roller_shade_passive() -> None:
             "isEncrypted": False,
             "model": ",",
             "modelFriendlyName": "Roller Shade",
-            "modelName": SwitchbotModel.ROLLER_SHADE,
+            "modelName": LD2410Model.ROLLER_SHADE,
         },
         device=ble_device,
         rssi=-97,
@@ -1809,10 +1791,8 @@ def test_circulator_fan_active() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"~\x00R"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.CIRCULATOR_FAN
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CIRCULATOR_FAN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"~\x00R",
@@ -1828,7 +1808,7 @@ def test_circulator_fan_active() -> None:
             "isEncrypted": False,
             "model": "~",
             "modelFriendlyName": "Circulator Fan",
-            "modelName": SwitchbotModel.CIRCULATOR_FAN,
+            "modelName": LD2410Model.CIRCULATOR_FAN,
         },
         device=ble_device,
         rssi=-97,
@@ -1843,10 +1823,8 @@ def test_circulator_fan_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfeXY\xa8~LR9"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.CIRCULATOR_FAN
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CIRCULATOR_FAN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -1862,7 +1840,7 @@ def test_circulator_fan_passive() -> None:
             "isEncrypted": False,
             "model": "~",
             "modelFriendlyName": "Circulator Fan",
-            "modelName": SwitchbotModel.CIRCULATOR_FAN,
+            "modelName": LD2410Model.CIRCULATOR_FAN,
         },
         device=ble_device,
         rssi=-97,
@@ -1878,10 +1856,8 @@ def test_circulator_fan_with_empty_data() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"~\x00R"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.CIRCULATOR_FAN
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.CIRCULATOR_FAN)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"~\x00R",
@@ -1903,8 +1879,8 @@ def test_k20_active() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b".\x00d"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K20_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K20_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b".\x00d",
@@ -1919,7 +1895,7 @@ def test_k20_active() -> None:
             "isEncrypted": False,
             "model": ".",
             "modelFriendlyName": "K20 Vacuum",
-            "modelName": SwitchbotModel.K20_VACUUM,
+            "modelName": LD2410Model.K20_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -1934,8 +1910,8 @@ def test_k20_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfe\x01\xf3\x8f'\x01\x11S\x00\x10d\x0f"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K20_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K20_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -1950,7 +1926,7 @@ def test_k20_passive() -> None:
             "isEncrypted": False,
             "model": ".",
             "modelFriendlyName": "K20 Vacuum",
-            "modelName": SwitchbotModel.K20_VACUUM,
+            "modelName": LD2410Model.K20_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -1966,8 +1942,8 @@ def test_k20_with_empty_data() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b".\x00d"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K20_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K20_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b".\x00d",
@@ -1989,10 +1965,8 @@ def test_k10_pro_active() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"(\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_VACUUM
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_PRO_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"(\x00",
@@ -2007,7 +1981,7 @@ def test_k10_pro_active() -> None:
             "isEncrypted": False,
             "model": "(",
             "modelFriendlyName": "K10+ Pro Vacuum",
-            "modelName": SwitchbotModel.K10_PRO_VACUUM,
+            "modelName": LD2410Model.K10_PRO_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2022,10 +1996,8 @@ def test_k10_pro_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfeP\x8d\x8d\x02 d"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_VACUUM
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_PRO_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2040,7 +2012,7 @@ def test_k10_pro_passive() -> None:
             "isEncrypted": False,
             "model": "(",
             "modelFriendlyName": "K10+ Pro Vacuum",
-            "modelName": SwitchbotModel.K10_PRO_VACUUM,
+            "modelName": LD2410Model.K10_PRO_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2056,10 +2028,8 @@ def test_k10_pro_with_empty_data() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"(\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_VACUUM
-    )
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_PRO_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"(\x00",
@@ -2081,8 +2051,8 @@ def test_k10_active() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"}\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"}\x00",
@@ -2097,7 +2067,7 @@ def test_k10_active() -> None:
             "isEncrypted": False,
             "model": "}",
             "modelFriendlyName": "K10+ Vacuum",
-            "modelName": SwitchbotModel.K10_VACUUM,
+            "modelName": LD2410Model.K10_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2112,8 +2082,8 @@ def test_k10_passive() -> None:
         manufacturer_data={2409: b"\xca8\x06\xa9_\xf1\x02 d"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2128,7 +2098,7 @@ def test_k10_passive() -> None:
             "isEncrypted": False,
             "model": "}",
             "modelFriendlyName": "K10+ Vacuum",
-            "modelName": SwitchbotModel.K10_VACUUM,
+            "modelName": LD2410Model.K10_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2144,8 +2114,8 @@ def test_k10_with_empty_data() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"}\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.K10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.K10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"}\x00",
@@ -2170,9 +2140,9 @@ def test_k10_pro_combo_active() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_COMBO_VACUUM
+        ble_device, adv_data, LD2410Model.K10_PRO_COMBO_VACUUM
     )
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"3\x00\x00",
@@ -2187,7 +2157,7 @@ def test_k10_pro_combo_active() -> None:
             "isEncrypted": False,
             "model": "3",
             "modelFriendlyName": "K10+ Pro Combo Vacuum",
-            "modelName": SwitchbotModel.K10_PRO_COMBO_VACUUM,
+            "modelName": LD2410Model.K10_PRO_COMBO_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2205,9 +2175,9 @@ def test_k10_pro_combo_passive() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_COMBO_VACUUM
+        ble_device, adv_data, LD2410Model.K10_PRO_COMBO_VACUUM
     )
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2222,7 +2192,7 @@ def test_k10_pro_combo_passive() -> None:
             "isEncrypted": False,
             "model": "3",
             "modelFriendlyName": "K10+ Pro Combo Vacuum",
-            "modelName": SwitchbotModel.K10_PRO_COMBO_VACUUM,
+            "modelName": LD2410Model.K10_PRO_COMBO_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2239,9 +2209,9 @@ def test_k10_pro_combo_with_empty_data() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(
-        ble_device, adv_data, SwitchbotModel.K10_PRO_COMBO_VACUUM
+        ble_device, adv_data, LD2410Model.K10_PRO_COMBO_VACUUM
     )
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"3\x00\x00",
@@ -2263,8 +2233,8 @@ def test_s10_active() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"z\x00\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.S10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.S10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"z\x00\x00",
@@ -2279,7 +2249,7 @@ def test_s10_active() -> None:
             "isEncrypted": False,
             "model": "z",
             "modelFriendlyName": "S10 Vacuum",
-            "modelName": SwitchbotModel.S10_VACUUM,
+            "modelName": LD2410Model.S10_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2294,8 +2264,8 @@ def test_s10_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfe\x00\x08|\n\x01\x11\x05\x00\x10M\x02"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.S10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.S10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2310,7 +2280,7 @@ def test_s10_passive() -> None:
             "isEncrypted": False,
             "model": "z",
             "modelFriendlyName": "S10 Vacuum",
-            "modelName": SwitchbotModel.S10_VACUUM,
+            "modelName": LD2410Model.S10_VACUUM,
         },
         device=ble_device,
         rssi=-97,
@@ -2326,8 +2296,8 @@ def test_s10_with_empty_data() -> None:
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"z\x00\x00"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.S10_VACUUM)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.S10_VACUUM)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"z\x00\x00",
@@ -2360,7 +2330,7 @@ def test_s10_with_empty_data() -> None:
             },
             "7",
             "Air Purifier Table",
-            SwitchbotModel.AIR_PURIFIER_TABLE,
+            LD2410Model.AIR_PURIFIER_TABLE,
         ),
         AdvTestCase(
             b'\xcc\x8d\xa2\xa7\x92>\t"\x80\x000\x00\x0f\x00\x00',
@@ -2378,7 +2348,7 @@ def test_s10_with_empty_data() -> None:
             },
             "*",
             "Air Purifier",
-            SwitchbotModel.AIR_PURIFIER,
+            LD2410Model.AIR_PURIFIER,
         ),
         AdvTestCase(
             b"\xcc\x8d\xa2\xa7\xe4\xa6\x0b\x83\x88d\x00\xea`\x00\x00",
@@ -2396,7 +2366,7 @@ def test_s10_with_empty_data() -> None:
             },
             "+",
             "Air Purifier",
-            SwitchbotModel.AIR_PURIFIER,
+            LD2410Model.AIR_PURIFIER,
         ),
         AdvTestCase(
             b"\xcc\x8d\xa2\xa7\xc1\xae\x9b\x81\x8c\xb2\x00\x01\x94\x00\x00",
@@ -2414,7 +2384,7 @@ def test_s10_with_empty_data() -> None:
             },
             "8",
             "Air Purifier Table",
-            SwitchbotModel.AIR_PURIFIER_TABLE,
+            LD2410Model.AIR_PURIFIER_TABLE,
         ),
         AdvTestCase(
             b"\xcc\x8d\xa2\xa7\xc1\xae\x9e\xa1\x8c\x800\x01\x95\x00\x00",
@@ -2432,7 +2402,7 @@ def test_s10_with_empty_data() -> None:
             },
             "8",
             "Air Purifier Table",
-            SwitchbotModel.AIR_PURIFIER_TABLE,
+            LD2410Model.AIR_PURIFIER_TABLE,
         ),
         AdvTestCase(
             b"\xcc\x8d\xa2\xa7\xc1\xae\x9e\x05\x8c\x800\x01\x95\x00\x00",
@@ -2450,7 +2420,7 @@ def test_s10_with_empty_data() -> None:
             },
             "8",
             "Air Purifier Table",
-            SwitchbotModel.AIR_PURIFIER_TABLE,
+            LD2410Model.AIR_PURIFIER_TABLE,
         ),
     ],
 )
@@ -2462,7 +2432,7 @@ def test_air_purifier_active(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,
@@ -2486,8 +2456,8 @@ def test_air_purifier_passive() -> None:
         },
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.AIR_PURIFIER)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.AIR_PURIFIER)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2505,7 +2475,7 @@ def test_air_purifier_passive() -> None:
             "isEncrypted": False,
             "model": "+",
             "modelFriendlyName": "Air Purifier",
-            "modelName": SwitchbotModel.AIR_PURIFIER,
+            "modelName": LD2410Model.AIR_PURIFIER,
         },
         device=ble_device,
         rssi=-97,
@@ -2523,7 +2493,7 @@ def test_air_purifier_with_empty_data() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"+\x00\x00\x15\x04\x00",
@@ -2548,7 +2518,7 @@ def test_hub3_active() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"\x00\x00d\x00\x10\xb9@",
@@ -2568,7 +2538,7 @@ def test_hub3_active() -> None:
             "isEncrypted": False,
             "model": b"\x00\x10\xb9@",
             "modelFriendlyName": "Hub3",
-            "modelName": SwitchbotModel.HUB3,
+            "modelName": LD2410Model.HUB3,
         },
         device=ble_device,
         rssi=-97,
@@ -2583,8 +2553,8 @@ def test_hub3_passive() -> None:
         manufacturer_data={2409: b"\xb0\xe9\xfen^)\x00\xffh&\xd6d\x83\x03\x994\x80"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.HUB3)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.HUB3)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2604,7 +2574,7 @@ def test_hub3_passive() -> None:
             "isEncrypted": False,
             "model": b"\x00\x10\xb9@",
             "modelFriendlyName": "Hub3",
-            "modelName": SwitchbotModel.HUB3,
+            "modelName": LD2410Model.HUB3,
         },
         device=ble_device,
         rssi=-97,
@@ -2623,7 +2593,7 @@ def test_hub3_with_empty_data() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"\x00\x00d\x00\x10\xb9@",
@@ -2655,7 +2625,7 @@ def test_hub3_with_empty_data() -> None:
             },
             "-",
             "Lock Lite",
-            SwitchbotModel.LOCK_LITE,
+            LD2410Model.LOCK_LITE,
         ),
         AdvTestCase(
             b"\xee\xf5\xe6\t\x8f\xe8\x11\x97\x08 ",
@@ -2675,7 +2645,7 @@ def test_hub3_with_empty_data() -> None:
             },
             "o",
             "Lock",
-            SwitchbotModel.LOCK,
+            LD2410Model.LOCK,
         ),
         AdvTestCase(
             b"\xf7a\x07H\xe6\xe8:\x8a\x00d\x00\x00",
@@ -2701,7 +2671,7 @@ def test_hub3_with_empty_data() -> None:
             },
             "$",
             "Lock Pro",
-            SwitchbotModel.LOCK_PRO,
+            LD2410Model.LOCK_PRO,
         ),
         AdvTestCase(
             b"\xb0\xe9\xfe\xb6j=%\x8204\x00\x04",
@@ -2726,7 +2696,7 @@ def test_hub3_with_empty_data() -> None:
             },
             b"\x00\x10\xa5\xb8",
             "Lock Ultra",
-            SwitchbotModel.LOCK_ULTRA,
+            LD2410Model.LOCK_ULTRA,
         ),
     ],
 )
@@ -2739,7 +2709,7 @@ def test_lock_active(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,
@@ -2773,7 +2743,7 @@ def test_lock_active(test_case: AdvTestCase) -> None:
             },
             "-",
             "Lock Lite",
-            SwitchbotModel.LOCK_LITE,
+            LD2410Model.LOCK_LITE,
         ),
         AdvTestCase(
             b"\xee\xf5\xe6\t\x8f\xe8\x11\x97\x08 ",
@@ -2793,7 +2763,7 @@ def test_lock_active(test_case: AdvTestCase) -> None:
             },
             "o",
             "Lock",
-            SwitchbotModel.LOCK,
+            LD2410Model.LOCK,
         ),
         AdvTestCase(
             b"\xf7a\x07H\xe6\xe8:\x8a\x00d\x00\x00",
@@ -2819,7 +2789,7 @@ def test_lock_active(test_case: AdvTestCase) -> None:
             },
             "$",
             "Lock Pro",
-            SwitchbotModel.LOCK_PRO,
+            LD2410Model.LOCK_PRO,
         ),
         AdvTestCase(
             b"\xb0\xe9\xfe\xb6j=%\x8204\x00\x04",
@@ -2844,7 +2814,7 @@ def test_lock_active(test_case: AdvTestCase) -> None:
             },
             b"\x00\x10\xa5\xb8",
             "Lock Ultra",
-            SwitchbotModel.LOCK_ULTRA,
+            LD2410Model.LOCK_ULTRA,
         ),
     ],
 )
@@ -2856,7 +2826,7 @@ def test_lock_passive(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data, test_case.modelName)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2881,7 +2851,7 @@ def test_lock_passive(test_case: AdvTestCase) -> None:
             {},
             "-",
             "Lock Lite",
-            SwitchbotModel.LOCK_LITE,
+            LD2410Model.LOCK_LITE,
         ),
         AdvTestCase(
             None,
@@ -2889,7 +2859,7 @@ def test_lock_passive(test_case: AdvTestCase) -> None:
             {},
             "o",
             "Lock",
-            SwitchbotModel.LOCK,
+            LD2410Model.LOCK,
         ),
         AdvTestCase(
             None,
@@ -2897,7 +2867,7 @@ def test_lock_passive(test_case: AdvTestCase) -> None:
             {},
             "$",
             "Lock Pro",
-            SwitchbotModel.LOCK_PRO,
+            LD2410Model.LOCK_PRO,
         ),
         AdvTestCase(
             None,
@@ -2905,7 +2875,7 @@ def test_lock_passive(test_case: AdvTestCase) -> None:
             {},
             b"\x00\x10\xa5\xb8",
             "Lock Ultra",
-            SwitchbotModel.LOCK_ULTRA,
+            LD2410Model.LOCK_ULTRA,
         ),
     ],
 )
@@ -2918,7 +2888,7 @@ def test_lock_with_empty_data(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data, test_case.modelName)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,
@@ -2941,7 +2911,7 @@ def test_blind_tilt_active() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"x\x00H",
@@ -2956,7 +2926,7 @@ def test_blind_tilt_active() -> None:
             "isEncrypted": False,
             "model": "x",
             "modelFriendlyName": "Blind Tilt",
-            "modelName": SwitchbotModel.BLIND_TILT,
+            "modelName": LD2410Model.BLIND_TILT,
         },
         device=ble_device,
         rssi=-97,
@@ -2971,8 +2941,8 @@ def test_blind_tilt_passive() -> None:
         manufacturer_data={2409: b"\xfc(\\6l\x7f\x0b'\x00\xa1\x84"},
         rssi=-97,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BLIND_TILT)
-    assert result == SwitchBotAdvertisement(
+    result = parse_advertisement_data(ble_device, adv_data, LD2410Model.BLIND_TILT)
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -2987,7 +2957,7 @@ def test_blind_tilt_passive() -> None:
             "isEncrypted": False,
             "model": "x",
             "modelFriendlyName": "Blind Tilt",
-            "modelName": SwitchbotModel.BLIND_TILT,
+            "modelName": LD2410Model.BLIND_TILT,
         },
         device=ble_device,
         rssi=-97,
@@ -3004,7 +2974,7 @@ def test_blind_tilt_with_empty_data() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"x\x00H",
@@ -3044,7 +3014,7 @@ def test_blind_tilt_with_empty_data() -> None:
             },
             "#",
             "Evaporative Humidifier",
-            SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+            LD2410Model.EVAPORATIVE_HUMIDIFIER,
         ),
         AdvTestCase(
             b"\xa0\xa3\xb3,\x9c\xe6H\x86\x80\x7f\xff\xf2\x10\x1d\x00\x874",
@@ -3069,7 +3039,7 @@ def test_blind_tilt_with_empty_data() -> None:
             },
             "#",
             "Evaporative Humidifier",
-            SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+            LD2410Model.EVAPORATIVE_HUMIDIFIER,
         ),
         AdvTestCase(
             b"\xa0\xa3\xb3,\x9c\xe6H\x86\x80\xff\xff\xf2\x10\x1d\x00\x874",
@@ -3094,7 +3064,7 @@ def test_blind_tilt_with_empty_data() -> None:
             },
             "#",
             "Evaporative Humidifier",
-            SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+            LD2410Model.EVAPORATIVE_HUMIDIFIER,
         ),
         AdvTestCase(
             b"\xacg\xb2\xcd\xfa\xbe",
@@ -3106,7 +3076,7 @@ def test_blind_tilt_with_empty_data() -> None:
             },
             "e",
             "Humidifier",
-            SwitchbotModel.HUMIDIFIER,
+            LD2410Model.HUMIDIFIER,
         ),
     ],
 )
@@ -3119,7 +3089,7 @@ def test_humidifer_active(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,
@@ -3161,7 +3131,7 @@ def test_humidifer_active(test_case: AdvTestCase) -> None:
             },
             "#",
             "Evaporative Humidifier",
-            SwitchbotModel.EVAPORATIVE_HUMIDIFIER,
+            LD2410Model.EVAPORATIVE_HUMIDIFIER,
         ),
         AdvTestCase(
             b"\xacg\xb2\xcd\xfa\xbe",
@@ -3173,7 +3143,7 @@ def test_humidifer_active(test_case: AdvTestCase) -> None:
             },
             "e",
             "Humidifier",
-            SwitchbotModel.HUMIDIFIER,
+            LD2410Model.HUMIDIFIER,
         ),
     ],
 )
@@ -3185,7 +3155,7 @@ def test_humidifer_passive(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data, test_case.modelName)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -3210,7 +3180,7 @@ def test_humidifer_with_empty_data() -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": b"#\x00\x00\x15\x1c\x00",
@@ -3247,7 +3217,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             "=",
             "Relay Switch 2PM",
-            SwitchbotModel.RELAY_SWITCH_2PM,
+            LD2410Model.RELAY_SWITCH_2PM,
         ),
         AdvTestCase(
             b"$X|\x0866G\x81\x00\x00\x001\x00\x00\x00\x00",
@@ -3259,7 +3229,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             ";",
             "Relay Switch 1",
-            SwitchbotModel.RELAY_SWITCH_1,
+            LD2410Model.RELAY_SWITCH_1,
         ),
         AdvTestCase(
             b"$X|\x0866G\x81\x00\x00\x001\x00\x00\x00\x00",
@@ -3272,7 +3242,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             "<",
             "Relay Switch 1PM",
-            SwitchbotModel.RELAY_SWITCH_1PM,
+            LD2410Model.RELAY_SWITCH_1PM,
         ),
         AdvTestCase(
             b"$X|\x05BN\x0f\x00\x00\x03\x00\x00\x00\x00\x00\x00",
@@ -3285,7 +3255,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             ">",
             "Garage Door Opener",
-            SwitchbotModel.GARAGE_DOOR_OPENER,
+            LD2410Model.GARAGE_DOOR_OPENER,
         ),
         AdvTestCase(
             b'\xc0N0\xe0U\x9a\x85\x9e"\xd0\x00\x00\x00\x00\x00\x00\x12\x91\x00',
@@ -3301,7 +3271,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             b"\x00\x10\xd0\xb1",
             "Strip Light 3",
-            SwitchbotModel.STRIP_LIGHT_3,
+            LD2410Model.STRIP_LIGHT_3,
         ),
         AdvTestCase(
             b'\xa0\x85\xe3e,\x06P\xaa"\xd4\x00\x00\x00\x00\x00\x00\r\x93\x00',
@@ -3317,7 +3287,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             b"\x00\x10\xd0\xb0",
             "Floor Lamp",
-            SwitchbotModel.FLOOR_LAMP,
+            LD2410Model.FLOOR_LAMP,
         ),
         AdvTestCase(
             b"\xef\xfe\xfb\x9d\x10\xfe\n\x01\x18\xf3$",
@@ -3331,7 +3301,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             "q",
             "Ceiling Light",
-            SwitchbotModel.CEILING_LIGHT,
+            LD2410Model.CEILING_LIGHT,
         ),
         AdvTestCase(
             b'|,g\xc8\x15&jR"l\x00\x00\x00\x00\x00\x00',
@@ -3346,7 +3316,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             "r",
             "Light Strip",
-            SwitchbotModel.LIGHT_STRIP,
+            LD2410Model.LIGHT_STRIP,
         ),
         AdvTestCase(
             b"@L\xca\xa7_\x12\x02\x81\x12\x00\x00",
@@ -3363,7 +3333,7 @@ def test_humidifer_with_empty_data() -> None:
             },
             "u",
             "Color Bulb",
-            SwitchbotModel.COLOR_BULB,
+            LD2410Model.COLOR_BULB,
         ),
     ],
 )
@@ -3376,7 +3346,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,
@@ -3415,7 +3385,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             "=",
             "Relay Switch 2PM",
-            SwitchbotModel.RELAY_SWITCH_2PM,
+            LD2410Model.RELAY_SWITCH_2PM,
         ),
         AdvTestCase(
             b"$X|\x0866G\x81\x00\x00\x001\x00\x00\x00\x00",
@@ -3427,7 +3397,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             ";",
             "Relay Switch 1",
-            SwitchbotModel.RELAY_SWITCH_1,
+            LD2410Model.RELAY_SWITCH_1,
         ),
         AdvTestCase(
             b"$X|\x0866G\x81\x00\x00\x001\x00\x00\x00\x00",
@@ -3440,7 +3410,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             "<",
             "Relay Switch 1PM",
-            SwitchbotModel.RELAY_SWITCH_1PM,
+            LD2410Model.RELAY_SWITCH_1PM,
         ),
         AdvTestCase(
             b"$X|\x05BN\x0f\x00\x00\x03\x00\x00\x00\x00\x00\x00",
@@ -3453,7 +3423,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             ">",
             "Garage Door Opener",
-            SwitchbotModel.GARAGE_DOOR_OPENER,
+            LD2410Model.GARAGE_DOOR_OPENER,
         ),
         AdvTestCase(
             b'\xc0N0\xe0U\x9a\x85\x9e"\xd0\x00\x00\x00\x00\x00\x00\x12\x91\x00',
@@ -3469,7 +3439,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             b"\x00\x10\xd0\xb1",
             "Strip Light 3",
-            SwitchbotModel.STRIP_LIGHT_3,
+            LD2410Model.STRIP_LIGHT_3,
         ),
         AdvTestCase(
             b'\xa0\x85\xe3e,\x06P\xaa"\xd4\x00\x00\x00\x00\x00\x00\r\x93\x00',
@@ -3485,7 +3455,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             b"\x00\x10\xd0\xb0",
             "Floor Lamp",
-            SwitchbotModel.FLOOR_LAMP,
+            LD2410Model.FLOOR_LAMP,
         ),
         AdvTestCase(
             b'|,g\xc8\x15&jR"l\x00\x00\x00\x00\x00\x00',
@@ -3500,7 +3470,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             "r",
             "Light Strip",
-            SwitchbotModel.LIGHT_STRIP,
+            LD2410Model.LIGHT_STRIP,
         ),
         AdvTestCase(
             b"@L\xca\xa7_\x12\x02\x81\x12\x00\x00",
@@ -3517,7 +3487,7 @@ def test_adv_active(test_case: AdvTestCase) -> None:
             },
             "u",
             "Color Bulb",
-            SwitchbotModel.COLOR_BULB,
+            LD2410Model.COLOR_BULB,
         ),
     ],
 )
@@ -3529,7 +3499,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data, test_case.modelName)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": None,
@@ -3567,7 +3537,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             },
             "=",
             "Relay Switch 2PM",
-            SwitchbotModel.RELAY_SWITCH_2PM,
+            LD2410Model.RELAY_SWITCH_2PM,
         ),
         AdvTestCase(
             None,
@@ -3579,7 +3549,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             },
             ";",
             "Relay Switch 1",
-            SwitchbotModel.RELAY_SWITCH_1,
+            LD2410Model.RELAY_SWITCH_1,
         ),
         AdvTestCase(
             None,
@@ -3592,7 +3562,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             },
             "<",
             "Relay Switch 1PM",
-            SwitchbotModel.RELAY_SWITCH_1PM,
+            LD2410Model.RELAY_SWITCH_1PM,
         ),
         AdvTestCase(
             None,
@@ -3605,7 +3575,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             },
             ">",
             "Garage Door Opener",
-            SwitchbotModel.GARAGE_DOOR_OPENER,
+            LD2410Model.GARAGE_DOOR_OPENER,
         ),
         AdvTestCase(
             None,
@@ -3613,7 +3583,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             {},
             b"\x00\x10\xd0\xb1",
             "Strip Light 3",
-            SwitchbotModel.STRIP_LIGHT_3,
+            LD2410Model.STRIP_LIGHT_3,
         ),
         AdvTestCase(
             None,
@@ -3621,7 +3591,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             {},
             b"\x00\x10\xd0\xb0",
             "Floor Lamp",
-            SwitchbotModel.FLOOR_LAMP,
+            LD2410Model.FLOOR_LAMP,
         ),
         AdvTestCase(
             None,
@@ -3629,7 +3599,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             {},
             "q",
             "Ceiling Light",
-            SwitchbotModel.CEILING_LIGHT,
+            LD2410Model.CEILING_LIGHT,
         ),
         AdvTestCase(
             None,
@@ -3637,7 +3607,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             {},
             "r",
             "Light Strip",
-            SwitchbotModel.LIGHT_STRIP,
+            LD2410Model.LIGHT_STRIP,
         ),
         AdvTestCase(
             None,
@@ -3645,7 +3615,7 @@ def test_adv_passive(test_case: AdvTestCase) -> None:
             {},
             "u",
             "Color Bulb",
-            SwitchbotModel.COLOR_BULB,
+            LD2410Model.COLOR_BULB,
         ),
     ],
 )
@@ -3658,7 +3628,7 @@ def test_adv_with_empty_data(test_case: AdvTestCase) -> None:
         rssi=-97,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
+    assert result == LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": test_case.service_data,

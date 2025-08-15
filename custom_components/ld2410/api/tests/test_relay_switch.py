@@ -3,15 +3,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 
-from ..switchbot import SwitchBotAdvertisement, SwitchbotEncryptedDevice, SwitchbotModel
-from ..switchbot.devices import relay_switch
-from ..switchbot.devices.device import _merge_data as merge_data
+from ..ld2410 import LD2410Advertisement, LD2410EncryptedDevice, LD2410Model
+from ..ld2410.devices import relay_switch
+from ..ld2410.devices.device import _merge_data as merge_data
 from .test_adv_parser import generate_ble_device
 
 common_params = [
-    (b";\x00\x00\x00", SwitchbotModel.RELAY_SWITCH_1),
-    (b"<\x00\x00\x00", SwitchbotModel.RELAY_SWITCH_1PM),
-    (b">\x00\x00\x00", SwitchbotModel.GARAGE_DOOR_OPENER),
+    (b";\x00\x00\x00", LD2410Model.RELAY_SWITCH_1),
+    (b"<\x00\x00\x00", LD2410Model.RELAY_SWITCH_1PM),
+    (b">\x00\x00\x00", LD2410Model.GARAGE_DOOR_OPENER),
 ]
 
 
@@ -20,7 +20,7 @@ def common_parametrize_2pm():
     """Provide common test data."""
     return {
         "rawAdvData": b"\x00\x00\x00\x00\x00\x00",
-        "model": SwitchbotModel.RELAY_SWITCH_2PM,
+        "model": LD2410Model.RELAY_SWITCH_2PM,
     }
 
 
@@ -29,12 +29,12 @@ def create_device_for_command_testing(
 ):
     """Create a device for command testing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    if model == SwitchbotModel.GARAGE_DOOR_OPENER:
-        device_class = relay_switch.SwitchbotGarageDoorOpener
-    elif model == SwitchbotModel.RELAY_SWITCH_2PM:
-        device_class = relay_switch.SwitchbotRelaySwitch2PM
+    if model == LD2410Model.GARAGE_DOOR_OPENER:
+        device_class = relay_switch.LD2410GarageDoorOpener
+    elif model == LD2410Model.RELAY_SWITCH_2PM:
+        device_class = relay_switch.LD2410RelaySwitch2PM
     else:
-        device_class = relay_switch.SwitchbotRelaySwitch
+        device_class = relay_switch.LD2410RelaySwitch
     device = device_class(
         ble_device, "ff", "ffffffffffffffffffffffffffffffff", model=model
     )
@@ -53,8 +53,8 @@ def make_advertisement_data(
     """Set advertisement data with defaults."""
     if init_data is None:
         init_data = {}
-    if model == SwitchbotModel.RELAY_SWITCH_2PM:
-        return SwitchBotAdvertisement(
+    if model == LD2410Model.RELAY_SWITCH_2PM:
+        return LD2410Advertisement(
             address="aa:bb:cc:dd:ee:ff",
             data={
                 "rawAdvData": rawAdvData,
@@ -77,8 +77,8 @@ def make_advertisement_data(
             rssi=-80,
             active=True,
         )
-    if model == SwitchbotModel.GARAGE_DOOR_OPENER:
-        return SwitchBotAdvertisement(
+    if model == LD2410Model.GARAGE_DOOR_OPENER:
+        return LD2410Advertisement(
             address="aa:bb:cc:dd:ee:ff",
             data={
                 "rawAdvData": rawAdvData,
@@ -95,7 +95,7 @@ def make_advertisement_data(
             rssi=-80,
             active=True,
         )
-    return SwitchBotAdvertisement(
+    return LD2410Advertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
             "rawAdvData": rawAdvData,
@@ -362,7 +362,7 @@ async def test_toggle(rawAdvData, model):
     [
         (
             b">\x00\x00\x00",
-            SwitchbotModel.GARAGE_DOOR_OPENER,
+            LD2410Model.GARAGE_DOOR_OPENER,
             {
                 "basic_info": b"\x01>\x80\x0c\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x10",
                 "channel1_info": b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
@@ -395,13 +395,13 @@ async def test_get_basic_info_garage_door_opener(rawAdvData, model, info_data):
 @pytest.mark.parametrize(
     "model",
     [
-        SwitchbotModel.RELAY_SWITCH_1,
-        SwitchbotModel.RELAY_SWITCH_1PM,
-        SwitchbotModel.GARAGE_DOOR_OPENER,
-        SwitchbotModel.RELAY_SWITCH_2PM,
+        LD2410Model.RELAY_SWITCH_1,
+        LD2410Model.RELAY_SWITCH_1PM,
+        LD2410Model.GARAGE_DOOR_OPENER,
+        LD2410Model.RELAY_SWITCH_2PM,
     ],
 )
-@patch.object(SwitchbotEncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
+@patch.object(LD2410EncryptedDevice, "verify_encryption_key", new_callable=AsyncMock)
 async def test_verify_encryption_key(mock_parent_verify, model):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     key_id = "ff"
@@ -409,7 +409,7 @@ async def test_verify_encryption_key(mock_parent_verify, model):
 
     mock_parent_verify.return_value = True
 
-    result = await relay_switch.SwitchbotRelaySwitch.verify_encryption_key(
+    result = await relay_switch.LD2410RelaySwitch.verify_encryption_key(
         device=ble_device,
         key_id=key_id,
         encryption_key=encryption_key,
@@ -457,7 +457,7 @@ def test_merge_data(old_data, new_data, expected_result):
 async def test_garage_door_opener_open():
     """Test open the garage door."""
     device = create_device_for_command_testing(
-        b">\x00\x00\x00", SwitchbotModel.GARAGE_DOOR_OPENER
+        b">\x00\x00\x00", LD2410Model.GARAGE_DOOR_OPENER
     )
 
     await device.open()
@@ -468,7 +468,7 @@ async def test_garage_door_opener_open():
 async def test_garage_door_opener_close():
     """Test close the garage door."""
     device = create_device_for_command_testing(
-        b">\x00\x00\x00", SwitchbotModel.GARAGE_DOOR_OPENER
+        b">\x00\x00\x00", LD2410Model.GARAGE_DOOR_OPENER
     )
 
     await device.close()
@@ -486,7 +486,7 @@ async def test_garage_door_opener_close():
 async def test_garage_door_opener_door_open(door_open):
     """Test get garage door state."""
     device = create_device_for_command_testing(
-        b">\x00\x00\x00", SwitchbotModel.GARAGE_DOOR_OPENER, {"door_open": door_open}
+        b">\x00\x00\x00", LD2410Model.GARAGE_DOOR_OPENER, {"door_open": door_open}
     )
     assert device.door_open() is door_open
 
@@ -495,7 +495,7 @@ async def test_garage_door_opener_door_open(door_open):
 async def test_press():
     """Test the press command for garage door opener."""
     device = create_device_for_command_testing(
-        b">\x00\x00\x00", SwitchbotModel.GARAGE_DOOR_OPENER
+        b">\x00\x00\x00", LD2410Model.GARAGE_DOOR_OPENER
     )
     await device.press()
     device._send_command.assert_awaited_once_with(device._press_command)

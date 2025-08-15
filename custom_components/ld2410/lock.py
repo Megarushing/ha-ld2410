@@ -1,41 +1,41 @@
-"""Support for SwitchBot lock platform."""
+"""Support for LD2410 lock platform."""
 
 from typing import Any
 
-from .api import switchbot
-from api.switchbot.const import LockStatus
+from .api import ld2410
+from api.ld2410.const import LockStatus
 
 from homeassistant.components.lock import LockEntity, LockEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import CONF_LOCK_NIGHTLATCH, DEFAULT_LOCK_NIGHTLATCH
-from .coordinator import SwitchbotConfigEntry, SwitchbotDataUpdateCoordinator
-from .entity import SwitchbotEntity, exception_handler
+from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .entity import LD2410Entity, exception_handler
 
 PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: SwitchbotConfigEntry,
+    entry: LD2410ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Switchbot lock based on a config entry."""
+    """Set up LD2410 lock based on a config entry."""
     force_nightlatch = entry.options.get(CONF_LOCK_NIGHTLATCH, DEFAULT_LOCK_NIGHTLATCH)
-    async_add_entities([SwitchBotLock(entry.runtime_data, force_nightlatch)])
+    async_add_entities([LD2410Lock(entry.runtime_data, force_nightlatch)])
 
 
 # noinspection PyAbstractClass
-class SwitchBotLock(SwitchbotEntity, LockEntity):
-    """Representation of a Switchbot lock."""
+class LD2410Lock(LD2410Entity, LockEntity):
+    """Representation of a LD2410 lock."""
 
     _attr_translation_key = "lock"
     _attr_name = None
-    _device: switchbot.SwitchbotLock
+    _device: ld2410.LD2410Lock
 
     def __init__(
-        self, coordinator: SwitchbotDataUpdateCoordinator, force_nightlatch
+        self, coordinator: LD2410DataUpdateCoordinator, force_nightlatch
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)

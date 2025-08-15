@@ -2,7 +2,7 @@
 
 import pytest
 
-from ..switchbot.helpers import parse_power_data
+from ..ld2410.helpers import parse_power_data
 
 
 def test_parse_power_data_basic():
