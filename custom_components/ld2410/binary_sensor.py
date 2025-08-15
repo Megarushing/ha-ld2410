@@ -17,11 +17,6 @@ from .entity import LD2410Entity
 PARALLEL_UPDATES = 0
 
 BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
-    "calibration": BinarySensorEntityDescription(
-        key="calibration",
-        translation_key="calibration",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
     "motion_detected": BinarySensorEntityDescription(
         key="pir_state",
         name=None,
@@ -37,37 +32,6 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
         translation_key="door_timeout",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "is_light": BinarySensorEntityDescription(
-        key="is_light",
-        device_class=BinarySensorDeviceClass.LIGHT,
-    ),
-    "door_open": BinarySensorEntityDescription(
-        key="door_status",
-        name=None,
-        device_class=BinarySensorDeviceClass.DOOR,
-    ),
-    "unclosed_alarm": BinarySensorEntityDescription(
-        key="unclosed_alarm",
-        translation_key="door_unclosed_alarm",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-    ),
-    "unlocked_alarm": BinarySensorEntityDescription(
-        key="unlocked_alarm",
-        translation_key="door_unlocked_alarm",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-    ),
-    "auto_lock_paused": BinarySensorEntityDescription(
-        key="auto_lock_paused",
-        translation_key="door_auto_lock_paused",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "leak": BinarySensorEntityDescription(
-        key="leak",
-        name=None,
-        device_class=BinarySensorDeviceClass.MOISTURE,
     ),
 }
 

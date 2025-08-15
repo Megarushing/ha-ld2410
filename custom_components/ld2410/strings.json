@@ -19,7 +19,7 @@
           "password": "[%key:common::config_flow::data::password%]"
         },
         "data_description": {
-          "password": "The password required for the Bot device access"
+          "password": "The password required for device access"
         }
       },
       "encrypted_key": {
@@ -68,32 +68,18 @@
     "step": {
       "init": {
         "data": {
-          "retry_count": "Retry count",
-          "lock_force_nightlatch": "Force Nightlatch operation mode"
+          "retry_count": "Retry count"
         },
         "data_description": {
-          "retry_count": "How many times to retry sending commands to your LD2410 devices",
-          "lock_force_nightlatch": "Force Nightlatch operation mode even if Nightlatch is not detected"
+          "retry_count": "How many times to retry sending commands to your LD2410 devices"
         }
       }
     }
   },
   "entity": {
     "binary_sensor": {
-      "calibration": {
-        "name": "Calibration"
-      },
       "door_timeout": {
         "name": "Timeout"
-      },
-      "door_unclosed_alarm": {
-        "name": "Unclosed alarm"
-      },
-      "door_unlocked_alarm": {
-        "name": "Unlocked alarm"
-      },
-      "door_auto_lock_paused": {
-        "name": "Auto-lock paused"
       }
     },
     "sensor": {
@@ -105,175 +91,6 @@
       },
       "light_level": {
         "name": "Light level"
-      },
-      "aqi_quality_level": {
-        "name": "Air quality level",
-        "state": {
-          "excellent": "Excellent",
-          "good": "Good",
-          "moderate": "Moderate",
-          "unhealthy": "Unhealthy"
-        }
-      },
-      "water_level": {
-        "name": "Water level",
-        "state": {
-          "empty": "[%key:common::state::empty%]",
-          "low": "[%key:common::state::low%]",
-          "medium": "[%key:common::state::medium%]",
-          "high": "[%key:common::state::high%]"
-        }
-      }
-    },
-    "cover": {
-      "cover": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "humidifier": {
-      "humidifier": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      },
-      "evaporative_humidifier": {
-        "state_attributes": {
-          "mode": {
-            "state": {
-              "high": "[%key:common::state::high%]",
-              "medium": "[%key:common::state::medium%]",
-              "low": "[%key:common::state::low%]",
-              "quiet": "Quiet",
-              "target_humidity": "Target humidity",
-              "sleep": "Sleep",
-              "auto": "[%key:common::state::auto%]",
-              "drying_filter": "Drying filter"
-            }
-          }
-        }
-      }
-    },
-    "lock": {
-      "lock": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "switch": {
-      "bot": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "switch_mode": {
-            "state": {
-              "true": "Pull/Retract",
-              "false": "Momentary"
-            }
-          }
-        }
-      }
-    },
-    "fan": {
-      "fan": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "preset_mode": {
-            "state": {
-              "normal": "[%key:common::state::normal%]",
-              "natural": "Natural",
-              "sleep": "Sleep",
-              "baby": "Baby"
-            }
-          }
-        }
-      },
-      "air_purifier": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "preset_mode": {
-            "state": {
-              "level_1": "Level 1",
-              "level_2": "Level 2",
-              "level_3": "Level 3",
-              "auto": "[%key:common::state::auto%]",
-              "pet": "Pet",
-              "sleep": "Sleep"
-            }
-          }
-        }
-      }
-    },
-    "vacuum": {
-      "vacuum": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "light": {
-      "light": {
-        "state_attributes": {
-          "effect": {
-            "state": {
-              "christmas": "Christmas",
-              "halloween": "Halloween",
-              "sunset": "Sunset",
-              "vitality": "Vitality",
-              "flashing": "Flashing",
-              "strobe": "Strobe",
-              "fade": "Fade",
-              "smooth": "Smooth",
-              "forest": "Forest",
-              "ocean": "Ocean",
-              "autumn": "Autumn",
-              "cool": "Cool",
-              "flow": "Flow",
-              "relax": "Relax",
-              "modern": "Modern",
-              "rose": "Rose",
-              "colorful": "Colorful",
-              "flickering": "Flickering",
-              "breathing": "Breathing"
-            }
-          }
-        }
       }
     }
   },

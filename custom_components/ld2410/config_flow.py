@@ -38,17 +38,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import (
     CONF_ENCRYPTION_KEY,
     CONF_KEY_ID,
-    CONF_LOCK_NIGHTLATCH,
     CONF_RETRY_COUNT,
     CONNECTABLE_SUPPORTED_MODEL_TYPES,
-    DEFAULT_LOCK_NIGHTLATCH,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
     ENCRYPTED_MODELS,
     ENCRYPTED_LD2410_MODEL_TO_CLASS,
     NON_CONNECTABLE_SUPPORTED_MODEL_TYPES,
     SUPPORTED_MODEL_TYPES,
-    SupportedModels,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -365,22 +362,4 @@ class LD2410OptionsFlowHandler(OptionsFlow):
                 ),
             ): int
         }
-        if CONF_SENSOR_TYPE in self.config_entry.data and self.config_entry.data[
-            CONF_SENSOR_TYPE
-        ] in (
-            SupportedModels.LOCK,
-            SupportedModels.LOCK_PRO,
-            SupportedModels.LOCK_ULTRA,
-        ):
-            options.update(
-                {
-                    vol.Optional(
-                        CONF_LOCK_NIGHTLATCH,
-                        default=self.config_entry.options.get(
-                            CONF_LOCK_NIGHTLATCH, DEFAULT_LOCK_NIGHTLATCH
-                        ),
-                    ): bool
-                }
-            )
-
         return self.async_show_form(step_id="init", data_schema=vol.Schema(options))
