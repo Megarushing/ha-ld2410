@@ -14,14 +14,11 @@
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
     }
   ],
-  "codeowners": [
-    "@megarushing"
-  ],
+  "codeowners": ["@megarushing"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/Megarushing/ha-ld2410/blob/main/README.md",
+  "integration_type": "device",
   "iot_class": "local_push",
-  "loggers": ["ld2410"],
-  "requirements": [],
-  "version": "1.0.0"
+  "requirements": ["bluetooth-data-tools==1.28.2"]
 }

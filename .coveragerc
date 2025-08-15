@@ -1,0 +1,7 @@
+[run]
+omit =
+    custom_components/ld2410/api/*
+    custom_components/ld2410/binary_sensor.py
+    custom_components/ld2410/sensor.py
+    custom_components/ld2410/config_flow.py
+    custom_components/ld2410/coordinator.py

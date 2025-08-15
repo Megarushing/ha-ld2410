@@ -1,230 +1,98 @@
-"""Support for LD2410 devices."""
+"""The LD2410 integration."""
 
 import logging
 
-from .api import ld2410
+from bleak_retry_connector import (
+    BleakError,
+    close_stale_connections_by_address,
+    get_device,
+)
+from .api import LD2410BLE
 
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_ADDRESS,
-    CONF_MAC,
-    CONF_NAME,
-    CONF_PASSWORD,
-    CONF_SENSOR_TYPE,
-    Platform,
-)
-from homeassistant.core import HomeAssistant
+from homeassistant.components.bluetooth.match import ADDRESS, BluetoothCallbackMatcher
+from homeassistant.const import CONF_ADDRESS, EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr
 
-from .const import (
-    CONF_ENCRYPTION_KEY,
-    CONF_KEY_ID,
-    CONF_RETRY_COUNT,
-    CONNECTABLE_SUPPORTED_MODEL_TYPES,
-    DEFAULT_RETRY_COUNT,
-    DOMAIN,
-    ENCRYPTED_MODELS,
-    HASS_SENSOR_TYPE_TO_LD2410_MODEL,
-    SupportedModels,
-)
-from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .coordinator import LD2410BLECoordinator
+from .models import LD2410BLEConfigEntry, LD2410BLEData
 
-PLATFORMS_BY_TYPE = {
-    SupportedModels.BULB.value: [Platform.SENSOR, Platform.LIGHT],
-    SupportedModels.LIGHT_STRIP.value: [Platform.SENSOR, Platform.LIGHT],
-    SupportedModels.CEILING_LIGHT.value: [Platform.SENSOR, Platform.LIGHT],
-    SupportedModels.BOT.value: [Platform.SWITCH, Platform.SENSOR],
-    SupportedModels.PLUG.value: [Platform.SWITCH, Platform.SENSOR],
-    SupportedModels.CURTAIN.value: [
-        Platform.COVER,
-        Platform.BINARY_SENSOR,
-        Platform.SENSOR,
-    ],
-    SupportedModels.HYGROMETER.value: [Platform.SENSOR],
-    SupportedModels.HYGROMETER_CO2.value: [Platform.SENSOR],
-    SupportedModels.CONTACT.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
-    SupportedModels.MOTION.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
-    SupportedModels.HUMIDIFIER.value: [Platform.HUMIDIFIER, Platform.SENSOR],
-    SupportedModels.LOCK.value: [
-        Platform.BINARY_SENSOR,
-        Platform.LOCK,
-        Platform.SENSOR,
-    ],
-    SupportedModels.LOCK_PRO.value: [
-        Platform.BINARY_SENSOR,
-        Platform.LOCK,
-        Platform.SENSOR,
-    ],
-    SupportedModels.BLIND_TILT.value: [
-        Platform.COVER,
-        Platform.BINARY_SENSOR,
-        Platform.SENSOR,
-    ],
-    SupportedModels.HUB2.value: [Platform.SENSOR],
-    SupportedModels.RELAY_SWITCH_1PM.value: [Platform.SWITCH, Platform.SENSOR],
-    SupportedModels.RELAY_SWITCH_1.value: [Platform.SWITCH],
-    SupportedModels.LEAK.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
-    SupportedModels.REMOTE.value: [Platform.SENSOR],
-    SupportedModels.ROLLER_SHADE.value: [
-        Platform.COVER,
-        Platform.BINARY_SENSOR,
-        Platform.SENSOR,
-    ],
-    SupportedModels.HUBMINI_MATTER.value: [Platform.SENSOR],
-    SupportedModels.CIRCULATOR_FAN.value: [Platform.FAN, Platform.SENSOR],
-    SupportedModels.K20_VACUUM.value: [Platform.VACUUM, Platform.SENSOR],
-    SupportedModels.S10_VACUUM.value: [Platform.VACUUM, Platform.SENSOR],
-    SupportedModels.K10_VACUUM.value: [Platform.VACUUM, Platform.SENSOR],
-    SupportedModels.K10_PRO_VACUUM.value: [Platform.VACUUM, Platform.SENSOR],
-    SupportedModels.K10_PRO_COMBO_VACUUM.value: [Platform.VACUUM, Platform.SENSOR],
-    SupportedModels.HUB3.value: [Platform.SENSOR, Platform.BINARY_SENSOR],
-    SupportedModels.LOCK_LITE.value: [
-        Platform.BINARY_SENSOR,
-        Platform.LOCK,
-        Platform.SENSOR,
-    ],
-    SupportedModels.LOCK_ULTRA.value: [
-        Platform.BINARY_SENSOR,
-        Platform.LOCK,
-        Platform.SENSOR,
-    ],
-    SupportedModels.AIR_PURIFIER.value: [Platform.FAN, Platform.SENSOR],
-    SupportedModels.AIR_PURIFIER_TABLE.value: [Platform.FAN, Platform.SENSOR],
-    SupportedModels.EVAPORATIVE_HUMIDIFIER: [Platform.HUMIDIFIER, Platform.SENSOR],
-    SupportedModels.FLOOR_LAMP.value: [Platform.LIGHT, Platform.SENSOR],
-    SupportedModels.STRIP_LIGHT_3.value: [Platform.LIGHT, Platform.SENSOR],
-    SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
-}
-CLASS_BY_DEVICE = {
-    SupportedModels.CEILING_LIGHT.value: ld2410.LD2410CeilingLight,
-    SupportedModels.CURTAIN.value: ld2410.LD2410Curtain,
-    SupportedModels.BOT.value: ld2410.LD2410,
-    SupportedModels.PLUG.value: ld2410.LD2410PlugMini,
-    SupportedModels.BULB.value: ld2410.LD2410Bulb,
-    SupportedModels.LIGHT_STRIP.value: ld2410.LD2410LightStrip,
-    SupportedModels.HUMIDIFIER.value: ld2410.LD2410Humidifier,
-    SupportedModels.LOCK.value: ld2410.LD2410Lock,
-    SupportedModels.LOCK_PRO.value: ld2410.LD2410Lock,
-    SupportedModels.BLIND_TILT.value: ld2410.LD2410BlindTilt,
-    SupportedModels.RELAY_SWITCH_1PM.value: ld2410.LD2410RelaySwitch,
-    SupportedModels.RELAY_SWITCH_1.value: ld2410.LD2410RelaySwitch,
-    SupportedModels.ROLLER_SHADE.value: ld2410.LD2410RollerShade,
-    SupportedModels.CIRCULATOR_FAN.value: ld2410.LD2410Fan,
-    SupportedModels.K20_VACUUM.value: ld2410.LD2410Vacuum,
-    SupportedModels.S10_VACUUM.value: ld2410.LD2410Vacuum,
-    SupportedModels.K10_VACUUM.value: ld2410.LD2410Vacuum,
-    SupportedModels.K10_PRO_VACUUM.value: ld2410.LD2410Vacuum,
-    SupportedModels.K10_PRO_COMBO_VACUUM.value: ld2410.LD2410Vacuum,
-    SupportedModels.LOCK_LITE.value: ld2410.LD2410Lock,
-    SupportedModels.LOCK_ULTRA.value: ld2410.LD2410Lock,
-    SupportedModels.AIR_PURIFIER.value: ld2410.LD2410AirPurifier,
-    SupportedModels.AIR_PURIFIER_TABLE.value: ld2410.LD2410AirPurifier,
-    SupportedModels.EVAPORATIVE_HUMIDIFIER: ld2410.LD2410EvaporativeHumidifier,
-    SupportedModels.FLOOR_LAMP.value: ld2410.LD2410StripLight3,
-    SupportedModels.STRIP_LIGHT_3.value: ld2410.LD2410StripLight3,
-}
-
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bool:
-    """Set up LD2410 from a config entry."""
-    assert entry.unique_id is not None
-    if CONF_ADDRESS not in entry.data and CONF_MAC in entry.data:
-        # Bleak uses addresses not mac addresses which are actually
-        # UUIDs on some platforms (MacOS).
-        mac = entry.data[CONF_MAC]
-        if "-" not in mac:
-            mac = dr.format_mac(mac)
-        hass.config_entries.async_update_entry(
-            entry,
-            data={**entry.data, CONF_ADDRESS: mac},
-        )
-
-    if not entry.options:
-        hass.config_entries.async_update_entry(
-            entry,
-            options={CONF_RETRY_COUNT: DEFAULT_RETRY_COUNT},
-        )
-
-    sensor_type: str = entry.data[CONF_SENSOR_TYPE]
-    ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL[sensor_type]
-    # connectable means we can make connections to the device
-    connectable = ld2410_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
+async def async_setup_entry(hass: HomeAssistant, entry: LD2410BLEConfigEntry) -> bool:
+    """Set up LD2410 BLE from a config entry."""
     address: str = entry.data[CONF_ADDRESS]
 
-    await ld2410.close_stale_connections_by_address(address)
+    await close_stale_connections_by_address(address)
 
     ble_device = bluetooth.async_ble_device_from_address(
-        hass, address.upper(), connectable
-    )
+        hass, address.upper(), True
+    ) or await get_device(address)
     if not ble_device:
         raise ConfigEntryNotReady(
-            translation_domain=DOMAIN,
-            translation_key="device_not_found_error",
-            translation_placeholders={"sensor_type": sensor_type, "address": address},
+            f"Could not find LD2410B device with address {address}"
         )
 
-    cls = CLASS_BY_DEVICE.get(sensor_type, ld2410.LD2410Device)
-    if ld2410_model in ENCRYPTED_MODELS:
-        try:
-            device = cls(
-                device=ble_device,
-                key_id=entry.data.get(CONF_KEY_ID),
-                encryption_key=entry.data.get(CONF_ENCRYPTION_KEY),
-                retry_count=entry.options[CONF_RETRY_COUNT],
-                model=ld2410_model,
-            )
-        except ValueError as error:
-            raise ConfigEntryNotReady(
-                translation_domain=DOMAIN,
-                translation_key="value_error",
-                translation_placeholders={"error": str(error)},
-            ) from error
-    else:
-        device = cls(
-            device=ble_device,
-            password=entry.data.get(CONF_PASSWORD),
-            retry_count=entry.options[CONF_RETRY_COUNT],
-        )
+    ld2410_ble = LD2410BLE(ble_device)
 
-    coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        ble_device,
-        device,
-        entry.unique_id,
-        entry.data.get(CONF_NAME, entry.title),
-        connectable,
-        ld2410_model,
-    )
-    entry.async_on_unload(coordinator.async_start())
-    if not await coordinator.async_wait_ready():
+    coordinator = LD2410BLECoordinator(hass, entry, ld2410_ble)
+
+    try:
+        await ld2410_ble.initialise()
+    except BleakError as exc:
         raise ConfigEntryNotReady(
-            translation_domain=DOMAIN,
-            translation_key="advertising_state_error",
-            translation_placeholders={"address": address},
+            f"Could not initialise LD2410B device with address {address}"
+        ) from exc
+
+    @callback
+    def _async_update_ble(
+        service_info: bluetooth.BluetoothServiceInfoBleak,
+        change: bluetooth.BluetoothChange,
+    ) -> None:
+        """Update from a ble callback."""
+        ld2410_ble.set_ble_device_and_advertisement_data(
+            service_info.device, service_info.advertisement
         )
 
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(
-        entry, PLATFORMS_BY_TYPE[sensor_type]
+    entry.async_on_unload(
+        bluetooth.async_register_callback(
+            hass,
+            _async_update_ble,
+            BluetoothCallbackMatcher({ADDRESS: address}),
+            bluetooth.BluetoothScanningMode.ACTIVE,
+        )
     )
 
+    entry.runtime_data = LD2410BLEData(entry.title, ld2410_ble, coordinator)
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+    async def _async_stop(event: Event) -> None:
+        """Close the connection."""
+        await ld2410_ble.stop()
+
+    entry.async_on_unload(
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop)
+    )
     return True
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_update_listener(
+    hass: HomeAssistant, entry: LD2410BLEConfigEntry
+) -> None:
     """Handle options update."""
-    await hass.config_entries.async_reload(entry.entry_id)
+    if entry.title != entry.runtime_data.title:
+        await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: LD2410BLEConfigEntry) -> bool:
     """Unload a config entry."""
-    sensor_type = entry.data[CONF_SENSOR_TYPE]
-    return await hass.config_entries.async_unload_platforms(
-        entry, PLATFORMS_BY_TYPE[sensor_type]
-    )
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        await entry.runtime_data.device.stop()
+
+    return unload_ok

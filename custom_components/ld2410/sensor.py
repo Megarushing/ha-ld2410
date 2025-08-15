@@ -1,179 +1,174 @@
-"""Support for LD2410 sensors."""
+"""LD2410 integration sensor platform."""
 
-from __future__ import annotations
+from .api import LD2410BLE
 
-from .api.ld2410 import HumidifierWaterLevel
-from .api.ld2410.const.air_purifier import AirQualityLevel
-
-from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
-    LIGHT_LUX,
-    PERCENTAGE,
-    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    EntityCategory,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfPower,
-    UnitOfTemperature,
-)
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EntityCategory, UnitOfLength
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
-from .entity import LD2410Entity
+from .coordinator import LD2410BLECoordinator
+from .models import LD2410BLEConfigEntry
 
-PARALLEL_UPDATES = 0
+MOVING_TARGET_DISTANCE_DESCRIPTION = SensorEntityDescription(
+    key="moving_target_distance",
+    translation_key="moving_target_distance",
+    device_class=SensorDeviceClass.DISTANCE,
+    entity_registry_enabled_default=False,
+    entity_registry_visible_default=True,
+    native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+    state_class=SensorStateClass.MEASUREMENT,
+)
 
-SENSOR_TYPES: dict[str, SensorEntityDescription] = {
-    "rssi": SensorEntityDescription(
-        key="rssi",
-        translation_key="bluetooth_signal",
-        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        state_class=SensorStateClass.MEASUREMENT,
+STATIC_TARGET_DISTANCE_DESCRIPTION = SensorEntityDescription(
+    key="static_target_distance",
+    translation_key="static_target_distance",
+    device_class=SensorDeviceClass.DISTANCE,
+    entity_registry_enabled_default=False,
+    entity_registry_visible_default=True,
+    native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+    state_class=SensorStateClass.MEASUREMENT,
+)
+
+DETECTION_DISTANCE_DESCRIPTION = SensorEntityDescription(
+    key="detection_distance",
+    translation_key="detection_distance",
+    device_class=SensorDeviceClass.DISTANCE,
+    entity_registry_enabled_default=False,
+    entity_registry_visible_default=True,
+    native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+    state_class=SensorStateClass.MEASUREMENT,
+)
+
+MOVING_TARGET_ENERGY_DESCRIPTION = SensorEntityDescription(
+    key="moving_target_energy",
+    translation_key="moving_target_energy",
+    device_class=None,
+    entity_registry_enabled_default=False,
+    entity_registry_visible_default=True,
+    native_unit_of_measurement="Target Energy",
+    state_class=SensorStateClass.MEASUREMENT,
+)
+
+STATIC_TARGET_ENERGY_DESCRIPTION = SensorEntityDescription(
+    key="static_target_energy",
+    translation_key="static_target_energy",
+    device_class=None,
+    entity_registry_enabled_default=False,
+    entity_registry_visible_default=True,
+    native_unit_of_measurement="Target Energy",
+    state_class=SensorStateClass.MEASUREMENT,
+)
+
+MAX_MOTION_GATES_DESCRIPTION = SensorEntityDescription(
+    key="max_motion_gates",
+    translation_key="max_motion_gates",
+    entity_category=EntityCategory.DIAGNOSTIC,
+    entity_registry_enabled_default=False,
+    native_unit_of_measurement="Gates",
+)
+
+MAX_STATIC_GATES_DESCRIPTION = SensorEntityDescription(
+    key="max_static_gates",
+    translation_key="max_static_gates",
+    entity_category=EntityCategory.DIAGNOSTIC,
+    entity_registry_enabled_default=False,
+    native_unit_of_measurement="Gates",
+)
+
+MOTION_ENERGY_GATES = [
+    SensorEntityDescription(
+        key=f"motion_energy_gate_{i}",
+        translation_key=f"motion_energy_gate_{i}",
+        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
+        native_unit_of_measurement="Target Energy",
+    )
+    for i in range(9)
+]
+
+STATIC_ENERGY_GATES = [
+    SensorEntityDescription(
+        key=f"static_energy_gate_{i}",
+        translation_key=f"static_energy_gate_{i}",
         entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "wifi_rssi": SensorEntityDescription(
-        key="wifi_rssi",
-        translation_key="wifi_signal",
-        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "battery": SensorEntityDescription(
-        key="battery",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "co2": SensorEntityDescription(
-        key="co2",
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CO2,
-    ),
-    "lightLevel": SensorEntityDescription(
-        key="lightLevel",
-        translation_key="light_level",
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "humidity": SensorEntityDescription(
-        key="humidity",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.HUMIDITY,
-    ),
-    "illuminance": SensorEntityDescription(
-        key="illuminance",
-        native_unit_of_measurement=LIGHT_LUX,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.ILLUMINANCE,
-    ),
-    "temperature": SensorEntityDescription(
-        key="temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    "power": SensorEntityDescription(
-        key="power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-    ),
-    "current": SensorEntityDescription(
-        key="current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-    ),
-    "voltage": SensorEntityDescription(
-        key="voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-    ),
-    "aqi_level": SensorEntityDescription(
-        key="aqi_level",
-        translation_key="aqi_quality_level",
-        device_class=SensorDeviceClass.ENUM,
-        options=[member.name.lower() for member in AirQualityLevel],
-    ),
-    "energy": SensorEntityDescription(
-        key="energy",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-    ),
-    "water_level": SensorEntityDescription(
-        key="water_level",
-        translation_key="water_level",
-        device_class=SensorDeviceClass.ENUM,
-        options=HumidifierWaterLevel.get_levels(),
-    ),
-}
+        native_unit_of_measurement="Target Energy",
+    )
+    for i in range(9)
+]
+
+SENSOR_DESCRIPTIONS = [
+    MOVING_TARGET_DISTANCE_DESCRIPTION,
+    STATIC_TARGET_DISTANCE_DESCRIPTION,
+    MOVING_TARGET_ENERGY_DESCRIPTION,
+    STATIC_TARGET_ENERGY_DESCRIPTION,
+    DETECTION_DISTANCE_DESCRIPTION,
+    MAX_MOTION_GATES_DESCRIPTION,
+    MAX_STATIC_GATES_DESCRIPTION,
+    *MOTION_ENERGY_GATES,
+    *STATIC_ENERGY_GATES,
+]
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: LD2410ConfigEntry,
+    entry: LD2410BLEConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up LD2410 sensor based on a config entry."""
-    coordinator = entry.runtime_data
-    entities = [
-        LD2410Sensor(coordinator, sensor)
-        for sensor in coordinator.device.parsed_data
-        if sensor in SENSOR_TYPES
-    ]
-    entities.append(LD2410RSSISensor(coordinator, "rssi"))
-    async_add_entities(entities)
+    """Set up the platform for LD2410BLE."""
+    data = entry.runtime_data
+    async_add_entities(
+        LD2410BLESensor(
+            data.coordinator,
+            data.device,
+            entry.title,
+            description,
+        )
+        for description in SENSOR_DESCRIPTIONS
+    )
 
 
-class LD2410Sensor(LD2410Entity, SensorEntity):
-    """Representation of a LD2410 sensor."""
+class LD2410BLESensor(CoordinatorEntity[LD2410BLECoordinator], SensorEntity):
+    """Generic sensor for LD2410BLE."""
+
+    _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: LD2410DataUpdateCoordinator,
-        sensor: str,
+        coordinator: LD2410BLECoordinator,
+        device: LD2410BLE,
+        name: str,
+        description: SensorEntityDescription,
     ) -> None:
-        """Initialize the LD2410 sensor."""
+        """Initialize the sensor."""
         super().__init__(coordinator)
-        self._sensor = sensor
-        self._attr_unique_id = f"{coordinator.base_unique_id}-{sensor}"
-        self.entity_description = SENSOR_TYPES[sensor]
+        self._coordinator = coordinator
+        self._device = device
+        self._key = description.key
+        self.entity_description = description
+        self._attr_unique_id = f"{device.address}_{self._key}"
+        self._attr_device_info = DeviceInfo(
+            name=name,
+            connections={(dr.CONNECTION_BLUETOOTH, device.address)},
+        )
+        self._attr_native_value = getattr(self._device, self._key)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._attr_native_value = getattr(self._device, self._key)
+        self.async_write_ha_state()
 
     @property
-    def native_value(self) -> str | int | None:
-        """Return the state of the sensor."""
-        return self.parsed_data[self._sensor]
-
-
-class LD2410RSSISensor(LD2410Sensor):
-    """Representation of a LD2410 RSSI sensor."""
-
-    @property
-    def native_value(self) -> str | int | None:
-        """Return the state of the sensor."""
-        # LD2410 supports both connectable and non-connectable devices
-        # so we need to request the rssi value based on the connectable instead
-        # of the nearest scanner since that is the RSSI that matters for controlling
-        # the device.
-        if service_info := async_last_service_info(
-            self.hass, self._address, self.coordinator.connectable
-        ):
-            return service_info.rssi
-        return None
+    def available(self) -> bool:
+        """Unavailable if coordinator isn't connected."""
+        return self._coordinator.connected and super().available

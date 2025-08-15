@@ -1,106 +1,79 @@
-"""Support for LD2410 binary sensors."""
-
-from __future__ import annotations
+"""LD2410 integration binary sensor platform."""
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
-from .entity import LD2410Entity
+from .api import LD2410BLE
+from .coordinator import LD2410BLECoordinator
+from .models import LD2410BLEConfigEntry
 
-PARALLEL_UPDATES = 0
-
-BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
-    "calibration": BinarySensorEntityDescription(
-        key="calibration",
-        translation_key="calibration",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "motion_detected": BinarySensorEntityDescription(
-        key="pir_state",
-        name=None,
+ENTITY_DESCRIPTIONS = (
+    BinarySensorEntityDescription(
+        key="is_moving",
         device_class=BinarySensorDeviceClass.MOTION,
     ),
-    "contact_open": BinarySensorEntityDescription(
-        key="contact_open",
-        name=None,
-        device_class=BinarySensorDeviceClass.DOOR,
+    BinarySensorEntityDescription(
+        key="is_static",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
-    "contact_timeout": BinarySensorEntityDescription(
-        key="contact_timeout",
-        translation_key="door_timeout",
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "is_light": BinarySensorEntityDescription(
-        key="is_light",
-        device_class=BinarySensorDeviceClass.LIGHT,
-    ),
-    "door_open": BinarySensorEntityDescription(
-        key="door_status",
-        name=None,
-        device_class=BinarySensorDeviceClass.DOOR,
-    ),
-    "unclosed_alarm": BinarySensorEntityDescription(
-        key="unclosed_alarm",
-        translation_key="door_unclosed_alarm",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-    ),
-    "unlocked_alarm": BinarySensorEntityDescription(
-        key="unlocked_alarm",
-        translation_key="door_unlocked_alarm",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-    ),
-    "auto_lock_paused": BinarySensorEntityDescription(
-        key="auto_lock_paused",
-        translation_key="door_auto_lock_paused",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "leak": BinarySensorEntityDescription(
-        key="leak",
-        name=None,
-        device_class=BinarySensorDeviceClass.MOISTURE,
-    ),
-}
+)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: LD2410ConfigEntry,
+    entry: LD2410BLEConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up LD2410 curtain based on a config entry."""
-    coordinator = entry.runtime_data
+    """Set up the platform for LD2410BLE."""
+    data = entry.runtime_data
     async_add_entities(
-        LD2410BinarySensor(coordinator, binary_sensor)
-        for binary_sensor in coordinator.device.parsed_data
-        if binary_sensor in BINARY_SENSOR_TYPES
+        LD2410BLEBinarySensor(data.coordinator, data.device, entry.title, description)
+        for description in ENTITY_DESCRIPTIONS
     )
 
 
-class LD2410BinarySensor(LD2410Entity, BinarySensorEntity):
-    """Representation of a LD2410 binary sensor."""
+class LD2410BLEBinarySensor(
+    CoordinatorEntity[LD2410BLECoordinator], BinarySensorEntity
+):
+    """Moving/static sensor for LD2410BLE."""
+
+    _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: LD2410DataUpdateCoordinator,
-        binary_sensor: str,
+        coordinator: LD2410BLECoordinator,
+        device: LD2410BLE,
+        name: str,
+        description: BinarySensorEntityDescription,
     ) -> None:
-        """Initialize the LD2410 sensor."""
+        """Initialize the sensor."""
         super().__init__(coordinator)
-        self._sensor = binary_sensor
-        self._attr_unique_id = f"{coordinator.base_unique_id}-{binary_sensor}"
-        self.entity_description = BINARY_SENSOR_TYPES[binary_sensor]
+        self._coordinator = coordinator
+        self._key = description.key
+        self._device = device
+        self.entity_description = description
+        self._attr_unique_id = f"{device.address}_{self._key}"
+        self._attr_device_info = DeviceInfo(
+            name=name,
+            connections={(dr.CONNECTION_BLUETOOTH, device.address)},
+        )
+        self._attr_is_on = getattr(self._device, self._key)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._attr_is_on = getattr(self._device, self._key)
+        self.async_write_ha_state()
 
     @property
-    def is_on(self) -> bool:
-        """Return the state of the sensor."""
-        return self.parsed_data[self._sensor]
+    def available(self) -> bool:
+        """Unavailable if coordinator isn't connected."""
+        return self._coordinator.connected and super().available

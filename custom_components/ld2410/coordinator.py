@@ -1,126 +1,88 @@
-"""Provides the ld2410 DataUpdateCoordinator."""
+"""Data coordinator for receiving LD2410B updates."""
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
+from datetime import datetime
 import logging
+import time
 from typing import TYPE_CHECKING
 
-from .api import ld2410
-from .api.ld2410 import LD2410Model
+from .api import LD2410BLE, LD2410BLEState
 
-from homeassistant.components import bluetooth
-from homeassistant.components.bluetooth.active_update_coordinator import (
-    ActiveBluetoothDataUpdateCoordinator,
-)
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CoreState, HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from bleak.backends.device import BLEDevice
-
+    from .models import LD2410BLEConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_STARTUP_TIMEOUT = 30
+NEVER_TIME = -86400.0
+DEBOUNCE_SECONDS = 1.0
 
-type LD2410ConfigEntry = ConfigEntry[LD2410DataUpdateCoordinator]
 
+class LD2410BLECoordinator(DataUpdateCoordinator[None]):
+    """Data coordinator for receiving LD2410B updates."""
 
-class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
-    """Class to manage fetching ld2410 data."""
+    config_entry: LD2410BLEConfigEntry
 
     def __init__(
         self,
         hass: HomeAssistant,
-        logger: logging.Logger,
-        ble_device: BLEDevice,
-        device: ld2410.LD2410Device,
-        base_unique_id: str,
-        device_name: str,
-        connectable: bool,
-        model: LD2410Model,
+        config_entry: LD2410BLEConfigEntry,
+        ld2410_ble: LD2410BLE,
     ) -> None:
-        """Initialize global ld2410 data updater."""
+        """Initialise the coordinator."""
         super().__init__(
-            hass=hass,
-            logger=logger,
-            address=ble_device.address,
-            needs_poll_method=self._needs_poll,
-            poll_method=self._async_update,
-            mode=bluetooth.BluetoothScanningMode.ACTIVE,
-            connectable=connectable,
+            hass,
+            _LOGGER,
+            config_entry=config_entry,
+            name=DOMAIN,
         )
-        self.ble_device = ble_device
-        self.device = device
-        self.device_name = device_name
-        self.base_unique_id = base_unique_id
-        self.model = model
-        self._ready_event = asyncio.Event()
-        self._was_unavailable = True
-
-    @callback
-    def _needs_poll(
-        self,
-        service_info: bluetooth.BluetoothServiceInfoBleak,
-        seconds_since_last_poll: float | None,
-    ) -> bool:
-        # Only poll if hass is running, we need to poll,
-        # and we actually have a way to connect to the device
-        return (
-            self.hass.state is CoreState.running
-            and self.device.poll_needed(seconds_since_last_poll)
-            and bool(
-                bluetooth.async_ble_device_from_address(
-                    self.hass, service_info.device.address, connectable=True
-                )
-            )
+        self._ld2410_ble = ld2410_ble
+        ld2410_ble.register_callback(self._async_handle_update)
+        ld2410_ble.register_disconnected_callback(self._async_handle_disconnect)
+        self.connected = False
+        self._last_update_time = NEVER_TIME
+        self._debounce_cancel: CALLBACK_TYPE | None = None
+        self._debounced_update_job = HassJob(
+            self._async_handle_debounced_update,
+            f"LD2410 {ld2410_ble.address} BLE debounced update",
         )
 
-    async def _async_update(
-        self, service_info: bluetooth.BluetoothServiceInfoBleak
-    ) -> None:
-        """Poll the device."""
-        await self.device.update()
+    @callback
+    def _async_handle_debounced_update(self, _now: datetime) -> None:
+        """Handle debounced update."""
+        self._debounce_cancel = None
+        self._last_update_time = time.monotonic()
+        self.async_set_updated_data(None)
 
     @callback
-    def _async_handle_unavailable(
-        self, service_info: bluetooth.BluetoothServiceInfoBleak
-    ) -> None:
-        """Handle the device going unavailable."""
-        super()._async_handle_unavailable(service_info)
-        self._was_unavailable = True
-        _LOGGER.info("Device %s is unavailable", self.device_name)
-
-    @callback
-    def _async_handle_bluetooth_event(
-        self,
-        service_info: bluetooth.BluetoothServiceInfoBleak,
-        change: bluetooth.BluetoothChange,
-    ) -> None:
-        """Handle a Bluetooth event."""
-        self.ble_device = service_info.device
-        if not (
-            adv := ld2410.parse_advertisement_data(
-                service_info.device, service_info.advertisement, self.model
+    def _async_handle_update(self, state: LD2410BLEState) -> None:
+        """Just trigger the callbacks."""
+        self.connected = True
+        previous_last_updated_time = self._last_update_time
+        self._last_update_time = time.monotonic()
+        if self._last_update_time - previous_last_updated_time >= DEBOUNCE_SECONDS:
+            self.async_set_updated_data(None)
+            return
+        if self._debounce_cancel is None:
+            self._debounce_cancel = async_call_later(
+                self.hass, DEBOUNCE_SECONDS, self._debounced_update_job
             )
-        ):
-            return
-        if "modelName" in adv.data:
-            self._ready_event.set()
-        _LOGGER.debug("%s: LD2410 data: %s", self.ble_device.address, self.device.data)
-        if not self.device.advertisement_changed(adv) and not self._was_unavailable:
-            return
-        self._was_unavailable = False
-        _LOGGER.info("Device %s is online", self.device_name)
-        self.device.update_from_advertisement(adv)
-        super()._async_handle_bluetooth_event(service_info, change)
 
-    async def async_wait_ready(self) -> bool:
-        """Wait for the device to be ready."""
-        with contextlib.suppress(TimeoutError):
-            async with asyncio.timeout(DEVICE_STARTUP_TIMEOUT):
-                await self._ready_event.wait()
-                return True
-        return False
+    @callback
+    def _async_handle_disconnect(self) -> None:
+        """Trigger the callbacks for disconnected."""
+        self.connected = False
+        self.async_update_listeners()
+
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator."""
+        if self._debounce_cancel is not None:
+            self._debounce_cancel()
+            self._debounce_cancel = None
+        await super().async_shutdown()

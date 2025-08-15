@@ -6,3 +6,4 @@ pytest-homeassistant-custom-component>=0.13
 aiousbwatcher>=1.1.1
 pyserial
 ruff
+bluetooth-data-tools==1.28.2

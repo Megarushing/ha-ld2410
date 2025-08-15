@@ -1,294 +1,101 @@
 {
   "config": {
-    "flow_title": "{name} ({address})",
+    "flow_title": "{name}",
     "step": {
       "user": {
         "data": {
-          "address": "MAC address"
-        },
-        "data_description": {
-          "address": "The Bluetooth MAC address of your LD2410 device"
-        }
-      },
-      "confirm": {
-        "description": "Do you want to set up {name}?"
-      },
-      "password": {
-        "description": "The {name} device requires a password",
-        "data": {
-          "password": "[%key:common::config_flow::data::password%]"
-        },
-        "data_description": {
-          "password": "The password required for the Bot device access"
-        }
-      },
-      "encrypted_key": {
-        "description": "The {name} device requires encryption key, details on how to obtain it can be found in the documentation.",
-        "data": {
-          "key_id": "Key ID",
-          "encryption_key": "Encryption key"
-        },
-        "data_description": {
-          "key_id": "The ID of the encryption key",
-          "encryption_key": "The encryption key for the device"
-        }
-      },
-      "encrypted_auth": {
-        "description": "Please provide your LD2410 app username and password. This data won't be saved and only used to retrieve your device's encryption key. Usernames and passwords are case-sensitive.",
-        "data": {
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]"
-        },
-        "data_description": {
-          "username": "The username of your LD2410 account",
-          "password": "The password of your LD2410 account"
-        }
-      },
-      "encrypted_choose_method": {
-        "description": "An encrypted LD2410 device can be set up in Home Assistant in two different ways.\n\nYou can enter the key ID and encryption key yourself, or Home Assistant can import them from your LD2410 account.",
-        "menu_options": {
-          "encrypted_auth": "LD2410 account (recommended)",
-          "encrypted_key": "Enter encryption key manually"
+          "address": "Bluetooth address"
         }
       }
     },
     "error": {
-      "encryption_key_invalid": "Key ID or encryption key is invalid",
-      "auth_failed": "Authentication failed: {error_detail}"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
-      "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "No supported LD2410 devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as LD2410 devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the LD2410 device is present.",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
-      "api_error": "Error while communicating with LD2410 API: {error_detail}",
-      "ld2410_unsupported_type": "Unsupported LD2410 type."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "retry_count": "Retry count",
-          "lock_force_nightlatch": "Force Nightlatch operation mode"
-        },
-        "data_description": {
-          "retry_count": "How many times to retry sending commands to your LD2410 devices",
-          "lock_force_nightlatch": "Force Nightlatch operation mode even if Nightlatch is not detected"
-        }
-      }
+      "not_supported": "Device not supported",
+      "already_in_progress": "[%key:common::config_flow::abort::already_in_progress%]",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
     }
   },
   "entity": {
-    "binary_sensor": {
-      "calibration": {
-        "name": "Calibration"
-      },
-      "door_timeout": {
-        "name": "Timeout"
-      },
-      "door_unclosed_alarm": {
-        "name": "Unclosed alarm"
-      },
-      "door_unlocked_alarm": {
-        "name": "Unlocked alarm"
-      },
-      "door_auto_lock_paused": {
-        "name": "Auto-lock paused"
-      }
-    },
     "sensor": {
-      "bluetooth_signal": {
-        "name": "Bluetooth signal"
+      "moving_target_distance": {
+        "name": "Moving target distance"
       },
-      "wifi_signal": {
-        "name": "Wi-Fi signal"
+      "static_target_distance": {
+        "name": "Static target distance"
       },
-      "light_level": {
-        "name": "Light level"
+      "detection_distance": {
+        "name": "Detection distance"
       },
-      "aqi_quality_level": {
-        "name": "Air quality level",
-        "state": {
-          "excellent": "Excellent",
-          "good": "Good",
-          "moderate": "Moderate",
-          "unhealthy": "Unhealthy"
-        }
+      "moving_target_energy": {
+        "name": "Moving target energy"
       },
-      "water_level": {
-        "name": "Water level",
-        "state": {
-          "empty": "[%key:common::state::empty%]",
-          "low": "[%key:common::state::low%]",
-          "medium": "[%key:common::state::medium%]",
-          "high": "[%key:common::state::high%]"
-        }
-      }
-    },
-    "cover": {
-      "cover": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "humidifier": {
-      "humidifier": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
+      "static_target_energy": {
+        "name": "Static target energy"
       },
-      "evaporative_humidifier": {
-        "state_attributes": {
-          "mode": {
-            "state": {
-              "high": "[%key:common::state::high%]",
-              "medium": "[%key:common::state::medium%]",
-              "low": "[%key:common::state::low%]",
-              "quiet": "Quiet",
-              "target_humidity": "Target humidity",
-              "sleep": "Sleep",
-              "auto": "[%key:common::state::auto%]",
-              "drying_filter": "Drying filter"
-            }
-          }
-        }
-      }
-    },
-    "lock": {
-      "lock": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "switch": {
-      "bot": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "switch_mode": {
-            "state": {
-              "true": "Pull/Retract",
-              "false": "Momentary"
-            }
-          }
-        }
-      }
-    },
-    "fan": {
-      "fan": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "preset_mode": {
-            "state": {
-              "normal": "[%key:common::state::normal%]",
-              "natural": "Natural",
-              "sleep": "Sleep",
-              "baby": "Baby"
-            }
-          }
-        }
+      "max_motion_gates": {
+        "name": "Max motion gates"
       },
-      "air_purifier": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          },
-          "preset_mode": {
-            "state": {
-              "level_1": "Level 1",
-              "level_2": "Level 2",
-              "level_3": "Level 3",
-              "auto": "[%key:common::state::auto%]",
-              "pet": "Pet",
-              "sleep": "Sleep"
-            }
-          }
-        }
+      "max_static_gates": {
+        "name": "Max static gates"
+      },
+      "motion_energy_gate_0": {
+        "name": "Motion energy gate 0"
+      },
+      "motion_energy_gate_1": {
+        "name": "Motion energy gate 1"
+      },
+      "motion_energy_gate_2": {
+        "name": "Motion energy gate 2"
+      },
+      "motion_energy_gate_3": {
+        "name": "Motion energy gate 3"
+      },
+      "motion_energy_gate_4": {
+        "name": "Motion energy gate 4"
+      },
+      "motion_energy_gate_5": {
+        "name": "Motion energy gate 5"
+      },
+      "motion_energy_gate_6": {
+        "name": "Motion energy gate 6"
+      },
+      "motion_energy_gate_7": {
+        "name": "Motion energy gate 7"
+      },
+      "motion_energy_gate_8": {
+        "name": "Motion energy gate 8"
+      },
+      "static_energy_gate_0": {
+        "name": "Static energy gate 0"
+      },
+      "static_energy_gate_1": {
+        "name": "Static energy gate 1"
+      },
+      "static_energy_gate_2": {
+        "name": "Static energy gate 2"
+      },
+      "static_energy_gate_3": {
+        "name": "Static energy gate 3"
+      },
+      "static_energy_gate_4": {
+        "name": "Static energy gate 4"
+      },
+      "static_energy_gate_5": {
+        "name": "Static energy gate 5"
+      },
+      "static_energy_gate_6": {
+        "name": "Static energy gate 6"
+      },
+      "static_energy_gate_7": {
+        "name": "Static energy gate 7"
+      },
+      "static_energy_gate_8": {
+        "name": "Static energy gate 8"
       }
-    },
-    "vacuum": {
-      "vacuum": {
-        "state_attributes": {
-          "last_run_success": {
-            "state": {
-              "true": "[%key:component::binary_sensor::entity_component::problem::state::off%]",
-              "false": "[%key:component::binary_sensor::entity_component::problem::state::on%]"
-            }
-          }
-        }
-      }
-    },
-    "light": {
-      "light": {
-        "state_attributes": {
-          "effect": {
-            "state": {
-              "christmas": "Christmas",
-              "halloween": "Halloween",
-              "sunset": "Sunset",
-              "vitality": "Vitality",
-              "flashing": "Flashing",
-              "strobe": "Strobe",
-              "fade": "Fade",
-              "smooth": "Smooth",
-              "forest": "Forest",
-              "ocean": "Ocean",
-              "autumn": "Autumn",
-              "cool": "Cool",
-              "flow": "Flow",
-              "relax": "Relax",
-              "modern": "Modern",
-              "rose": "Rose",
-              "colorful": "Colorful",
-              "flickering": "Flickering",
-              "breathing": "Breathing"
-            }
-          }
-        }
-      }
-    }
-  },
-  "exceptions": {
-    "operation_error": {
-      "message": "An error occurred while performing the action: {error}"
-    },
-    "value_error": {
-      "message": "LD2410 device initialization failed because of incorrect configuration parameters: {error}"
-    },
-    "advertising_state_error": {
-      "message": "{address} is not advertising state"
-    },
-    "device_not_found_error": {
-      "message": "Could not find LD2410 {sensor_type} with address {address}"
     }
   }
 }
