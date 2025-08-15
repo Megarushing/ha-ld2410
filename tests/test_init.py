@@ -65,6 +65,7 @@ async def test_async_setup_entry(hass: HomeAssistant):
 
         # Verify calls were made
         mock_ble_device.assert_called_once()
+        assert mock_ble_device.call_args.args[2] is True
         mock_coordinator.assert_called_once()
         mock_forward.assert_called_once()
 

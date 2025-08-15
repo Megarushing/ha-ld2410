@@ -5,14 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .api.ld2410 import (
-    LD2410AccountConnectionError,
-    LD2410Advertisement,
-    LD2410ApiError,
-    LD2410AuthenticationError,
-    LD2410Model,
-    parse_advertisement_data,
-)
+from .api.ld2410 import LD2410Advertisement, parse_advertisement_data
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
@@ -27,23 +20,15 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import (
     CONF_ADDRESS,
-    CONF_PASSWORD,
     CONF_SENSOR_TYPE,
-    CONF_USERNAME,
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
 from .const import (
-    CONF_ENCRYPTION_KEY,
-    CONF_KEY_ID,
     CONF_RETRY_COUNT,
     CONNECTABLE_SUPPORTED_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
-    ENCRYPTED_MODELS,
-    ENCRYPTED_LD2410_MODEL_TO_CLASS,
     NON_CONNECTABLE_SUPPORTED_MODEL_TYPES,
     SUPPORTED_MODEL_TYPES,
 )
@@ -110,10 +95,6 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             "name": data["modelFriendlyName"],
             "address": short_address(discovery_info.address),
         }
-        if model_name in ENCRYPTED_MODELS:
-            return await self.async_step_encrypted_choose_method()
-        if self._discovered_adv.data["isEncrypted"]:
-            return await self.async_step_password()
         return await self.async_step_confirm()
 
     async def _async_create_entry_from_discovery(
@@ -147,121 +128,6 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({}),
             description_placeholders={
                 "name": name_from_discovery(self._discovered_adv)
-            },
-        )
-
-    async def async_step_password(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the password step."""
-        assert self._discovered_adv is not None
-        if user_input is not None:
-            # There is currently no api to validate the password
-            # that does not operate the device so we have
-            # to accept it as-is
-            return await self._async_create_entry_from_discovery(user_input)
-
-        return self.async_show_form(
-            step_id="password",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
-            description_placeholders={
-                "name": name_from_discovery(self._discovered_adv)
-            },
-        )
-
-    async def async_step_encrypted_auth(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the LD2410 API auth step."""
-        errors = {}
-        assert self._discovered_adv is not None
-        description_placeholders = {}
-        if user_input is not None:
-            model: LD2410Model = self._discovered_adv.data["modelName"]
-            cls = ENCRYPTED_LD2410_MODEL_TO_CLASS[model]
-            try:
-                key_details = await cls.async_retrieve_encryption_key(
-                    async_get_clientsession(self.hass),
-                    self._discovered_adv.address,
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
-            except (LD2410ApiError, LD2410AccountConnectionError) as ex:
-                _LOGGER.debug("Failed to connect to LD2410 API: %s", ex, exc_info=True)
-                raise AbortFlow(
-                    "api_error", description_placeholders={"error_detail": str(ex)}
-                ) from ex
-            except LD2410AuthenticationError as ex:
-                _LOGGER.debug("Authentication failed: %s", ex, exc_info=True)
-                errors = {"base": "auth_failed"}
-                description_placeholders = {"error_detail": str(ex)}
-            else:
-                return await self.async_step_encrypted_key(key_details)
-
-        user_input = user_input or {}
-        return self.async_show_form(
-            step_id="encrypted_auth",
-            errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USERNAME, default=user_input.get(CONF_USERNAME)
-                    ): str,
-                    vol.Required(CONF_PASSWORD): str,
-                }
-            ),
-            description_placeholders={
-                "name": name_from_discovery(self._discovered_adv),
-                **description_placeholders,
-            },
-        )
-
-    async def async_step_encrypted_choose_method(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the LD2410 API chose method step."""
-        assert self._discovered_adv is not None
-
-        return self.async_show_menu(
-            step_id="encrypted_choose_method",
-            menu_options=["encrypted_auth", "encrypted_key"],
-            description_placeholders={
-                "name": name_from_discovery(self._discovered_adv),
-            },
-        )
-
-    async def async_step_encrypted_key(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the encryption key step."""
-        errors = {}
-        assert self._discovered_adv is not None
-        if user_input is not None:
-            model: LD2410Model = self._discovered_adv.data["modelName"]
-            cls = ENCRYPTED_LD2410_MODEL_TO_CLASS[model]
-            if not await cls.verify_encryption_key(
-                self._discovered_adv.device,
-                user_input[CONF_KEY_ID],
-                user_input[CONF_ENCRYPTION_KEY],
-                model=model,
-            ):
-                errors = {
-                    "base": "encryption_key_invalid",
-                }
-            else:
-                return await self._async_create_entry_from_discovery(user_input)
-
-        return self.async_show_form(
-            step_id="encrypted_key",
-            errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_KEY_ID): str,
-                    vol.Required(CONF_ENCRYPTION_KEY): str,
-                }
-            ),
-            description_placeholders={
-                "name": name_from_discovery(self._discovered_adv),
             },
         )
 
@@ -309,22 +175,13 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)
-            if device_adv.data.get("modelName") in ENCRYPTED_MODELS:
-                return await self.async_step_encrypted_choose_method()
-            if device_adv.data["isEncrypted"]:
-                return await self.async_step_password()
             return await self._async_create_entry_from_discovery(user_input)
 
         self._async_discover_devices()
         if len(self._discovered_advs) == 1:
-            # If there is only one device we can ask for a password
-            # or simply confirm it
+            # If there is only one device we can simply confirm it
             device_adv = list(self._discovered_advs.values())[0]
             await self._async_set_device(device_adv)
-            if device_adv.data.get("modelName") in ENCRYPTED_MODELS:
-                return await self.async_step_encrypted_choose_method()
-            if device_adv.data["isEncrypted"]:
-                return await self.async_step_password()
             return await self.async_step_confirm()
 
         return self.async_show_form(

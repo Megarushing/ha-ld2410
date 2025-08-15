@@ -135,12 +135,10 @@ def _parse_data(
     if not _model:
         return None
 
-    _isEncrypted = bool(_service_data[0] & 0b10000000) if _service_data else False
     data = {
         "rawAdvData": _service_data,
         "data": {},
         "model": _model,
-        "isEncrypted": _isEncrypted,
     }
 
     type_data = SUPPORTED_TYPES.get(_model)

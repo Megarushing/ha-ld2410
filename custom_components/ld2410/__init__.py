@@ -19,13 +19,10 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
-    CONF_ENCRYPTION_KEY,
-    CONF_KEY_ID,
     CONF_RETRY_COUNT,
     CONNECTABLE_SUPPORTED_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
-    ENCRYPTED_MODELS,
     HASS_SENSOR_TYPE_TO_LD2410_MODEL,
     SupportedModels,
 )
@@ -81,27 +78,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         )
 
     cls = CLASS_BY_DEVICE.get(sensor_type, ld2410.LD2410Device)
-    if ld2410_model in ENCRYPTED_MODELS:
-        try:
-            device = cls(
-                device=ble_device,
-                key_id=entry.data.get(CONF_KEY_ID),
-                encryption_key=entry.data.get(CONF_ENCRYPTION_KEY),
-                retry_count=entry.options[CONF_RETRY_COUNT],
-                model=ld2410_model,
-            )
-        except ValueError as error:
-            raise ConfigEntryNotReady(
-                translation_domain=DOMAIN,
-                translation_key="value_error",
-                translation_placeholders={"error": str(error)},
-            ) from error
-    else:
-        device = cls(
-            device=ble_device,
-            password=entry.data.get(CONF_PASSWORD),
-            retry_count=entry.options[CONF_RETRY_COUNT],
-        )
+    device = cls(
+        device=ble_device,
+        password=entry.data.get(CONF_PASSWORD),
+        retry_count=entry.options[CONF_RETRY_COUNT],
+    )
 
     coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
         hass,
