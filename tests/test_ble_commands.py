@@ -54,7 +54,6 @@ async def test_initialise_sends_commands_using_correct_characteristics(
         self._client = client
         self._read_char = MockCharacteristic(CHARACTERISTIC_NOTIFY)
         self._write_char = MockCharacteristic(CHARACTERISTIC_WRITE)
-        await client.start_notify(self._read_char, self._notification_handler)
 
     with patch(
         "custom_components.ld2410.api.ld2410.devices.device.LD2410BaseDevice._ensure_connected",
@@ -72,3 +71,26 @@ async def test_initialise_sends_commands_using_correct_characteristics(
         (CHARACTERISTIC_WRITE, CMD_ENABLE_ENGINEERING_MODE),
         (CHARACTERISTIC_WRITE, CMD_DISABLE_CONFIG),
     ]
+
+
+@pytest.mark.asyncio
+async def test_notification_callback_logs_stream(hass: HomeAssistant) -> None:
+    ble_device = BLEDevice("AA:BB:CC:DD:EE:FF", "test", {})
+    client = MockClient()
+
+    async def mock_ensure_connected(self):
+        self._client = client
+        self._read_char = MockCharacteristic(CHARACTERISTIC_NOTIFY)
+        self._write_char = MockCharacteristic(CHARACTERISTIC_WRITE)
+
+    with patch(
+        "custom_components.ld2410.api.ld2410.devices.device.LD2410BaseDevice._ensure_connected",
+        mock_ensure_connected,
+    ):
+        device = LD2410Device(device=ble_device, password="HiLink")
+        records: list[bytearray] = []
+        device.subscribe_data_stream(lambda data: records.append(data))
+        await device.initialise()
+        device._notification_handler(0, b"abc")
+
+    assert records == [b"abc"]

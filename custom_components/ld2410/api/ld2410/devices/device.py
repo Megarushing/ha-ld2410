@@ -149,6 +149,7 @@ class LD2410BaseDevice:
         self._expected_disconnect = False
         self.loop = asyncio.get_event_loop()
         self._callbacks: list[Callable[[], None]] = []
+        self._raw_callbacks: list[Callable[[bytearray], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
@@ -294,6 +295,12 @@ class LD2410BaseDevice:
         await self.enable_config()
         await self.enable_engineering_mode()
         await self.disable_config()
+        await self._start_notify()
+        self.subscribe_data_stream(
+            lambda data: _LOGGER.debug(
+                "%s: Notification received: %s", self.name, data.hex()
+            )
+        )
 
     @property
     def name(self) -> str:
@@ -373,12 +380,11 @@ class LD2410BaseDevice:
                 raise
 
             _LOGGER.debug(
-                "%s: Starting notify and disconnect timer; RSSI: %s",
+                "%s: Connected; RSSI: %s",
                 self.name,
                 self.rssi,
             )
             self._reset_disconnect_timer()
-            await self._start_notify()
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve characteristics."""
@@ -514,7 +520,10 @@ class LD2410BaseDevice:
         if self._notify_future and not self._notify_future.done():
             self._notify_future.set_result(data)
             return
-        _LOGGER.debug("%s: Received unsolicited notification: %s", self.name, data)
+        for callback in self._raw_callbacks:
+            callback(data)
+        if not self._raw_callbacks:
+            _LOGGER.debug("%s: Received unsolicited notification: %s", self.name, data)
 
     async def _start_notify(self) -> None:
         """Start notification."""
@@ -638,6 +647,18 @@ class LD2410BaseDevice:
         def _unsub() -> None:
             """Unsubscribe from device notifications."""
             self._callbacks.remove(callback)
+
+        return _unsub
+
+    def subscribe_data_stream(
+        self, callback: Callable[[bytearray], None]
+    ) -> Callable[[], None]:
+        """Subscribe to raw notification data."""
+        self._raw_callbacks.append(callback)
+
+        def _unsub() -> None:
+            """Unsubscribe from raw notification data."""
+            self._raw_callbacks.remove(callback)
 
         return _unsub
 
