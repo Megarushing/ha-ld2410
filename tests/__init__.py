@@ -12,10 +12,10 @@ try:
 except ImportError:
     from homeassistant.config_entries import ConfigEntry
     from typing import Any
-    
+
     class MockConfigEntry(ConfigEntry):
         """Mock config entry for testing."""
-        
+
         def __init__(
             self,
             *,
@@ -41,20 +41,23 @@ except ImportError:
                 "entry_id": entry_id or "mock_entry_id",
                 "unique_id": unique_id,
                 "discovery_keys": {},  # Required for newer HA versions
-                "subentries_data": {},  # Required for newer HA versions
             }
             super().__init__(**kwargs)
-        
+
         def add_to_hass(self, hass: HomeAssistant) -> None:
             """Add this entry to Home Assistant."""
             hass.config_entries._entries[self.entry_id] = self
 
+
 try:
-    from tests.components.bluetooth import generate_advertisement_data, generate_ble_device
+    from tests.components.bluetooth import (
+        generate_advertisement_data,
+        generate_ble_device,
+    )
 except ImportError:
     from bleak.backends.device import BLEDevice
     from bleak import AdvertisementData
-    
+
     def generate_advertisement_data(
         local_name: str | None = None,
         manufacturer_data: dict[int, bytes] | None = None,
@@ -73,7 +76,7 @@ except ImportError:
             rssi=rssi,
             platform_data=(),
         )
-    
+
     def generate_ble_device(
         address: str,
         name: str | None = None,
@@ -84,6 +87,7 @@ except ImportError:
             name=name,
             details={},
         )
+
 
 DOMAIN = "ld2410"
 
