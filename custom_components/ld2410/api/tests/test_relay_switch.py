@@ -6,7 +6,6 @@ from bleak.backends.device import BLEDevice
 from ..switchbot import SwitchBotAdvertisement, SwitchbotEncryptedDevice, SwitchbotModel
 from ..switchbot.devices import relay_switch
 from ..switchbot.devices.device import _merge_data as merge_data
-
 from .test_adv_parser import generate_ble_device
 
 common_params = [

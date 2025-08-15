@@ -8,7 +8,6 @@ from ..switchbot.const.light import ColorMode
 from ..switchbot.devices import light_strip
 from ..switchbot.devices.base_light import SwitchbotBaseLight
 from ..switchbot.devices.device import SwitchbotEncryptedDevice, SwitchbotOperationError
-
 from .test_adv_parser import generate_ble_device
 
 

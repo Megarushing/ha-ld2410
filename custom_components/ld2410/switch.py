@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from api import switchbot
+from .api import switchbot
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.const import STATE_ON

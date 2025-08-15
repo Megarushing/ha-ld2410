@@ -6,8 +6,8 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
-from api.switchbot import Switchbot, SwitchbotDevice
-from api.switchbot.devices.device import SwitchbotOperationError
+from .api.switchbot import Switchbot, SwitchbotDevice
+from .api.switchbot.devices.device import SwitchbotOperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
     PassiveBluetoothCoordinatorEntity,

@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from api import switchbot
-from api.switchbot import HumidifierAction as SwitchbotHumidifierAction, HumidifierMode
+from .api import switchbot
+from .api.switchbot import HumidifierAction as SwitchbotHumidifierAction, HumidifierMode
 
 from homeassistant.components.humidifier import (
     MODE_AUTO,

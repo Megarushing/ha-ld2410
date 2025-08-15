@@ -13,7 +13,6 @@ from ..switchbot import (
 )
 from ..switchbot.devices import evaporative_humidifier
 from ..switchbot.devices.device import SwitchbotEncryptedDevice, SwitchbotOperationError
-
 from .test_adv_parser import generate_ble_device
 
 

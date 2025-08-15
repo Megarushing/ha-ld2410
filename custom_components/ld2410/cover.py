@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from api import switchbot
+from .api import switchbot
 
 from homeassistant.components.cover import (
     ATTR_CURRENT_POSITION,

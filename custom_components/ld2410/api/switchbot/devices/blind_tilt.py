@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from switchbot.devices.device import (
+from ...switchbot.devices.device import (
     REQ_HEADER,
     SwitchbotSequenceDevice,
     update_after_operation,
 )
-
 from ..models import SwitchBotAdvertisement
 from .base_cover import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotBaseCover
 

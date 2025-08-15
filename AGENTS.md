@@ -5,13 +5,20 @@
 - Read the old_integration folder if you need to understand how the ld2410 bluetooth integration works.
 
 ## The following steps are required before commiting changes:
+- Setup the environment:
+  ```bash
+  python -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.dev.txt
+  ```
 - Before any commit, make sure to run the linter:
   ```bash
-
+  ruff check . --fix
+  ruff format .
   ```
 - Execute the full test suite before making PRs:
   ```bash
-
+  pytest
   ```
 - Run tests and linters for every code change.
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any, cast
 
-from api import switchbot
-from api.switchbot import ColorMode as SwitchBotColorMode
+from .api import switchbot
+from .api.switchbot import ColorMode as SwitchBotColorMode
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,

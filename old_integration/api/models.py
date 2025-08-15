@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class LD2410BLEState:
-
     is_moving: bool = False
     is_static: bool = False
     moving_target_distance: int = 0

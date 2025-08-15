@@ -22,5 +22,6 @@
   "documentation": "https://github.com/Megarushing/ha-ld2410/blob/main/README.md",
   "iot_class": "local_push",
   "loggers": ["ld2410"],
-  "requirements": []
+  "requirements": [],
+  "version": "1.0.0"
 }

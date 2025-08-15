@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import api.switchbot
-from api.switchbot import AirPurifierMode, FanMode
+from . import api
+from .api.switchbot import AirPurifierMode, FanMode
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.core import HomeAssistant
@@ -27,7 +27,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Switchbot fan based on a config entry."""
     coordinator = entry.runtime_data
-    if isinstance(coordinator.device, switchbot.SwitchbotAirPurifier):
+    if isinstance(coordinator.device, api.switchbot.SwitchbotAirPurifier):
         async_add_entities([SwitchBotAirPurifierEntity(coordinator)])
     else:
         async_add_entities([SwitchBotFanEntity(coordinator)])
@@ -36,7 +36,7 @@ async def async_setup_entry(
 class SwitchBotFanEntity(SwitchbotEntity, FanEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    _device: switchbot.SwitchbotFan
+    _device: api.switchbot.SwitchbotFan
     _attr_supported_features = (
         FanEntityFeature.SET_SPEED
         | FanEntityFeature.OSCILLATE
@@ -128,7 +128,7 @@ class SwitchBotFanEntity(SwitchbotEntity, FanEntity, RestoreEntity):
 class SwitchBotAirPurifierEntity(SwitchbotEntity, FanEntity):
     """Representation of a Switchbot air purifier."""
 
-    _device: switchbot.SwitchbotAirPurifier
+    _device: api.switchbot.SwitchbotAirPurifier
     _attr_supported_features = (
         FanEntityFeature.PRESET_MODE
         | FanEntityFeature.TURN_OFF

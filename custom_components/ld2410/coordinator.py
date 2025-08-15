@@ -7,8 +7,8 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
-from api import switchbot
-from api.switchbot import SwitchbotModel
+from .api import switchbot
+from .api.switchbot import SwitchbotModel
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.active_update_coordinator import (

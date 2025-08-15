@@ -2,7 +2,7 @@
 
 import logging
 
-from api import switchbot
+from .api import switchbot
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry

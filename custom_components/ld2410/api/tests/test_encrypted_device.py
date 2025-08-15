@@ -13,7 +13,6 @@ from ..switchbot import SwitchbotModel
 from ..switchbot.devices.device import (
     SwitchbotEncryptedDevice,
 )
-
 from .test_adv_parser import generate_ble_device
 
 

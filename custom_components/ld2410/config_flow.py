@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from api.switchbot import (
+from .api.switchbot import (
     SwitchbotAccountConnectionError,
     SwitchBotAdvertisement,
     SwitchbotApiError,

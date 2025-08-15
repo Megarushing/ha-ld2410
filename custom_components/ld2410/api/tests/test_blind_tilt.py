@@ -6,7 +6,6 @@ from bleak.backends.device import BLEDevice
 from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
 from ..switchbot.devices import blind_tilt
 from ..switchbot.devices.base_cover import COVER_EXT_SUM_KEY
-
 from .test_adv_parser import generate_ble_device
 
 

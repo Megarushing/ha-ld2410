@@ -6,7 +6,6 @@ from bleak.backends.device import BLEDevice
 from ..switchbot import SwitchBotAdvertisement, SwitchbotEncryptedDevice, SwitchbotModel
 from ..switchbot.const.air_purifier import AirPurifierMode
 from ..switchbot.devices import air_purifier
-
 from .test_adv_parser import generate_ble_device
 
 common_params = [

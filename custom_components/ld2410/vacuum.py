@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from api import switchbot
-from api.switchbot import SwitchbotModel
+from .api import switchbot
+from .api.switchbot import SwitchbotModel
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,

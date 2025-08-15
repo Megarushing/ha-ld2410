@@ -6,7 +6,6 @@ import pytest
 from ..switchbot import SwitchbotModel
 from ..switchbot.const.lock import LockStatus
 from ..switchbot.devices import lock
-
 from .test_adv_parser import generate_ble_device
 
 

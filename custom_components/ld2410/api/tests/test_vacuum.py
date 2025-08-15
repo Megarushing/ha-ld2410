@@ -6,7 +6,6 @@ from bleak.backends.device import BLEDevice
 from ..switchbot import SwitchBotAdvertisement
 from ..switchbot.adv_parser import SUPPORTED_TYPES
 from ..switchbot.devices import vacuum
-
 from .test_adv_parser import generate_ble_device
 
 common_params = [

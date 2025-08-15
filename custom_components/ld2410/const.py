@@ -2,8 +2,8 @@
 
 from enum import StrEnum
 
-from api import switchbot
-from api.switchbot import SwitchbotModel
+from .api import switchbot
+from .api.switchbot import SwitchbotModel
 
 DOMAIN = "switchbot"
 MANUFACTURER = "switchbot"

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from api import switchbot
+from .api import switchbot
 from api.switchbot.const import LockStatus
 
 from homeassistant.components.lock import LockEntity, LockEntityFeature

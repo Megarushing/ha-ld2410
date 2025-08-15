@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from api.switchbot import HumidifierWaterLevel
-from api.switchbot.const.air_purifier import AirQualityLevel
+from .api.switchbot import HumidifierWaterLevel
+from .api.switchbot.const.air_purifier import AirQualityLevel
 
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (

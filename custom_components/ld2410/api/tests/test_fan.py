@@ -6,7 +6,6 @@ from bleak.backends.device import BLEDevice
 from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
 from ..switchbot.const.fan import FanMode
 from ..switchbot.devices import fan
-
 from .test_adv_parser import generate_ble_device
 
 

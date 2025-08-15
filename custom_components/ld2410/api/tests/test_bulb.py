@@ -7,7 +7,6 @@ from ..switchbot import SwitchBotAdvertisement, SwitchbotModel
 from ..switchbot.const.light import ColorMode
 from ..switchbot.devices import bulb
 from ..switchbot.devices.device import SwitchbotOperationError
-
 from .test_adv_parser import generate_ble_device
 
 

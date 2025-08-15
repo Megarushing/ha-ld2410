@@ -11,7 +11,6 @@ from ..switchbot import HumidifierMode, SwitchbotModel
 from ..switchbot.adv_parser import parse_advertisement_data
 from ..switchbot.const.lock import LockStatus
 from ..switchbot.models import SwitchBotAdvertisement
-
 from . import AdvTestCase
 
 ADVERTISEMENT_DATA_DEFAULTS = {
