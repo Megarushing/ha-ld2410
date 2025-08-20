@@ -1,66 +1,104 @@
-"""Test the LD2410 integration initialization."""
+"""Test the ld2410 init."""
 
-from unittest.mock import patch
+from collections.abc import Callable
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from homeassistant.core import HomeAssistant
 
 from . import (
-    DOMAIN,
-    ENTRY_CONFIG,
-    LD2410_SERVICE_INFO,
-    MockConfigEntry,
+    HUBMINI_MATTER_SERVICE_INFO,
+    LOCK_SERVICE_INFO,
     patch_async_ble_device_from_address,
 )
 
+try:
+    from tests.common import MockConfigEntry
+except ImportError:
+    from .mocks import MockConfigEntry
 
-def test_constants():
-    """Test that our constants are properly defined."""
-    assert DOMAIN == "ld2410"
-    assert "address" in ENTRY_CONFIG
+try:
+    from tests.components.bluetooth import (
+        inject_bluetooth_service_info
+    )
+except ImportError:
+    from .mocks import (
+        inject_bluetooth_service_info
+    )
 
+@pytest.mark.parametrize(
+    ("exception", "error_message"),
+    [
+        (
+            ValueError("wrong model"),
+            "LD2410 device initialization failed because of incorrect configuration parameters: wrong model",
+        ),
+    ],
+)
+async def test_exception_handling_for_device_initialization(
+    hass: HomeAssistant,
+    mock_entry_encrypted_factory: Callable[[str], MockConfigEntry],
+    exception: Exception,
+    error_message: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test exception handling for lock initialization."""
+    inject_bluetooth_service_info(hass, LOCK_SERVICE_INFO)
 
-def test_service_info():
-    """Test that service info is properly structured."""
-    assert LD2410_SERVICE_INFO.name == "HLK-LD2410B_123"
-    assert LD2410_SERVICE_INFO.address == "AA:BB:CC:DD:EE:FF"
-    assert "0000af30-0000-1000-8000-00805f9b34fb" in LD2410_SERVICE_INFO.service_uuids
+    entry = mock_entry_encrypted_factory(sensor_type="lock")
+    entry.add_to_hass(hass)
 
-
-def test_mock_config_entry():
-    """Test MockConfigEntry creation."""
-    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_CONFIG)
-    assert entry.domain == DOMAIN
-    assert entry.data == ENTRY_CONFIG
-    
-
-async def test_setup_entry_success(hass: HomeAssistant) -> None:
-    """Test successful setup of a config entry."""
-    # For now, we'll just test the mock setup without full HA setup
-    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_CONFIG)
-    
-    # Mock the integration's setup function
     with patch(
-        f"custom_components.{DOMAIN}.async_setup_entry",
-        return_value=True,
-    ) as mock_setup:
-        # For this test, just verify the mock works
-        result = await mock_setup(hass, entry)
-        assert result is True
+        "homeassistant.components.ld2410.lock.ld2410.LD2410Lock.__init__",
+        side_effect=exception,
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    assert error_message in caplog.text
 
 
 async def test_setup_entry_without_ble_device(
     hass: HomeAssistant,
+    mock_entry_factory: Callable[[str], MockConfigEntry],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test setup entry without ble device."""
 
-    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_CONFIG)
+    entry = mock_entry_factory("hygrometer_co2")
     entry.add_to_hass(hass)
 
     with patch_async_ble_device_from_address(None):
-        result = await hass.config_entries.async_setup(entry.entry_id)
+        await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert not result
+    assert (
+        "Could not find LD2410 hygrometer_co2 with address aa:bb:cc:dd:ee:ff"
+        in caplog.text
+    )
+
+
+async def test_coordinator_wait_ready_timeout(
+    hass: HomeAssistant,
+    mock_entry_factory: Callable[[str], MockConfigEntry],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test the coordinator async_wait_ready timeout by calling it directly."""
+
+    inject_bluetooth_service_info(hass, HUBMINI_MATTER_SERVICE_INFO)
+
+    entry = mock_entry_factory("hubmini_matter")
+    entry.add_to_hass(hass)
+
+    timeout_mock = AsyncMock()
+    timeout_mock.__aenter__.side_effect = TimeoutError
+    timeout_mock.__aexit__.return_value = None
+
+    with patch(
+        "homeassistant.components.ld2410.coordinator.asyncio.timeout",
+        return_value=timeout_mock,
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert "aa:bb:cc:dd:ee:ff is not advertising state" in caplog.text
