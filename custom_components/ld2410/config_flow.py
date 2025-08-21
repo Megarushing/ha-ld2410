@@ -196,6 +196,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)
+            return await self.async_step_password()
             return await self._async_create_entry_from_discovery(user_input)
 
         self._async_discover_devices()

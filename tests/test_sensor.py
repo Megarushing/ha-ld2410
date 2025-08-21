@@ -51,7 +51,7 @@ async def test_sensors(hass: HomeAssistant) -> None:
             CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
             CONF_NAME: "test-name",
             CONF_PASSWORD: "test-password",
-            CONF_SENSOR_TYPE: "bot",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
@@ -91,7 +91,7 @@ async def test_co2_sensor(hass: HomeAssistant) -> None:
             CONF_ADDRESS: "AA:BB:CC:DD:EE:AA",
             CONF_NAME: "test-name",
             CONF_PASSWORD: "test-password",
-            CONF_SENSOR_TYPE: "hygrometer_co2",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeaa",
     )
@@ -132,7 +132,7 @@ async def test_relay_switch_1pm_sensor(hass: HomeAssistant) -> None:
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
-        "homeassistant.components.ld2410.switch.ld2410.LD2410RelaySwitch.get_basic_info",
+        "custom_components.ld2410.switch.ld2410.LD2410RelaySwitch.get_basic_info",
         new=AsyncMock(
             return_value={
                 "power": 4.9,
@@ -147,7 +147,7 @@ async def test_relay_switch_1pm_sensor(hass: HomeAssistant) -> None:
             data={
                 CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
                 CONF_NAME: "test-name",
-                CONF_SENSOR_TYPE: "relay_switch_1pm"
+                CONF_SENSOR_TYPE: "ld2410"
             },
             unique_id="aabbccddeeaa",
         )
@@ -208,7 +208,7 @@ async def test_leak_sensor(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "leak",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeaa",
     )
@@ -250,7 +250,7 @@ async def test_remote(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "remote",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
@@ -289,7 +289,7 @@ async def test_hub2_sensor(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "hub2",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
@@ -346,7 +346,7 @@ async def test_hubmini_matter_sensor(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "hubmini_matter",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
@@ -393,14 +393,14 @@ async def test_fan_sensors(hass: HomeAssistant) -> None:
             CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
             CONF_NAME: "test-name",
             CONF_PASSWORD: "test-password",
-            CONF_SENSOR_TYPE: "circulator_fan",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
     entry.add_to_hass(hass)
 
     with patch(
-        "homeassistant.components.ld2410.fan.ld2410.LD2410Fan.update",
+        "custom_components.ld2410.fan.ld2410.LD2410Fan.update",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
@@ -436,7 +436,7 @@ async def test_hub3_sensor(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "hub3",
+            CONF_SENSOR_TYPE: "ld2410",
         },
         unique_id="aabbccddeeff",
     )
@@ -495,14 +495,14 @@ async def test_evaporative_humidifier_sensor(hass: HomeAssistant) -> None:
         data={
             CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: "evaporative_humidifier"
+            CONF_SENSOR_TYPE: "ld2410"
         },
         unique_id="aabbccddeeff",
     )
     entry.add_to_hass(hass)
 
     with patch(
-        "homeassistant.components.ld2410.humidifier.ld2410.LD2410EvaporativeHumidifier.update",
+        "custom_components.ld2410.humidifier.ld2410.LD2410EvaporativeHumidifier.update",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)

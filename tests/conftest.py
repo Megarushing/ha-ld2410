@@ -1,6 +1,7 @@
 """Define fixtures available for all tests."""
 
 import pytest
+from bleak.backends.device import BLEDevice
 
 from custom_components.ld2410.const import (
     DOMAIN,
@@ -20,6 +21,18 @@ def _auto_enable_custom_integrations(enable_custom_integrations):
 # If present, this already prevents real BLE scanning; harmless if not.
 @pytest.fixture(autouse=True)
 def _mock_bt(mock_bluetooth):
+    yield
+
+@pytest.fixture(autouse=True)
+def _patch_ble_device_from_address(monkeypatch):
+    def _fake(hass, address, connectable=True):
+        # Create a minimal BLEDevice that matches your entry’s address
+        return BLEDevice(address=address, name="HLK-LD2410", details=None, rssi=-60)
+    monkeypatch.setattr(
+        "homeassistant.components.bluetooth.async_ble_device_from_address",
+        _fake,
+        raising=False,
+    )
     yield
 
 @pytest.fixture(autouse=True)

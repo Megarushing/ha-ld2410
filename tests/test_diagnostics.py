@@ -52,7 +52,7 @@ async def test_diagnostics(
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
-        "homeassistant.components.ld2410.switch.ld2410.LD2410RelaySwitch.update",
+        "custom_components.ld2410.api.ld2410.LD2410Device.update",
         return_value=None,
     ):
         mock_config_entry = MockConfigEntry(
@@ -60,7 +60,7 @@ async def test_diagnostics(
             data={
                 CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
                 CONF_NAME: "test-name",
-                CONF_SENSOR_TYPE: "relay_switch_1pm"
+                CONF_SENSOR_TYPE: "ld2410"
             },
             unique_id="aabbccddeeaa",
             options={CONF_RETRY_COUNT: DEFAULT_RETRY_COUNT},
