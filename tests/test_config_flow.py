@@ -494,7 +494,7 @@ async def test_user_setup_woencrypted_key(hass: HomeAssistant) -> None:
     assert result["errors"] == {}
 
     with patch(
-        "switchbot.LD2410Lock.verify_encryption_key",
+        "ld2410.LD2410Lock.verify_encryption_key",
         return_value=False,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -512,7 +512,7 @@ async def test_user_setup_woencrypted_key(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "switchbot.LD2410Lock.verify_encryption_key",
+            "ld2410.LD2410Lock.verify_encryption_key",
             return_value=True,
         ),
     ):
@@ -538,7 +538,7 @@ async def test_user_setup_woencrypted_auth(hass: HomeAssistant) -> None:
     """Test the user initiated form for a lock."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WOLOCK_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -556,7 +556,7 @@ async def test_user_setup_woencrypted_auth(hass: HomeAssistant) -> None:
     assert result["errors"] == {}
 
     with patch(
-        "switchbot.LD2410Lock.async_retrieve_encryption_key",
+        "ld2410.LD2410Lock.async_retrieve_encryption_key",
         side_effect=LD2410AuthenticationError("error from api"),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -575,11 +575,11 @@ async def test_user_setup_woencrypted_auth(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "switchbot.LD2410Lock.verify_encryption_key",
+            "ld2410.LD2410Lock.verify_encryption_key",
             return_value=True,
         ),
         patch(
-            "switchbot.LD2410Lock.async_retrieve_encryption_key",
+            "ld2410.LD2410Lock.async_retrieve_encryption_key",
             return_value={
 
             },
@@ -604,13 +604,13 @@ async def test_user_setup_woencrypted_auth(hass: HomeAssistant) -> None:
     assert len(mock_setup_entry.mock_calls) == 1
 
 
-async def test_user_setup_woencrypted_auth_switchbot_api_down(
+async def test_user_setup_woencrypted_auth_ld2410_api_down(
     hass: HomeAssistant,
 ) -> None:
-    """Test the user initiated form for a lock when the switchbot api is down."""
+    """Test the user initiated form for a lock when the ld2410 api is down."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WOLOCK_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -628,7 +628,7 @@ async def test_user_setup_woencrypted_auth_switchbot_api_down(
     assert result["errors"] == {}
 
     with patch(
-        "switchbot.LD2410Lock.async_retrieve_encryption_key",
+        "ld2410.LD2410Lock.async_retrieve_encryption_key",
         side_effect=LD2410AccountConnectionError("LD2410 API down"),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -648,7 +648,7 @@ async def test_user_setup_wolock_or_bot(hass: HomeAssistant) -> None:
     """Test the user initiated form for a lock."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[
             WOLOCK_SERVICE_INFO,
             WOHAND_SERVICE_ALT_ADDRESS_INFO,
@@ -680,7 +680,7 @@ async def test_user_setup_wolock_or_bot(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "switchbot.LD2410Lock.verify_encryption_key",
+            "ld2410.LD2410Lock.verify_encryption_key",
             return_value=True,
         ),
     ):
@@ -705,7 +705,7 @@ async def test_user_setup_wolock_or_bot(hass: HomeAssistant) -> None:
 async def test_user_setup_wosensor(hass: HomeAssistant) -> None:
     """Test the user initiated form with password and valid mac."""
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WOSENSORTH_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -735,7 +735,7 @@ async def test_user_setup_wosensor(hass: HomeAssistant) -> None:
 async def test_user_no_devices(hass: HomeAssistant) -> None:
     """Test the user initiated form with password and valid mac."""
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -758,7 +758,7 @@ async def test_async_step_user_takes_precedence_over_discovery(
     assert result["step_id"] == "confirm"
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WOCURTAIN_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -915,7 +915,7 @@ async def test_user_setup_worelay_switch_1pm_key(hass: HomeAssistant) -> None:
     """Test the user initiated form for a relay switch 1pm."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -935,7 +935,7 @@ async def test_user_setup_worelay_switch_1pm_key(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "switchbot.LD2410RelaySwitch.verify_encryption_key", return_value=True
+            "ld2410.LD2410RelaySwitch.verify_encryption_key", return_value=True
         ),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -960,7 +960,7 @@ async def test_user_setup_worelay_switch_1pm_auth(hass: HomeAssistant) -> None:
     """Test the user initiated form for a relay switch 1pm."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -978,7 +978,7 @@ async def test_user_setup_worelay_switch_1pm_auth(hass: HomeAssistant) -> None:
     assert result["errors"] == {}
 
     with patch(
-        "switchbot.LD2410RelaySwitch.async_retrieve_encryption_key",
+        "ld2410.LD2410RelaySwitch.async_retrieve_encryption_key",
         side_effect=LD2410AuthenticationError("error from api"),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -997,13 +997,13 @@ async def test_user_setup_worelay_switch_1pm_auth(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "switchbot.LD2410RelaySwitch.async_retrieve_encryption_key",
+            "ld2410.LD2410RelaySwitch.async_retrieve_encryption_key",
             return_value={
 
             },
         ),
         patch(
-            "switchbot.LD2410RelaySwitch.verify_encryption_key", return_value=True
+            "ld2410.LD2410RelaySwitch.verify_encryption_key", return_value=True
         ),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -1025,13 +1025,13 @@ async def test_user_setup_worelay_switch_1pm_auth(hass: HomeAssistant) -> None:
     assert len(mock_setup_entry.mock_calls) == 1
 
 
-async def test_user_setup_worelay_switch_1pm_auth_switchbot_api_down(
+async def test_user_setup_worelay_switch_1pm_auth_ld2410_api_down(
     hass: HomeAssistant,
 ) -> None:
-    """Test the user initiated form for a relay switch 1pm when the switchbot api is down."""
+    """Test the user initiated form for a relay switch 1pm when the ld2410 api is down."""
 
     with patch(
-        "homeassistant.components.switchbot.config_flow.async_discovered_service_info",
+        "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -1049,7 +1049,7 @@ async def test_user_setup_worelay_switch_1pm_auth_switchbot_api_down(
     assert result["errors"] == {}
 
     with patch(
-        "switchbot.LD2410RelaySwitch.async_retrieve_encryption_key",
+        "ld2410.LD2410RelaySwitch.async_retrieve_encryption_key",
         side_effect=LD2410AccountConnectionError("LD2410 API down"),
     ):
         result = await hass.config_entries.flow.async_configure(

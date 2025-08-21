@@ -510,7 +510,7 @@ async def test_evaporative_humidifier_sensor(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
 
     with patch(
-        "homeassistant.components.switchbot.humidifier.switchbot.LD2410EvaporativeHumidifier.update",
+        "homeassistant.components.ld2410.humidifier.ld2410.LD2410EvaporativeHumidifier.update",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
