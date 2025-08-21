@@ -9,7 +9,6 @@ import time
 from collections.abc import Callable
 from dataclasses import replace
 from typing import Any, TypeVar, cast
-from uuid import UUID
 
 import aiohttp
 from bleak.backends.device import BLEDevice
@@ -27,7 +26,7 @@ from ..api_config import LD2410_APP_API_BASE_URL
 from ..const import (
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    LD2410ApiError,
+    LD2410ApiError, CHARACTERISTIC_NOTIFY, CHARACTERISTIC_WRITE,
 )
 from ..discovery import GetLD2410Devices
 from ..helpers import create_background_task
@@ -68,20 +67,6 @@ class CharacteristicMissingError(Exception):
 
 class LD2410OperationError(Exception):
     """Raised when an operation fails."""
-
-
-def _sb_uuid(comms_type: str = "service") -> UUID | str:
-    """Return LD2410 UUID."""
-    _uuid = {"tx": "002", "rx": "003", "service": "d00"}
-
-    if comms_type in _uuid:
-        return UUID(f"cba20{_uuid[comms_type]}-224d-11e6-9fb8-0002a5d5c51b")
-
-    return "Incorrect type, choose between: tx, rx or service"
-
-
-READ_CHAR_UUID = _sb_uuid(comms_type="rx")
-WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
 
 WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
@@ -357,12 +342,12 @@ class LD2410BaseDevice:
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve characteristics."""
-        self._read_char = services.get_characteristic(READ_CHAR_UUID)
+        self._read_char = services.get_characteristic(CHARACTERISTIC_NOTIFY)
         if not self._read_char:
-            raise CharacteristicMissingError(READ_CHAR_UUID)
-        self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
+            raise CharacteristicMissingError(CHARACTERISTIC_NOTIFY)
+        self._write_char = services.get_characteristic(CHARACTERISTIC_WRITE)
         if not self._write_char:
-            raise CharacteristicMissingError(WRITE_CHAR_UUID)
+            raise CharacteristicMissingError(CHARACTERISTIC_WRITE)
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""

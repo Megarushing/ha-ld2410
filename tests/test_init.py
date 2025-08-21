@@ -49,7 +49,7 @@ async def test_exception_handling_for_device_initialization(
     entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.ld2410.lock.ld2410.LD2410Lock.__init__",
+        "custom_components.ld2410.api.ld2410.LD2410Device.__init__",
         side_effect=exception,
     ):
         await hass.config_entries.async_setup(entry.entry_id)

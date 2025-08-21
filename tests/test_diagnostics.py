@@ -52,17 +52,17 @@ async def test_diagnostics(
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
-        "custom_components.ld2410.api.ld2410.LD2410Device.update",
+        "custom_components.ld2410.api.ld2410.LD2410.update",
         return_value=None,
     ):
         mock_config_entry = MockConfigEntry(
             domain=DOMAIN,
             data={
-                CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
+                CONF_ADDRESS: "42:6C:99:4F:96:D8",
                 CONF_NAME: "test-name",
                 CONF_SENSOR_TYPE: "ld2410"
             },
-            unique_id="aabbccddeeaa",
+            unique_id="426c994f96d8",
             options={CONF_RETRY_COUNT: DEFAULT_RETRY_COUNT},
         )
         mock_config_entry.add_to_hass(hass)

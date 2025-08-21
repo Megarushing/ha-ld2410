@@ -33,7 +33,9 @@ PLATFORMS_BY_TYPE = {
     SupportedModels.MOTION.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
 }
-CLASS_BY_DEVICE: dict[str, type[ld2410.LD2410Device]] = {}
+CLASS_BY_DEVICE = {
+    SupportedModels.LD2410.value: ld2410.LD2410
+}
 
 
 _LOGGER = logging.getLogger(__name__)
