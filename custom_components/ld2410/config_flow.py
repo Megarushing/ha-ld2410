@@ -18,11 +18,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
-from homeassistant.const import (
-    CONF_ADDRESS,
-    CONF_SENSOR_TYPE,
-    CONF_PASSWORD
-)
+from homeassistant.const import CONF_ADDRESS, CONF_SENSOR_TYPE, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
 from .const import (
@@ -100,7 +96,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         return await self.async_step_confirm()
 
     async def async_step_password(
-            self, user_input: dict[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the password step."""
         assert self._discovered_adv is not None
@@ -112,7 +108,9 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="password",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema(
+                {vol.Required(CONF_PASSWORD, default="HiLink"): str}
+            ),
             description_placeholders={
                 "name": name_from_discovery(self._discovered_adv)
             },

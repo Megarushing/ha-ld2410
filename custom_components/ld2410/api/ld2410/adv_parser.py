@@ -11,16 +11,14 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from .adv_parsers.contact import process_wocontact
-from .adv_parsers.motion import process_wopresence
 from .adv_parsers.ld2410 import process_ld2410
+from .adv_parsers.motion import process_wopresence
 from .const import LD2410Model
 from .models import LD2410Advertisement
 
 _LOGGER = logging.getLogger(__name__)
 
-SERVICE_DATA_ORDER = (
-    "0000af30-0000-1000-8000-00805f9b34fb",
-)
+SERVICE_DATA_ORDER = ("0000af30-0000-1000-8000-00805f9b34fb",)
 MFR_DATA_ORDER = (256, 1494)
 
 
@@ -123,10 +121,8 @@ def _parse_data(
     """Parse advertisement data."""
     type_data = SUPPORTED_TYPES.get("t")
 
-    data = {
+    return {
         "modelFriendlyName": type_data["modelFriendlyName"],
         "modelName": type_data["modelName"],
         "data": type_data["func"](_service_data, _mfr_data),
     }
-
-    return data

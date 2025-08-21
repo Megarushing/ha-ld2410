@@ -2,7 +2,6 @@
 
 from unittest.mock import patch
 
-from custom_components.ld2410.api.ld2410 import LD2410AccountConnectionError, LD2410AuthenticationError
 
 from custom_components.ld2410.const import (
     CONF_RETRY_COUNT,
@@ -13,19 +12,17 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_SENSOR_TYPE,
-    CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from . import (
-    USER_INPUT,
     LD2410b_SERVICE_INFO,
     LD2410b_2_SERVICE_INFO,
     LD2410b_NOT_CONNECTABLE,
     NOT_LD2410_INFO,
     init_integration,
-    patch_async_setup_entry
+    patch_async_setup_entry,
 )
 
 try:
@@ -34,6 +31,7 @@ except ImportError:
     from .mocks import MockConfigEntry
 
 DOMAIN = "ld2410"
+
 
 async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> None:
     """Test discovery via bluetooth with a valid device that needs a password."""
@@ -44,6 +42,7 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "password"
+    assert result["data_schema"]({})[CONF_PASSWORD] == "HiLink"
 
     with patch_async_setup_entry() as mock_setup_entry:
         result = await hass.config_entries.flow.async_configure(
@@ -106,6 +105,7 @@ async def test_async_step_bluetooth_not_connectable(hass: HomeAssistant) -> None
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "not_supported"
 
+
 async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     """Test setting up a ld2410 replaces an ignored entry."""
     entry = MockConfigEntry(
@@ -124,8 +124,7 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
 
     with patch_async_setup_entry() as mock_setup_entry:
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_PASSWORD: "abc123"}
+            result["flow_id"], {CONF_PASSWORD: "abc123"}
         )
     await hass.async_block_till_done()
 
@@ -139,15 +138,13 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
 
     assert len(mock_setup_entry.mock_calls) == 1
 
+
 async def test_user_setup_ld2410_1_or_2_with_password(hass: HomeAssistant) -> None:
     """Test the user initiated form and valid address and a bot with a password."""
 
     with patch(
         "custom_components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[
-            LD2410b_SERVICE_INFO,
-            LD2410b_2_SERVICE_INFO
-        ],
+        return_value=[LD2410b_SERVICE_INFO, LD2410b_2_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -163,6 +160,8 @@ async def test_user_setup_ld2410_1_or_2_with_password(hass: HomeAssistant) -> No
     assert result2["type"] is FlowResultType.FORM
     assert result2["step_id"] == "password"
     assert result2["errors"] is None
+    assert result2["data_schema"]({})[CONF_PASSWORD] == "HiLink"
+
 
 async def test_user_no_devices(hass: HomeAssistant) -> None:
     """Test the user initiated form with password and valid mac."""
@@ -329,12 +328,10 @@ async def test_options_flow_lock_pro(hass: HomeAssistant) -> None:
 
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={
-            },
+            user_input={},
         )
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
     assert len(mock_setup_entry.mock_calls) == 0
-
