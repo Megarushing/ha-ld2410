@@ -5,6 +5,7 @@ from unittest.mock import patch
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
+from contextlib import contextmanager
 
 # Import test utilities from Home Assistant
 try:
@@ -30,7 +31,7 @@ ENTRY_CONFIG = {
 }
 
 USER_INPUT = {
-    CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
+    CONF_ADDRESS: "42:6C:99:4F:96:D8",
 }
 
 USER_INPUT_UNSUPPORTED_DEVICE = {
@@ -41,13 +42,15 @@ USER_INPUT_INVALID = {
     CONF_ADDRESS: "invalid-mac",
 }
 
+@contextmanager
+def patch_async_setup_entry(domain="ld2410"):
+    with patch(f"custom_components.{domain}.async_setup_entry", return_value=True) as m:
+        yield m
 
-def patch_async_setup_entry(return_value=True):
-    """Patch async setup entry to return True."""
-    return patch(
-        "homeassistant.components.ld2410.async_setup_entry",
-        return_value=return_value,
-    )
+@contextmanager
+def patch_async_setup(domain="ld2410"):
+    with patch(f"custom_components.{domain}.async_setup", return_value=True) as m:
+        yield m
 
 
 async def init_integration(hass: HomeAssistant) -> MockConfigEntry:
@@ -67,6 +70,49 @@ def patch_async_ble_device_from_address(return_value: BluetoothServiceInfoBleak 
         "homeassistant.components.bluetooth.async_ble_device_from_address",
         return_value=return_value,
     )
+
+NOT_LD2410_INFO = BluetoothServiceInfoBleak(
+    name="unknown",
+    service_uuids=[],
+    address="aa:bb:cc:dd:ee:ff",
+    manufacturer_data={},
+    service_data={},
+    rssi=-60,
+    source="local",
+    advertisement=generate_advertisement_data(
+        manufacturer_data={},
+        service_data={},
+    ),
+    device=generate_ble_device("aa:bb:cc:dd:ee:ff", "unknown"),
+    time=0,
+    connectable=True,
+    tx_power=-127,
+)
+
+LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
+    name = "HLK-LD2410_96D8",
+    manufacturer_data = {
+        256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
+        1494: b"\x08\x00JLAISDK",
+    },
+    service_data = {},
+    service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
+    address = "42:6C:99:4F:96:D8",
+    rssi = -90,
+    source = "local",
+    advertisement = generate_advertisement_data(
+        local_name="HLK-LD2410_96D8",
+        manufacturer_data={
+            256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
+            1494: b"\x08\x00JLAISDK",
+        },
+        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
+    ),
+    device = generate_ble_device("42:6C:99:4F:96:D8", "HLK-LD2410_96D8"),
+    time = 0,
+    connectable = False,
+    tx_power = -127,
+)
 
 LD2410b_SERVICE_INFO = BluetoothServiceInfoBleak(
     name = "HLK-LD2410_96D8",
@@ -101,7 +147,7 @@ LD2410b_2_SERVICE_INFO = BluetoothServiceInfoBleak(
     },
     service_data = {},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "42:6C:99:4F:96:D8",
+    address = "4F:06:4F:C1:DA:DB",
     rssi = -90,
     source = "local",
     advertisement = generate_advertisement_data(

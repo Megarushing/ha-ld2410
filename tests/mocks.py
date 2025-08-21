@@ -17,6 +17,7 @@ class MockConfigEntry(ConfigEntry):
             unique_id: str | None = None,
             version: int = 1,
             minor_version: int = 1,
+            subemtries_data: dict[str, Any] | None = None,
     ) -> None:
         """Initialize a mock config entry."""
         kwargs = {
@@ -29,7 +30,9 @@ class MockConfigEntry(ConfigEntry):
             "source": source,
             "entry_id": entry_id or "mock_entry_id",
             "unique_id": unique_id,
-            "discovery_keys": {},  # Required for newer HA versions
+            "discovery_keys": {},
+            'subentries_data': subemtries_data or {},
+            # Required for newer HA versions
         }
         super().__init__(**kwargs)
 

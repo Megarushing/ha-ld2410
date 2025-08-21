@@ -21,6 +21,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import (
     CONF_ADDRESS,
     CONF_SENSOR_TYPE,
+    CONF_PASSWORD
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
@@ -95,7 +96,27 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             "name": data["modelFriendlyName"],
             "address": short_address(discovery_info.address),
         }
+        return await self.async_step_password()
         return await self.async_step_confirm()
+
+    async def async_step_password(
+            self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle the password step."""
+        assert self._discovered_adv is not None
+        if user_input is not None:
+            # There is currently no api to validate the password
+            # that does not operate the device so we have
+            # to accept it as-is
+            return await self._async_create_entry_from_discovery(user_input)
+
+        return self.async_show_form(
+            step_id="password",
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            description_placeholders={
+                "name": name_from_discovery(self._discovered_adv)
+            },
+        )
 
     async def _async_create_entry_from_discovery(
         self, user_input: dict[str, Any]
@@ -182,6 +203,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             # If there is only one device we can simply confirm it
             device_adv = list(self._discovered_advs.values())[0]
             await self._async_set_device(device_adv)
+            return await self.async_step_password()
             return await self.async_step_confirm()
 
         return self.async_show_form(

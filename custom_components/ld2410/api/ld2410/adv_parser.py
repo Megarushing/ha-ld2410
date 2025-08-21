@@ -19,10 +19,9 @@ from .models import LD2410Advertisement
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_DATA_ORDER = (
-    "0000fd3d-0000-1000-8000-00805f9b34fb",
-    "00000d00-0000-1000-8000-00805f9b34fb",
+    "0000af30-0000-1000-8000-00805f9b34fb",
 )
-MFR_DATA_ORDER = (2409, 741, 89)
+MFR_DATA_ORDER = (256, 1494)
 
 
 class LD2410SupportedType(TypedDict):
@@ -40,19 +39,19 @@ SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
         "modelName": LD2410Model.CONTACT_SENSOR,
         "modelFriendlyName": "Contact Sensor",
         "func": process_wocontact,
-        "manufacturer_id": 2409,
+        "manufacturer_id": 256,
     },
     "s": {
         "modelName": LD2410Model.MOTION_SENSOR,
         "modelFriendlyName": "Motion Sensor",
         "func": process_wopresence,
-        "manufacturer_id": 2409,
+        "manufacturer_id": 256,
     },
     "t": {
         "modelName": LD2410Model.LD2410,
         "modelFriendlyName": "HLK-LD2410",
         "func": process_ld2410,
-        "manufacturer_id": 2409,
+        "manufacturer_id": 256,
     },
 }
 
@@ -122,42 +121,12 @@ def _parse_data(
     _ld2410_model: LD2410Model | None = None,
 ) -> dict[str, Any] | None:
     """Parse advertisement data."""
-    _model = chr(_service_data[0] & 0b01111111) if _service_data else None
-
-    if _ld2410_model and _ld2410_model in _LD2410_MODEL_TO_CHAR:
-        _model = _LD2410_MODEL_TO_CHAR[_ld2410_model]
-
-    if not _model and _mfr_id and _mfr_id in MODELS_BY_MANUFACTURER_DATA:
-        for model_chr, model_data in MODELS_BY_MANUFACTURER_DATA[_mfr_id]:
-            if model_data.get("manufacturer_data_length") == len(_mfr_data):
-                _model = model_chr
-                break
-    if (
-        _service_data
-        and len(_service_data) > 5
-        and _service_data[-4:] in SUPPORTED_TYPES
-    ):
-        _model = _service_data[-4:]
-
-    if not _model:
-        return None
+    type_data = SUPPORTED_TYPES.get("t")
 
     data = {
-        "rawAdvData": _service_data,
-        "data": {},
-        "model": _model,
+        "modelFriendlyName": type_data["modelFriendlyName"],
+        "modelName": type_data["modelName"],
+        "data": type_data["func"](_service_data, _mfr_data),
     }
-
-    type_data = SUPPORTED_TYPES.get(_model)
-    if type_data:
-        model_data = type_data["func"](_service_data, _mfr_data)
-        if model_data:
-            data.update(
-                {
-                    "modelFriendlyName": type_data["modelFriendlyName"],
-                    "modelName": type_data["modelName"],
-                    "data": model_data,
-                }
-            )
 
     return data
