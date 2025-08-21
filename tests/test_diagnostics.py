@@ -17,7 +17,7 @@ from homeassistant.const import CONF_ADDRESS, CONF_NAME, CONF_SENSOR_TYPE
 from homeassistant.core import HomeAssistant
 from typing import Any
 
-from . import WORELAY_SWITCH_1PM_SERVICE_INFO
+from . import LD2410b_SERVICE_INFO
 
 try:
     from tests.common import MockConfigEntry
@@ -49,7 +49,7 @@ async def test_diagnostics(
 ) -> None:
     """Test diagnostics for config entry."""
 
-    inject_bluetooth_service_info(hass, WORELAY_SWITCH_1PM_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
         "homeassistant.components.ld2410.switch.ld2410.LD2410RelaySwitch.update",

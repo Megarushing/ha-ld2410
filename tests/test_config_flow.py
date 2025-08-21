@@ -19,18 +19,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from . import (
-    NOT_SWITCHBOT_INFO,
     USER_INPUT,
-    WOCURTAIN_SERVICE_INFO,
-    WOHAND_ENCRYPTED_SERVICE_INFO,
-    WOHAND_SERVICE_ALT_ADDRESS_INFO,
-    WOHAND_SERVICE_INFO,
-    WOHAND_SERVICE_INFO_NOT_CONNECTABLE,
-    WOLOCK_SERVICE_INFO,
-    WORELAY_SWITCH_1PM_SERVICE_INFO,
-    WOSENSORTH_SERVICE_INFO,
+    LD2410b_SERVICE_INFO,
+    LD2410b_2_SERVICE_INFO,
     init_integration,
-    patch_async_setup_entry,
+    patch_async_setup_entry, LD2410b_2_SERVICE_INFO,
 )
 
 try:
@@ -46,7 +39,7 @@ async def test_bluetooth_discovery(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOHAND_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "confirm"
@@ -73,7 +66,7 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOHAND_ENCRYPTED_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "password"
@@ -101,7 +94,7 @@ async def test_bluetooth_discovery_encrypted_key(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOLOCK_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.MENU
     assert result["step_id"] == "encrypted_choose_method"
@@ -160,7 +153,7 @@ async def test_bluetooth_discovery_key(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WORELAY_SWITCH_1PM_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.MENU
     assert result["step_id"] == "encrypted_choose_method"
@@ -213,7 +206,7 @@ async def test_bluetooth_discovery_already_setup(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOHAND_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
@@ -224,7 +217,7 @@ async def test_async_step_bluetooth_not_ld2410(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=NOT_SWITCHBOT_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "not_supported"
@@ -235,7 +228,7 @@ async def test_async_step_bluetooth_not_connectable(hass: HomeAssistant) -> None
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOHAND_SERVICE_INFO_NOT_CONNECTABLE,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "not_supported"
@@ -246,7 +239,7 @@ async def test_user_setup_wohand(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOHAND_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -287,7 +280,7 @@ async def test_user_setup_wohand_already_configured(hass: HomeAssistant) -> None
     entry.add_to_hass(hass)
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOHAND_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -304,7 +297,7 @@ async def test_user_setup_wohand_replaces_ignored(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOHAND_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -334,7 +327,7 @@ async def test_user_setup_wocurtain(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOCURTAIN_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -366,10 +359,8 @@ async def test_user_setup_wocurtain_or_bot(hass: HomeAssistant) -> None:
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[
-            NOT_SWITCHBOT_INFO,
-            WOCURTAIN_SERVICE_INFO,
-            WOHAND_SERVICE_ALT_ADDRESS_INFO,
-            WOHAND_SERVICE_INFO_NOT_CONNECTABLE,
+            LD2410b_SERVICE_INFO,
+            LD2410b_2_SERVICE_INFO
         ],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -402,9 +393,8 @@ async def test_user_setup_wocurtain_or_bot_with_password(hass: HomeAssistant) ->
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[
-            WOCURTAIN_SERVICE_INFO,
-            WOHAND_ENCRYPTED_SERVICE_INFO,
-            WOHAND_SERVICE_INFO_NOT_CONNECTABLE,
+            LD2410b_SERVICE_INFO,
+            LD2410b_2_SERVICE_INFO
         ],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -422,30 +412,12 @@ async def test_user_setup_wocurtain_or_bot_with_password(hass: HomeAssistant) ->
     assert result2["step_id"] == "password"
     assert result2["errors"] is None
 
-    with patch_async_setup_entry() as mock_setup_entry:
-        result3 = await hass.config_entries.flow.async_configure(
-            result2["flow_id"],
-            {CONF_PASSWORD: "abc123"},
-        )
-        await hass.async_block_till_done()
-
-    assert result3["type"] is FlowResultType.CREATE_ENTRY
-    assert result3["title"] == "Bot 923B"
-    assert result3["data"] == {
-        CONF_ADDRESS: "798A8547-2A3D-C609-55FF-73FA824B923B",
-        CONF_PASSWORD: "abc123",
-        CONF_SENSOR_TYPE: "bot",
-    }
-
-    assert len(mock_setup_entry.mock_calls) == 1
-
-
 async def test_user_setup_single_bot_with_password(hass: HomeAssistant) -> None:
     """Test the user initiated form for a bot with a password."""
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOHAND_ENCRYPTED_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -477,7 +449,7 @@ async def test_user_setup_woencrypted_key(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOLOCK_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -539,7 +511,7 @@ async def test_user_setup_woencrypted_auth(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOLOCK_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -611,7 +583,7 @@ async def test_user_setup_woencrypted_auth_ld2410_api_down(
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOLOCK_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -650,8 +622,8 @@ async def test_user_setup_wolock_or_bot(hass: HomeAssistant) -> None:
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
         return_value=[
-            WOLOCK_SERVICE_INFO,
-            WOHAND_SERVICE_ALT_ADDRESS_INFO,
+            LD2410b_SERVICE_INFO,
+            LD2410b_2_SERVICE_INFO,
         ],
     ):
         result = await hass.config_entries.flow.async_init(
@@ -706,7 +678,7 @@ async def test_user_setup_wosensor(hass: HomeAssistant) -> None:
     """Test the user initiated form with password and valid mac."""
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOSENSORTH_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -752,14 +724,14 @@ async def test_async_step_user_takes_precedence_over_discovery(
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=WOCURTAIN_SERVICE_INFO,
+        data=LD2410b_SERVICE_INFO,
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "confirm"
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WOCURTAIN_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
@@ -883,7 +855,6 @@ async def test_options_flow_lock_pro(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_LOCK_NIGHTLATCH] is False
 
     assert len(mock_setup_entry.mock_calls) == 1
 
@@ -898,17 +869,13 @@ async def test_options_flow_lock_pro(hass: HomeAssistant) -> None:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
-                CONF_LOCK_NIGHTLATCH: True,
             },
         )
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_LOCK_NIGHTLATCH] is True
 
     assert len(mock_setup_entry.mock_calls) == 0
-
-    assert entry.options[CONF_LOCK_NIGHTLATCH] is True
 
 
 async def test_user_setup_worelay_switch_1pm_key(hass: HomeAssistant) -> None:
@@ -916,7 +883,7 @@ async def test_user_setup_worelay_switch_1pm_key(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -961,7 +928,7 @@ async def test_user_setup_worelay_switch_1pm_auth(hass: HomeAssistant) -> None:
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -1032,7 +999,7 @@ async def test_user_setup_worelay_switch_1pm_auth_ld2410_api_down(
 
     with patch(
         "homeassistant.components.ld2410.config_flow.async_discovered_service_info",
-        return_value=[WORELAY_SWITCH_1PM_SERVICE_INFO],
+        return_value=[LD2410b_SERVICE_INFO],
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}

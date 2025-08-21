@@ -8,8 +8,7 @@ import pytest
 from homeassistant.core import HomeAssistant
 
 from . import (
-    HUBMINI_MATTER_SERVICE_INFO,
-    LOCK_SERVICE_INFO,
+    LD2410b_SERVICE_INFO,
     patch_async_ble_device_from_address,
 )
 
@@ -44,9 +43,9 @@ async def test_exception_handling_for_device_initialization(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test exception handling for lock initialization."""
-    inject_bluetooth_service_info(hass, LOCK_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
-    entry = mock_entry_encrypted_factory(sensor_type="lock")
+    entry = mock_entry_encrypted_factory()
     entry.add_to_hass(hass)
 
     with patch(
@@ -85,7 +84,7 @@ async def test_coordinator_wait_ready_timeout(
 ) -> None:
     """Test the coordinator async_wait_ready timeout by calling it directly."""
 
-    inject_bluetooth_service_info(hass, HUBMINI_MATTER_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = mock_entry_factory("hubmini_matter")
     entry.add_to_hass(hass)

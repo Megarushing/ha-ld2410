@@ -21,16 +21,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
 from . import (
-    CIRCULATOR_FAN_SERVICE_INFO,
-    EVAPORATIVE_HUMIDIFIER_SERVICE_INFO,
-    HUB3_SERVICE_INFO,
-    HUBMINI_MATTER_SERVICE_INFO,
-    LEAK_SERVICE_INFO,
-    REMOTE_SERVICE_INFO,
-    WOHAND_SERVICE_INFO,
-    WOHUB2_SERVICE_INFO,
-    WOMETERTHPC_SERVICE_INFO,
-    WORELAY_SWITCH_1PM_SERVICE_INFO,
+    LD2410b_SERVICE_INFO,
+    LD2410b_2_SERVICE_INFO
 )
 
 try:
@@ -51,7 +43,7 @@ except ImportError:
 async def test_sensors(hass: HomeAssistant) -> None:
     """Test setting up creates the sensors."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, WOHAND_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -91,7 +83,7 @@ async def test_sensors(hass: HomeAssistant) -> None:
 async def test_co2_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the co2 sensor for a WoTHPc."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, WOMETERTHPC_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -137,7 +129,7 @@ async def test_co2_sensor(hass: HomeAssistant) -> None:
 async def test_relay_switch_1pm_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the relay switch 1PM sensor."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, WORELAY_SWITCH_1PM_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
         "homeassistant.components.ld2410.switch.ld2410.LD2410RelaySwitch.get_basic_info",
@@ -209,7 +201,7 @@ async def test_relay_switch_1pm_sensor(hass: HomeAssistant) -> None:
 async def test_leak_sensor(hass: HomeAssistant) -> None:
     """Test setting up the leak detector."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, LEAK_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -251,7 +243,7 @@ async def test_leak_sensor(hass: HomeAssistant) -> None:
 async def test_remote(hass: HomeAssistant) -> None:
     """Test setting up the remote sensor."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, REMOTE_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -290,7 +282,7 @@ async def test_remote(hass: HomeAssistant) -> None:
 async def test_hub2_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the sensor for WoHub2."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, WOHUB2_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -347,7 +339,7 @@ async def test_hub2_sensor(hass: HomeAssistant) -> None:
 async def test_hubmini_matter_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the sensor for HubMini Matter."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, HUBMINI_MATTER_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -393,7 +385,7 @@ async def test_hubmini_matter_sensor(hass: HomeAssistant) -> None:
 async def test_fan_sensors(hass: HomeAssistant) -> None:
     """Test setting up creates the sensors."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, CIRCULATOR_FAN_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -437,7 +429,7 @@ async def test_fan_sensors(hass: HomeAssistant) -> None:
 async def test_hub3_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the sensor for Hub3."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, HUB3_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -496,7 +488,7 @@ async def test_hub3_sensor(hass: HomeAssistant) -> None:
 async def test_evaporative_humidifier_sensor(hass: HomeAssistant) -> None:
     """Test setting up creates the sensor for evaporative humidifier."""
     await async_setup_component(hass, DOMAIN, {})
-    inject_bluetooth_service_info(hass, EVAPORATIVE_HUMIDIFIER_SERVICE_INFO)
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
