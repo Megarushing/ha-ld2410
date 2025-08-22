@@ -1,5 +1,6 @@
 from typing import Any
 from collections.abc import Callable, Coroutine
+import inspect
 
 from aiohttp.test_utils import TestClient
 from bleak import AdvertisementData
@@ -38,8 +39,9 @@ class MockConfigEntry(ConfigEntry):
             "entry_id": entry_id or "mock_entry_id",
             "unique_id": unique_id,
             "discovery_keys": {},
-            "subentries_data": subentries_data or (),
         }
+        if "subentries_data" in inspect.signature(ConfigEntry.__init__).parameters:
+            kwargs["subentries_data"] = subentries_data or ()
         super().__init__(**kwargs)
 
     def add_to_hass(self, hass: HomeAssistant) -> None:
