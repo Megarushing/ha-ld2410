@@ -24,6 +24,7 @@ class MockConfigEntry(ConfigEntry):
         unique_id: str | None = None,
         version: int = 1,
         minor_version: int = 1,
+        subentries_data: tuple[dict[str, Any], ...] | None = None,
     ) -> None:
         """Initialize a mock config entry."""
         kwargs = {
@@ -37,6 +38,7 @@ class MockConfigEntry(ConfigEntry):
             "entry_id": entry_id or "mock_entry_id",
             "unique_id": unique_id,
             "discovery_keys": {},
+            "subentries_data": subentries_data or (),
         }
         super().__init__(**kwargs)
 
