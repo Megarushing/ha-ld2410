@@ -25,22 +25,15 @@ except ImportError:
     from .mocks import MockConfigEntry
 
 try:
-    from tests.components.bluetooth import (
-        inject_bluetooth_service_info
-    )
+    from tests.components.bluetooth import inject_bluetooth_service_info
 except ImportError:
-    from .mocks import (
-        inject_bluetooth_service_info
-    )
+    from .mocks import inject_bluetooth_service_info
 
 try:
-    from tests.components.diagnostics import (
-        get_diagnostics_for_config_entry
-    )
+    from tests.components.diagnostics import get_diagnostics_for_config_entry
 except ImportError:
-    from .mocks import (
-        get_diagnostics_for_config_entry
-    )
+    from .mocks import get_diagnostics_for_config_entry
+
 
 async def test_diagnostics(
     hass: HomeAssistant,
@@ -60,10 +53,17 @@ async def test_diagnostics(
             data={
                 CONF_ADDRESS: "42:6C:99:4F:96:D8",
                 CONF_NAME: "test-name",
-                CONF_SENSOR_TYPE: "ld2410"
+                CONF_SENSOR_TYPE: "ld2410",
             },
             unique_id="426c994f96d8",
             options={CONF_RETRY_COUNT: DEFAULT_RETRY_COUNT},
+            subentries_data=(
+                {
+                    "title": "Subentry",
+                    "data": {},
+                    "subentry_type": "test",
+                },
+            ),
         )
         mock_config_entry.add_to_hass(hass)
 
@@ -75,5 +75,5 @@ async def test_diagnostics(
         hass, hass_client, mock_config_entry
     )
     assert result == snapshot(
-        exclude=props("created_at", "modified_at", "entry_id", "time")
+        exclude=props("created_at", "modified_at", "entry_id", "time", "subentry_id")
     )

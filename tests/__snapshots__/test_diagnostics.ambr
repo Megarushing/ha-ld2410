@@ -18,6 +18,15 @@
       'pref_disable_new_entities': False,
       'pref_disable_polling': False,
       'source': 'user',
+      'subentries': list([
+        dict({
+          'data': dict({
+          }),
+          'subentry_type': 'test',
+          'title': 'Subentry',
+          'unique_id': None,
+        }),
+      ]),
       'title': 'Mock Title',
       'unique_id': '426c994f96d8',
       'version': 1,
