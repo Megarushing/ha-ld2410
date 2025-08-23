@@ -44,7 +44,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
+        entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "wifi_rssi": SensorEntityDescription(
