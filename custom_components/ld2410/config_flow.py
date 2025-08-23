@@ -46,7 +46,7 @@ def short_address(address: str) -> str:
 
 def name_from_discovery(discovery: LD2410Advertisement) -> str:
     """Get the name from a discovery."""
-    return f"{discovery.data['modelFriendlyName']} {short_address(discovery.address)}"
+    return f"LD2410_{short_address(discovery.address)}"
 
 
 class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -87,11 +87,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             # Source is not connectable but the model is connectable
             return self.async_abort(reason="not_supported")
         self._discovered_adv = parsed
-        data = parsed.data
-        self.context["title_placeholders"] = {
-            "name": data["modelFriendlyName"],
-            "address": short_address(discovery_info.address),
-        }
+        self.context["title_placeholders"] = {"name": name_from_discovery(parsed)}
         return await self.async_step_password()
         return await self.async_step_confirm()
 
