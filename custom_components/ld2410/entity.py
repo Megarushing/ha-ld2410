@@ -6,7 +6,7 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
-from .api.ld2410 import LD2410, LD2410Device
+from .api.ld2410 import LD2410Device
 from .api.ld2410.devices.device import LD2410OperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
@@ -17,7 +17,6 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import ToggleEntity
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import LD2410DataUpdateCoordinator
@@ -107,29 +106,3 @@ def exception_handler[_EntityT: LD2410Entity, **_P](
             ) from error
 
     return handler
-
-
-class LD2410SwitchedEntity(LD2410Entity, ToggleEntity):
-    """Base class for LD2410 entities that can be turned on and off."""
-
-    _device: LD2410
-
-    @exception_handler
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn device on."""
-        _LOGGER.debug("Turn LD2410 device on %s", self._address)
-
-        self._last_run_success = bool(await self._device.turn_on())
-        if self._last_run_success:
-            self._attr_is_on = True
-        self.async_write_ha_state()
-
-    @exception_handler
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn device off."""
-        _LOGGER.debug("Turn LD2410 device off %s", self._address)
-
-        self._last_run_success = bool(await self._device.turn_off())
-        if self._last_run_success:
-            self._attr_is_on = False
-        self.async_write_ha_state()
