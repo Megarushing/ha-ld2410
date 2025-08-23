@@ -10,16 +10,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
-    LIGHT_LUX,
-    PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfPower,
-    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 
@@ -47,75 +39,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    "wifi_rssi": SensorEntityDescription(
-        key="wifi_rssi",
-        translation_key="wifi_signal",
-        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "battery": SensorEntityDescription(
-        key="battery",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "co2": SensorEntityDescription(
-        key="co2",
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CO2,
-    ),
-    "lightLevel": SensorEntityDescription(
-        key="lightLevel",
-        translation_key="light_level",
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "humidity": SensorEntityDescription(
-        key="humidity",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.HUMIDITY,
-    ),
-    "illuminance": SensorEntityDescription(
-        key="illuminance",
-        native_unit_of_measurement=LIGHT_LUX,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.ILLUMINANCE,
-    ),
-    "temperature": SensorEntityDescription(
-        key="temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    "power": SensorEntityDescription(
-        key="power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-    ),
-    "current": SensorEntityDescription(
-        key="current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-    ),
-    "voltage": SensorEntityDescription(
-        key="voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-    ),
-    "energy": SensorEntityDescription(
-        key="energy",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-    ),
     "firmware_version": SensorEntityDescription(
         key="firmware_version",
         name="Firmware version",
@@ -140,7 +63,7 @@ async def async_setup_entry(
     entities = [
         LD2410Sensor(coordinator, sensor)
         for sensor in coordinator.device.parsed_data
-        if sensor in SENSOR_TYPES
+        if sensor in SENSOR_TYPES and sensor != "rssi"
     ]
     entities.append(LD2410RSSISensor(coordinator, "rssi"))
     async_add_entities(entities)

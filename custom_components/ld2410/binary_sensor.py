@@ -7,7 +7,6 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 
 try:
@@ -30,16 +29,10 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
         name=None,
         device_class=BinarySensorDeviceClass.MOTION,
     ),
-    "contact_open": BinarySensorEntityDescription(
-        key="contact_open",
+    "presence_detected": BinarySensorEntityDescription(
+        key="presence_state",
         name=None,
-        device_class=BinarySensorDeviceClass.DOOR,
-    ),
-    "contact_timeout": BinarySensorEntityDescription(
-        key="contact_timeout",
-        translation_key="door_timeout",
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.PRESENCE,
     ),
 }
 
