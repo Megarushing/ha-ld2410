@@ -71,7 +71,7 @@ async def test_setup_entry_without_ble_device(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert "device_not_found_error" in caplog.text
+    assert "Could not find LD2410 test with address AA:BB:CC:DD:EE:FF" in caplog.text
 
 
 async def test_coordinator_wait_ready_timeout(
@@ -100,4 +100,4 @@ async def test_coordinator_wait_ready_timeout(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert "advertising_state_error" in caplog.text
+    assert "AA:BB:CC:DD:EE:FF is not advertising state" in caplog.text
