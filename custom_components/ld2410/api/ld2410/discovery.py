@@ -79,10 +79,6 @@ class GetLD2410Devices:
             if adv.data.get("model") == model
         }
 
-    async def get_contactsensors(self) -> dict[str, LD2410Advertisement]:
-        """Return all WoContact/Contact sensor devices with services data."""
-        return await self._get_devices_by_model("d")
-
     async def get_device_data(
         self, address: str
     ) -> dict[str, LD2410Advertisement] | None:

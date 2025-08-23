@@ -24,12 +24,13 @@ from bleak_retry_connector import (
 
 from ..api_config import LD2410_APP_API_BASE_URL
 from ..const import (
+    CHARACTERISTIC_NOTIFY,
+    CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    LD2410ApiError, CHARACTERISTIC_NOTIFY, CHARACTERISTIC_WRITE,
+    LD2410ApiError,
 )
 from ..discovery import GetLD2410Devices
-from ..helpers import create_background_task
 from ..models import LD2410Advertisement
 
 _LOGGER = logging.getLogger(__name__)
@@ -725,57 +726,12 @@ class LD2410BaseDevice:
 
 class LD2410Device(LD2410BaseDevice):
     """
-    Base Representation of a LD2410 Device.
+    Base representation of an LD2410 device.
 
-    This base class consumes the advertisement data during connection. If the device
-    sends stale advertisement data while connected, use
-    LD2410DeviceOverrideStateDuringConnection instead.
+    This base class consumes advertisement data during connection.
     """
 
     def update_from_advertisement(self, advertisement: LD2410Advertisement) -> None:
         """Update device data from advertisement."""
         super().update_from_advertisement(advertisement)
         self._set_advertisement_data(advertisement)
-
-
-class LD2410DeviceOverrideStateDuringConnection(LD2410BaseDevice):
-    """
-    Base Representation of a LD2410 Device.
-
-    This base class ignores the advertisement data during connection and uses the
-    data from the device instead.
-    """
-
-    def update_from_advertisement(self, advertisement: LD2410Advertisement) -> None:
-        super().update_from_advertisement(advertisement)
-        if self._client and self._client.is_connected:
-            # We do not consume the advertisement data if we are connected
-            # to the device. This is because the advertisement data is not
-            # updated when the device is connected for some devices.
-            _LOGGER.debug("%s: Ignore advertisement data during connection", self.name)
-            return
-        self._set_advertisement_data(advertisement)
-
-
-class LD2410SequenceDevice(LD2410Device):
-    """
-    A LD2410 sequence device.
-
-    This class must not use LD2410DeviceOverrideStateDuringConnection because
-    it needs to know when the sequence_number has changed.
-    """
-
-    def update_from_advertisement(self, advertisement: LD2410Advertisement) -> None:
-        """Update device data from advertisement."""
-        current_state = self._get_adv_value("sequence_number")
-        super().update_from_advertisement(advertisement)
-        new_state = self._get_adv_value("sequence_number")
-        _LOGGER.debug(
-            "%s: update advertisement: %s (seq before: %s) (seq after: %s)",
-            self.name,
-            advertisement,
-            current_state,
-            new_state,
-        )
-        if current_state != new_state:
-            create_background_task(self.update())

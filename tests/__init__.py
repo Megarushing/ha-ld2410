@@ -42,10 +42,12 @@ USER_INPUT_INVALID = {
     CONF_ADDRESS: "invalid-mac",
 }
 
+
 @contextmanager
 def patch_async_setup_entry(domain="ld2410"):
     with patch(f"custom_components.{domain}.async_setup_entry", return_value=True) as m:
         yield m
+
 
 @contextmanager
 def patch_async_setup(domain="ld2410"):
@@ -71,6 +73,7 @@ def patch_async_ble_device_from_address(return_value: BluetoothServiceInfoBleak 
         return_value=return_value,
     )
 
+
 NOT_LD2410_INFO = BluetoothServiceInfoBleak(
     name="unknown",
     service_uuids=[],
@@ -90,76 +93,76 @@ NOT_LD2410_INFO = BluetoothServiceInfoBleak(
 )
 
 LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
-    name = "HLK-LD2410_96D8",
-    manufacturer_data = {
-        256: b'D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff',
+    name="HLK-LD2410_96D8",
+    manufacturer_data={
+        256: b"D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff",
         1494: b"\x08\x00JLAISDK",
     },
-    service_data = {},
+    service_data={},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "AA:BB:CC:DD:EE:FF",
-    rssi = -90,
-    source = "local",
-    advertisement = generate_advertisement_data(
+    address="AA:BB:CC:DD:EE:FF",
+    rssi=-90,
+    source="local",
+    advertisement=generate_advertisement_data(
         local_name="HLK-LD2410_96D8",
         manufacturer_data={
-            256: b'D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff',
+            256: b"D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff",
             1494: b"\x08\x00JLAISDK",
         },
-        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
+        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
     ),
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
-    time = 0,
-    connectable = False,
-    tx_power = -127,
+    device=generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
+    time=0,
+    connectable=False,
+    tx_power=-127,
 )
 
 LD2410b_SERVICE_INFO = BluetoothServiceInfoBleak(
-    name = "HLK-LD2410_96D8",
-    manufacturer_data = {
+    name="HLK-LD2410_96D8",
+    manufacturer_data={
         256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
         1494: b"\x08\x00JLAISDK",
     },
-    service_data = {},
+    service_data={},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "AA:BB:CC:DD:EE:FF",
-    rssi = -90,
-    source = "local",
-    advertisement = generate_advertisement_data(
+    address="AA:BB:CC:DD:EE:FF",
+    rssi=-90,
+    source="local",
+    advertisement=generate_advertisement_data(
         local_name="HLK-LD2410_96D8",
         manufacturer_data={
             256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
             1494: b"\x08\x00JLAISDK",
         },
-        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
+        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
     ),
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
-    time = 0,
-    connectable = True,
-    tx_power = -127,
+    device=generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
+    time=0,
+    connectable=True,
+    tx_power=-127,
 )
 
 LD2410b_2_SERVICE_INFO = BluetoothServiceInfoBleak(
-    name = "HLK-LD2410_DADB",
-    manufacturer_data = {
+    name="HLK-LD2410_DADB",
+    manufacturer_data={
         256: b"D\x02\x101\x07$\x00O\x06O\xc1\xda\xdb",
         1494: b"\x08\x00JLAISDK",
     },
-    service_data = {},
+    service_data={},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "4F:06:4F:C1:DA:DB",
-    rssi = -90,
-    source = "local",
-    advertisement = generate_advertisement_data(
+    address="4F:06:4F:C1:DA:DB",
+    rssi=-90,
+    source="local",
+    advertisement=generate_advertisement_data(
         local_name="HLK-LD2410_DADB",
         manufacturer_data={
             256: b"D\x02\x101\x07$\x00O\x06O\xc1\xda\xdb",
             1494: b"\x08\x00JLAISDK",
         },
-        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
+        service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
     ),
-    device = generate_ble_device("4F:06:4F:C1:DA:DB", "HLK-LD2410_DADB"),
-    time = 0,
-    connectable = True,
-    tx_power = -127,
+    device=generate_ble_device("4F:06:4F:C1:DA:DB", "HLK-LD2410_DADB"),
+    time=0,
+    connectable=True,
+    tx_power=-127,
 )

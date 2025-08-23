@@ -18,15 +18,10 @@ from .const import (
     LD2410AuthenticationError,
     LD2410Model,
 )
-from .devices.device import (
-    LD2410Device,
-    LD2410OperationError
-)
-
+from .devices.device import LD2410Device, LD2410OperationError
 from .devices.ld2410 import (
     LD2410,
 )
-
 from .discovery import GetLD2410Devices
 from .models import LD2410Advertisement
 
@@ -34,13 +29,13 @@ __all__ = [
     "DEFAULT_RETRY_COUNT",
     "DEFAULT_RETRY_TIMEOUT",
     "DEFAULT_SCAN_TIMEOUT",
+    "LD2410",
     "GetLD2410Devices",
     "LD2410AccountConnectionError",
     "LD2410Advertisement",
     "LD2410ApiError",
     "LD2410AuthenticationError",
     "LD2410Device",
-    "LD2410",
     "LD2410Model",
     "LD2410OperationError",
     "LD2410SupportedType",

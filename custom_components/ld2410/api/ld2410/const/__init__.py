@@ -43,28 +43,28 @@ frame_static_energy_gates = b"(?P<static_energy_gates>.{9})"
 frame_additional_information = b"(?P<additional_information>.*)"
 
 frame_regex = (
-        frame_start
-        + frame_length
-        + frame_engineering_mode
-        + frame_head
-        + frame_target_state
-        + frame_moving_target_distance
-        + frame_moving_target_energy
-        + frame_static_target_distance
-        + frame_static_target_energy
-        + frame_detection_distance
-        + frame_engineering_data
-        + frame_tail
-        + frame_check
-        + frame_end
+    frame_start
+    + frame_length
+    + frame_engineering_mode
+    + frame_head
+    + frame_target_state
+    + frame_moving_target_distance
+    + frame_moving_target_energy
+    + frame_static_target_distance
+    + frame_static_target_energy
+    + frame_detection_distance
+    + frame_engineering_data
+    + frame_tail
+    + frame_check
+    + frame_end
 )
 
 engineering_frame_regex = (
-        frame_maximum_motion_gates
-        + frame_maximum_static_gates
-        + frame_motion_energy_gates
-        + frame_static_energy_gates
-        + frame_additional_information
+    frame_maximum_motion_gates
+    + frame_maximum_static_gates
+    + frame_motion_energy_gates
+    + frame_static_energy_gates
+    + frame_additional_information
 )
 
 
@@ -83,9 +83,8 @@ class LD2410AccountConnectionError(RuntimeError):
 class LD2410Model(StrEnum):
     """LD2410 device models."""
 
-    CONTACT_SENSOR = "WoContact"
-    MOTION_SENSOR = "WoPresence"
     LD2410 = "HLK-LD2410B"
+
 
 __all__ = [
     "DEFAULT_RETRY_COUNT",
