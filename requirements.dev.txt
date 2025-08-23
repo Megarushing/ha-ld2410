@@ -4,5 +4,6 @@ pytest-asyncio>=0.23
 pytest-cov
 pytest-homeassistant-custom-component>=0.13
 aiousbwatcher>=1.1.1
+pyudev
 pyserial
 ruff
