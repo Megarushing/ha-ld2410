@@ -49,6 +49,12 @@
       },
       "light_level": {
         "name": "Light level"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
+      },
+      "firmware_build_date": {
+        "name": "Firmware build date"
       }
     }
   },

@@ -64,7 +64,10 @@ async def test_setup_entry_without_ble_device(
     entry = mock_entry_factory("test")
     entry.add_to_hass(hass)
 
-    with patch_async_ble_device_from_address(None):
+    with (
+        patch_async_ble_device_from_address(None),
+        patch("custom_components.ld2410.api.ld2410.close_stale_connections_by_address"),
+    ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -87,9 +90,12 @@ async def test_coordinator_wait_ready_timeout(
     timeout_mock.__aenter__.side_effect = TimeoutError
     timeout_mock.__aexit__.return_value = None
 
-    with patch(
-        "custom_components.ld2410.coordinator.asyncio.timeout",
-        return_value=timeout_mock,
+    with (
+        patch(
+            "custom_components.ld2410.coordinator.asyncio.timeout",
+            return_value=timeout_mock,
+        ),
+        patch("custom_components.ld2410.api.ld2410.close_stale_connections_by_address"),
     ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()

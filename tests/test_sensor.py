@@ -1,10 +1,8 @@
 """Test the ld2410 sensors."""
 
-from unittest.mock import AsyncMock, patch
-
 import pytest
 
-from homeassistant.components.sensor import ATTR_STATE_CLASS
+from homeassistant.components.sensor import SensorDeviceClass
 from custom_components.ld2410.const import (
     DOMAIN,
 )
@@ -20,10 +18,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
-from . import (
-    LD2410b_SERVICE_INFO,
-    LD2410b_2_SERVICE_INFO
-)
+from . import LD2410b_SERVICE_INFO
 
 try:
     from tests.common import MockConfigEntry
@@ -31,13 +26,10 @@ except ImportError:
     from .mocks import MockConfigEntry
 
 try:
-    from tests.components.bluetooth import (
-        inject_bluetooth_service_info
-    )
+    from tests.components.bluetooth import inject_bluetooth_service_info
 except ImportError:
-    from .mocks import (
-        inject_bluetooth_service_info
-    )
+    from .mocks import inject_bluetooth_service_info
+
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_sensors(hass: HomeAssistant) -> None:
@@ -60,14 +52,24 @@ async def test_sensors(hass: HomeAssistant) -> None:
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert len(hass.states.async_all("sensor")) == 1
+    assert len(hass.states.async_all("sensor")) == 3
+
+    version_sensor = hass.states.get("sensor.test_name_firmware_version")
+    version_attrs = version_sensor.attributes
+    assert version_sensor.state == "2.44.24073110"
+    assert version_attrs[ATTR_FRIENDLY_NAME] == "test-name Firmware version"
+
+    build_sensor = hass.states.get("sensor.test_name_firmware_build_date")
+    build_attrs = build_sensor.attributes
+    assert build_sensor.state == "2024-07-31T10:00:00+00:00"
+    assert build_attrs[ATTR_FRIENDLY_NAME] == "test-name Firmware build date"
+    assert build_attrs[ATTR_DEVICE_CLASS] == SensorDeviceClass.TIMESTAMP
 
     rssi_sensor = hass.states.get("sensor.test_name_signal_strength")
-    rssi_sensor_attrs = rssi_sensor.attributes
+    rssi_attrs = rssi_sensor.attributes
     assert rssi_sensor.state == "-90"
-    assert rssi_sensor_attrs[ATTR_FRIENDLY_NAME] == 'test-name Signal strength'
-    assert rssi_sensor_attrs[ATTR_UNIT_OF_MEASUREMENT] == "dBm"
+    assert rssi_attrs[ATTR_FRIENDLY_NAME] == "test-name Signal strength"
+    assert rssi_attrs[ATTR_UNIT_OF_MEASUREMENT] == "dBm"
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
-
