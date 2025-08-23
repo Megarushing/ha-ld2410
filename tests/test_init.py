@@ -37,7 +37,7 @@ except ImportError:
 )
 async def test_exception_handling_for_device_initialization(
     hass: HomeAssistant,
-    mock_entry_encrypted_factory: Callable[[str], MockConfigEntry],
+    mock_entry_factory: Callable[[str], MockConfigEntry],
     exception: Exception,
     error_message: str,
     caplog: pytest.LogCaptureFixture,
@@ -45,7 +45,7 @@ async def test_exception_handling_for_device_initialization(
     """Test exception handling for lock initialization."""
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
-    entry = mock_entry_encrypted_factory()
+    entry = mock_entry_factory("somethingelse")
     entry.add_to_hass(hass)
 
     with patch(
@@ -64,7 +64,7 @@ async def test_setup_entry_without_ble_device(
 ) -> None:
     """Test setup entry without ble device."""
 
-    entry = mock_entry_factory("hygrometer_co2")
+    entry = mock_entry_factory("test")
     entry.add_to_hass(hass)
 
     with patch_async_ble_device_from_address(None):
@@ -86,7 +86,7 @@ async def test_coordinator_wait_ready_timeout(
 
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
-    entry = mock_entry_factory("hubmini_matter")
+    entry = mock_entry_factory("ld2410")
     entry.add_to_hass(hass)
 
     timeout_mock = AsyncMock()

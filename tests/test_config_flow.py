@@ -52,9 +52,9 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "HLK-LD2410 96D8"
+    assert result["title"] == "HLK-LD2410 EEFF"
     assert result["data"] == {
-        CONF_ADDRESS: "42:6C:99:4F:96:D8",
+        CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
         CONF_PASSWORD: "abc123",
     }
@@ -67,12 +67,12 @@ async def test_bluetooth_discovery_already_setup(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
-            CONF_ADDRESS: "42:6C:99:4F:96:D8",
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
             CONF_PASSWORD: "test-password",
             CONF_SENSOR_TYPE: "ld2410",
         },
-        unique_id="426c994f96d8",
+        unique_id="aabbccddeeff",
     )
     entry.add_to_hass(hass)
     result = await hass.config_entries.flow.async_init(
@@ -109,7 +109,7 @@ async def test_async_step_bluetooth_not_connectable(hass: HomeAssistant) -> None
 async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     """Test setting up a ld2410 replaces an ignored entry."""
     entry = MockConfigEntry(
-        domain=DOMAIN, data={}, unique_id="426c994f96d8", source=SOURCE_IGNORE
+        domain=DOMAIN, data={}, unique_id="aabbccddeeff", source=SOURCE_IGNORE
     )
     entry.add_to_hass(hass)
     with patch(
@@ -129,9 +129,9 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "HLK-LD2410 96D8"
+    assert result["title"] == "HLK-LD2410 EEFF"
     assert result["data"] == {
-        CONF_ADDRESS: "42:6C:99:4F:96:D8",
+        CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
         CONF_PASSWORD: "abc123",
     }
@@ -155,7 +155,7 @@ async def test_user_setup_ld2410_1_or_2_with_password(hass: HomeAssistant) -> No
 
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        {CONF_ADDRESS: "42:6C:99:4F:96:D8"},
+        {CONF_ADDRESS: "AA:BB:CC:DD:EE:FF"},
     )
     assert result2["type"] is FlowResultType.FORM
     assert result2["step_id"] == "password"
@@ -205,9 +205,9 @@ async def test_async_step_user_takes_precedence_over_discovery(
         )
 
     assert result2["type"] is FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "HLK-LD2410 96D8"
+    assert result2["title"] == "HLK-LD2410 EEFF"
     assert result2["data"] == {
-        CONF_ADDRESS: "42:6C:99:4F:96:D8",
+        CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
         CONF_PASSWORD: "abc123",
     }

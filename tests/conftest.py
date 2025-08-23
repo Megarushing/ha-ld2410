@@ -126,24 +126,10 @@ def entity_registry_enabled_by_default():
 @pytest.fixture
 def mock_entry_factory():
     """Fixture to create a MockConfigEntry with a customizable sensor type."""
-    return lambda sensor_type="curtain": MockConfigEntry(
+    return lambda sensor_type="ld2410": MockConfigEntry(
         domain=DOMAIN,
         data={
-            CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
-            CONF_NAME: "test-name",
-            CONF_SENSOR_TYPE: sensor_type,
-        },
-        unique_id="aabbccddeeff",
-    )
-
-
-@pytest.fixture
-def mock_entry_encrypted_factory():
-    """Fixture to create a MockConfigEntry with an encryption key and a customizable sensor type."""
-    return lambda sensor_type="lock": MockConfigEntry(
-        domain=DOMAIN,
-        data={
-            CONF_ADDRESS: "aa:bb:cc:dd:ee:ff",
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
             CONF_SENSOR_TYPE: sensor_type,
         },

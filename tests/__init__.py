@@ -31,7 +31,7 @@ ENTRY_CONFIG = {
 }
 
 USER_INPUT = {
-    CONF_ADDRESS: "42:6C:99:4F:96:D8",
+    CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
 }
 
 USER_INPUT_UNSUPPORTED_DEVICE = {
@@ -97,7 +97,7 @@ LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
     },
     service_data = {},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "42:6C:99:4F:96:D8",
+    address = "AA:BB:CC:DD:EE:FF",
     rssi = -90,
     source = "local",
     advertisement = generate_advertisement_data(
@@ -108,7 +108,7 @@ LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
         },
         service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
     ),
-    device = generate_ble_device("42:6C:99:4F:96:D8", "HLK-LD2410_96D8"),
+    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
     time = 0,
     connectable = False,
     tx_power = -127,
@@ -122,7 +122,7 @@ LD2410b_SERVICE_INFO = BluetoothServiceInfoBleak(
     },
     service_data = {},
     service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"],
-    address = "42:6C:99:4F:96:D8",
+    address = "AA:BB:CC:DD:EE:FF",
     rssi = -90,
     source = "local",
     advertisement = generate_advertisement_data(
@@ -133,7 +133,7 @@ LD2410b_SERVICE_INFO = BluetoothServiceInfoBleak(
         },
         service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
     ),
-    device = generate_ble_device("42:6C:99:4F:96:D8", "HLK-LD2410_96D8"),
+    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "HLK-LD2410_96D8"),
     time = 0,
     connectable = True,
     tx_power = -127,

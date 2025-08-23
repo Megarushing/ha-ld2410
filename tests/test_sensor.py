@@ -48,12 +48,12 @@ async def test_sensors(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
-            CONF_ADDRESS: "42:6C:99:4F:96:D8",
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
             CONF_NAME: "test-name",
             CONF_PASSWORD: "test-password",
             CONF_SENSOR_TYPE: "ld2410",
         },
-        unique_id="426c994f96d8",
+        unique_id="aabbccddeeff",
     )
     entry.add_to_hass(hass)
 
