@@ -33,9 +33,7 @@ PLATFORMS_BY_TYPE = {
     SupportedModels.MOTION.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
 }
-CLASS_BY_DEVICE = {
-    SupportedModels.LD2410.value: ld2410.LD2410
-}
+CLASS_BY_DEVICE = {SupportedModels.LD2410.value: ld2410.LD2410}
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,7 +60,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         )
 
     sensor_type: str = entry.data[CONF_SENSOR_TYPE]
-    ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL[sensor_type]
+    ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL.get(
+        sensor_type, ld2410.LD2410Model.LD2410
+    )
     # connectable means we can make connections to the device
     connectable = ld2410_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
     address: str = entry.data[CONF_ADDRESS]
@@ -80,11 +80,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         )
 
     cls = CLASS_BY_DEVICE.get(sensor_type, ld2410.LD2410Device)
-    device = cls(
-        device=ble_device,
-        password=entry.data.get(CONF_PASSWORD),
-        retry_count=entry.options[CONF_RETRY_COUNT],
-    )
+    try:
+        device = cls(
+            device=ble_device,
+            password=entry.data.get(CONF_PASSWORD),
+            retry_count=entry.options[CONF_RETRY_COUNT],
+        )
+    except ValueError as err:
+        _LOGGER.error(
+            "LD2410 device initialization failed because of incorrect configuration parameters: %s",
+            err,
+        )
+        return False
 
     coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
         hass,

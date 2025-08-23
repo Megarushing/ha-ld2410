@@ -22,7 +22,15 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+try:
+    from homeassistant.helpers.entity_platform import (
+        AddConfigEntryEntitiesCallback,
+    )
+except ImportError:  # Home Assistant <2024.6
+    from homeassistant.helpers.entity_platform import (
+        AddEntitiesCallback as AddConfigEntryEntitiesCallback,
+    )
 
 from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
 from .entity import LD2410Entity
