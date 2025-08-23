@@ -29,8 +29,6 @@ from .const import (
 from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
 
 PLATFORMS_BY_TYPE = {
-    SupportedModels.CONTACT.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
-    SupportedModels.MOTION.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
 }
 CLASS_BY_DEVICE = {SupportedModels.LD2410.value: ld2410.LD2410}

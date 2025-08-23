@@ -10,9 +10,7 @@ from typing import Any, TypedDict
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from .adv_parsers.contact import process_wocontact
 from .adv_parsers.ld2410 import process_ld2410
-from .adv_parsers.motion import process_wopresence
 from .const import LD2410Model
 from .models import LD2410Advertisement
 
@@ -33,18 +31,6 @@ class LD2410SupportedType(TypedDict):
 
 
 SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
-    "d": {
-        "modelName": LD2410Model.CONTACT_SENSOR,
-        "modelFriendlyName": "Contact Sensor",
-        "func": process_wocontact,
-        "manufacturer_id": 256,
-    },
-    "s": {
-        "modelName": LD2410Model.MOTION_SENSOR,
-        "modelFriendlyName": "Motion Sensor",
-        "func": process_wopresence,
-        "manufacturer_id": 256,
-    },
     "t": {
         "modelName": LD2410Model.LD2410,
         "modelFriendlyName": "HLK-LD2410",
@@ -53,24 +39,11 @@ SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
     },
 }
 
-_LD2410_MODEL_TO_CHAR = {
-    model_data["modelName"]: model_chr
-    for model_chr, model_data in SUPPORTED_TYPES.items()
-}
-
-MODELS_BY_MANUFACTURER_DATA: dict[int, list[tuple[str, LD2410SupportedType]]] = {
-    mfr_id: [] for mfr_id in MFR_DATA_ORDER
-}
-for model_chr, model in SUPPORTED_TYPES.items():
-    if "manufacturer_id" in model:
-        mfr_id = model["manufacturer_id"]
-        MODELS_BY_MANUFACTURER_DATA[mfr_id].append((model_chr, model))
-
 
 def parse_advertisement_data(
     device: BLEDevice,
     advertisement_data: AdvertisementData,
-    model: LD2410Model | None = None,
+    _model: LD2410Model | None = None,
 ) -> LD2410Advertisement | None:
     """Parse advertisement data."""
     service_data = advertisement_data.service_data
@@ -82,10 +55,8 @@ def parse_advertisement_data(
             break
 
     _mfr_data = None
-    _mfr_id = None
     for mfr_id in MFR_DATA_ORDER:
         if mfr_id in advertisement_data.manufacturer_data:
-            _mfr_id = mfr_id
             _mfr_data = advertisement_data.manufacturer_data[mfr_id]
             break
 
@@ -96,8 +67,6 @@ def parse_advertisement_data(
         data = _parse_data(
             _service_data,
             _mfr_data,
-            _mfr_id,
-            model,
         )
     except Exception:  # pylint: disable=broad-except
         _LOGGER.exception("Failed to parse advertisement data: %s", advertisement_data)
@@ -115,11 +84,9 @@ def parse_advertisement_data(
 def _parse_data(
     _service_data: bytes | None,
     _mfr_data: bytes | None,
-    _mfr_id: int | None = None,
-    _ld2410_model: LD2410Model | None = None,
 ) -> dict[str, Any] | None:
     """Parse advertisement data."""
-    type_data = SUPPORTED_TYPES.get("t")
+    type_data = SUPPORTED_TYPES["t"]
 
     return {
         "modelFriendlyName": type_data["modelFriendlyName"],

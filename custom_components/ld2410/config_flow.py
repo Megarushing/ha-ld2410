@@ -26,7 +26,6 @@ from .const import (
     CONNECTABLE_SUPPORTED_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
-    NON_CONNECTABLE_SUPPORTED_MODEL_TYPES,
     SUPPORTED_MODEL_TYPES,
 )
 
@@ -166,7 +165,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
                 if (
                     discovery_info.connectable
                     and model_name in CONNECTABLE_SUPPORTED_MODEL_TYPES
-                ) or model_name in NON_CONNECTABLE_SUPPORTED_MODEL_TYPES:
+                ):
                     self._discovered_advs[address] = parsed
 
         if not self._discovered_advs:

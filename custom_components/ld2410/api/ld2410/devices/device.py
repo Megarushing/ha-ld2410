@@ -24,9 +24,11 @@ from bleak_retry_connector import (
 
 from ..api_config import LD2410_APP_API_BASE_URL
 from ..const import (
+    CHARACTERISTIC_NOTIFY,
+    CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    LD2410ApiError, CHARACTERISTIC_NOTIFY, CHARACTERISTIC_WRITE,
+    LD2410ApiError,
 )
 from ..discovery import GetLD2410Devices
 from ..helpers import create_background_task
