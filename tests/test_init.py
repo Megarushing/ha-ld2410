@@ -18,13 +18,10 @@ except ImportError:
     from .mocks import MockConfigEntry
 
 try:
-    from tests.components.bluetooth import (
-        inject_bluetooth_service_info
-    )
+    from tests.components.bluetooth import inject_bluetooth_service_info
 except ImportError:
-    from .mocks import (
-        inject_bluetooth_service_info
-    )
+    from .mocks import inject_bluetooth_service_info
+
 
 @pytest.mark.parametrize(
     ("exception", "error_message"),
@@ -67,14 +64,14 @@ async def test_setup_entry_without_ble_device(
     entry = mock_entry_factory("test")
     entry.add_to_hass(hass)
 
-    with patch_async_ble_device_from_address(None):
+    with (
+        patch_async_ble_device_from_address(None),
+        patch("custom_components.ld2410.api.ld2410.close_stale_connections_by_address"),
+    ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert (
-        "Could not find LD2410 hygrometer_co2 with address aa:bb:cc:dd:ee:ff"
-        in caplog.text
-    )
+    assert "device_not_found_error" in caplog.text
 
 
 async def test_coordinator_wait_ready_timeout(
@@ -93,11 +90,14 @@ async def test_coordinator_wait_ready_timeout(
     timeout_mock.__aenter__.side_effect = TimeoutError
     timeout_mock.__aexit__.return_value = None
 
-    with patch(
-        "custom_components.ld2410.coordinator.asyncio.timeout",
-        return_value=timeout_mock,
+    with (
+        patch(
+            "custom_components.ld2410.coordinator.asyncio.timeout",
+            return_value=timeout_mock,
+        ),
+        patch("custom_components.ld2410.api.ld2410.close_stale_connections_by_address"),
     ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert "aa:bb:cc:dd:ee:ff is not advertising state" in caplog.text
+    assert "advertising_state_error" in caplog.text

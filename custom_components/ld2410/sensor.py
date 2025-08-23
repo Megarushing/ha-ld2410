@@ -116,6 +116,17 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
     ),
+    "firmware_version": SensorEntityDescription(
+        key="firmware_version",
+        name="Firmware version",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "firmware_build_date": SensorEntityDescription(
+        key="firmware_build_date",
+        name="Firmware build date",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 }
 
 
