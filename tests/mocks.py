@@ -84,8 +84,50 @@ def generate_ble_device(
 def inject_bluetooth_service_info(
     hass: HomeAssistant, info: BluetoothServiceInfo
 ) -> None:
-    """mock injection of service info."""
-    return
+    """Inject a Bluetooth advertisement for tests.
+
+    The real Home Assistant test helpers provide a rich Bluetooth testing
+    harness. In this repository we only need a small subset of that
+    behaviour. This helper stores the provided ``BluetoothServiceInfo`` in a
+    lightweight manager and immediately notifies any registered callbacks.
+    """
+    from habluetooth.central_manager import get_manager, set_manager
+    from homeassistant.components.bluetooth import BluetoothChange
+
+    try:
+        manager = get_manager()
+    except RuntimeError:
+
+        class _StubBluetoothManager:
+            def __init__(self) -> None:
+                self.service_info = {}
+                self._callback = None
+
+            def inject(self, service_info: BluetoothServiceInfo) -> None:
+                self.service_info[service_info.address] = service_info
+                if self._callback:
+                    self._callback(service_info, BluetoothChange.ADVERTISEMENT)
+
+            def async_address_present(self, address: str, connectable: bool) -> bool:
+                return address in self.service_info
+
+            def async_register_callback(self, callback, matcher) -> Callable[[], None]:
+                self._callback = callback
+                address = matcher.get("address") if matcher else None
+                if address and address in self.service_info:
+                    callback(self.service_info[address], BluetoothChange.ADVERTISEMENT)
+                return lambda: None
+
+            def async_track_unavailable(self, callback, address, connectable):
+                return lambda: None
+
+            def async_last_service_info(self, address: str, connectable: bool):
+                return self.service_info.get(address)
+
+        manager = _StubBluetoothManager()
+        set_manager(manager)
+
+    manager.inject(info)
 
 
 async def get_diagnostics_for_config_entry(
@@ -93,5 +135,8 @@ async def get_diagnostics_for_config_entry(
     hass_client: Callable[..., Coroutine[Any, Any, TestClient]],
     config_entry: ConfigEntry,
 ) -> dict[str, str]:
-    """Return the diagnostics config entry for the specified domain."""
-    return {}
+    """Return diagnostics for a config entry."""
+    from custom_components.ld2410 import diagnostics as diag
+
+    await hass.async_block_till_done()
+    return await diag.async_get_config_entry_diagnostics(hass, config_entry)
