@@ -92,7 +92,7 @@ NOT_LD2410_INFO = BluetoothServiceInfoBleak(
 LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
     name = "HLK-LD2410_96D8",
     manufacturer_data = {
-        256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
+        256: b'D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff',
         1494: b"\x08\x00JLAISDK",
     },
     service_data = {},
@@ -103,7 +103,7 @@ LD2410b_NOT_CONNECTABLE = BluetoothServiceInfoBleak(
     advertisement = generate_advertisement_data(
         local_name="HLK-LD2410_96D8",
         manufacturer_data={
-            256: b"D\x02\x101\x07$\x00Bl\x99O\x96\xd8",
+            256: b'D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff',
             1494: b"\x08\x00JLAISDK",
         },
         service_uuids=["0000af30-0000-1000-8000-00805f9b34fb"]
