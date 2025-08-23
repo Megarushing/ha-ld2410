@@ -8,7 +8,7 @@ from typing import Any
 from .device import (
     DEVICE_SET_EXTENDED_KEY,
     DEVICE_SET_MODE_KEY,
-    LD2410DeviceOverrideStateDuringConnection,
+    LD2410Device,
     update_after_operation,
 )
 
@@ -24,7 +24,7 @@ DOWN_KEY = f"{BOT_COMMAND_HEADER}03"
 UP_KEY = f"{BOT_COMMAND_HEADER}04"
 
 
-class LD2410(LD2410DeviceOverrideStateDuringConnection):
+class LD2410(LD2410Device):
     """Representation of a LD2410."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
