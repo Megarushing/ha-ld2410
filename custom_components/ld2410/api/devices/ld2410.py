@@ -9,7 +9,6 @@ from ..const import CMD_BT_GET_PERMISSION
 from .device import (
     Device,
     OperationError,
-    update_after_operation,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,8 +33,11 @@ class LD2410(Device):
 
     async def cmd_send_bluetooth_password(
         self, words: Sequence[str] | None = None
-    ) -> bytes | None:
-        """Send the bluetooth password to the device."""
+    ) -> bool:
+        """Send the bluetooth password to the device.
+
+        Returns True if the password is accepted.
+        """
         payload_words = words or self._password_words
         if not payload_words:
             raise OperationError("Password required")
@@ -44,7 +46,7 @@ class LD2410(Device):
         response = await self._send_command(key)
         if response == b"\x01\x00":
             raise OperationError("Wrong password")
-        return response
+        return response == b"\x00\x00"
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
