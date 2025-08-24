@@ -45,7 +45,7 @@ async def test_diagnostics(
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     with patch(
-        "custom_components.ld2410.ld2410.LD2410.update",
+        "custom_components.ld2410.api.LD2410.update",
         return_value=None,
     ):
         mock_config_entry = MockConfigEntry(

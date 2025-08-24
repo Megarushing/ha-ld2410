@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .ld2410 import LD2410Advertisement, parse_advertisement_data
+from .api import LD2410Advertisement, parse_advertisement_data
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (

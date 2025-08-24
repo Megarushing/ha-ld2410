@@ -2,7 +2,7 @@
 
 import logging
 
-from . import ld2410
+from . import api
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
@@ -31,7 +31,7 @@ from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
 PLATFORMS_BY_TYPE = {
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
 }
-CLASS_BY_DEVICE = {SupportedModels.LD2410.value: ld2410.LD2410}
+CLASS_BY_DEVICE = {SupportedModels.LD2410.value: api.LD2410}
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,13 +59,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
 
     sensor_type: str = entry.data[CONF_SENSOR_TYPE]
     ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL.get(
-        sensor_type, ld2410.LD2410Model.LD2410
+        sensor_type, api.LD2410Model.LD2410
     )
     # connectable means we can make connections to the device
     connectable = ld2410_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
     address: str = entry.data[CONF_ADDRESS]
 
-    await ld2410.close_stale_connections_by_address(address)
+    await api.close_stale_connections_by_address(address)
 
     ble_device = bluetooth.async_ble_device_from_address(
         hass, address.upper(), connectable
@@ -77,7 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
             translation_placeholders={"sensor_type": sensor_type, "address": address},
         )
 
-    cls = CLASS_BY_DEVICE.get(sensor_type, ld2410.LD2410Device)
+    cls = CLASS_BY_DEVICE.get(sensor_type, api.LD2410Device)
     try:
         device = cls(
             device=ble_device,
