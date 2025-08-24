@@ -14,7 +14,6 @@ setup(
         "ld2410.adv_parsers",
     ],
     install_requires=[
-        "aiohttp>=3.9.5",
         "bleak>=0.19.0",
         "bleak-retry-connector>=3.4.0",
         "cryptography>=39.0.0",
