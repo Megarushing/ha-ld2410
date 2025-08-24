@@ -1,6 +1,7 @@
 """Test the sensors."""
 
 import pytest
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.components.sensor import SensorDeviceClass
 from custom_components.ld2410.const import (
@@ -49,8 +50,15 @@ async def test_sensors(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
 
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
 
     assert len(hass.states.async_all("sensor")) == 3
 

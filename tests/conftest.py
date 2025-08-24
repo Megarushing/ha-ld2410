@@ -15,12 +15,15 @@ try:
 except ImportError:
     from .mocks import MockConfigEntry
 
+
 class MySnapshots(AmberSnapshotExtension):
-    _dirname = "__snapshots__"   # or "snapshots"
+    _dirname = "__snapshots__"  # or "snapshots"
+
 
 @pytest.fixture
 def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
     return snapshot.use_extension(MySnapshots)
+
 
 # Make HA load integrations from ./custom_components/*
 @pytest.fixture(autouse=True)

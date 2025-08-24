@@ -5,6 +5,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from homeassistant.const import (
+    CONF_ADDRESS,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_SENSOR_TYPE,
+)
 from homeassistant.core import HomeAssistant
 
 from . import (
@@ -21,6 +27,8 @@ try:
     from tests.components.bluetooth import inject_bluetooth_service_info
 except ImportError:
     from .mocks import inject_bluetooth_service_info
+
+from custom_components.ld2410.const import DOMAIN
 
 
 @pytest.mark.parametrize(
@@ -101,3 +109,32 @@ async def test_coordinator_wait_ready_timeout(
         await hass.async_block_till_done()
 
     assert "AA:BB:CC:DD:EE:FF is not advertising state" in caplog.text
+
+
+async def test_send_password_on_setup(hass: HomeAssistant) -> None:
+    """Ensure the bluetooth password is sent during setup."""
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "abc123",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ) as mock_send,
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    mock_send.assert_awaited_once()

@@ -1,6 +1,6 @@
 """Test the config flow."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 
 from custom_components.ld2410.const import (
@@ -24,6 +24,7 @@ from . import (
     init_integration,
     patch_async_setup_entry,
 )
+from custom_components.ld2410.api import OperationError
 
 try:
     from tests.common import MockConfigEntry
@@ -44,7 +45,13 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     assert result["step_id"] == "password"
     assert result["data_schema"]({})[CONF_PASSWORD] == "HiLink"
 
-    with patch_async_setup_entry() as mock_setup_entry:
+    with (
+        patch_async_setup_entry() as mock_setup_entry,
+        patch(
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_PASSWORD: "abc123"},
@@ -59,6 +66,41 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
         CONF_PASSWORD: "abc123",
     }
 
+    assert len(mock_setup_entry.mock_calls) == 1
+
+
+async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> None:
+    """Ensure wrong password shows error and allows retry."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=LD2410b_SERVICE_INFO,
+    )
+    with patch(
+        "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
+        side_effect=OperationError("Wrong password"),
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_PASSWORD: "bad"},
+        )
+    assert result2["type"] is FlowResultType.FORM
+    assert result2["step_id"] == "password"
+    assert result2["errors"] == {"base": "wrong_password"}
+
+    with (
+        patch_async_setup_entry() as mock_setup_entry,
+        patch(
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
+        result3 = await hass.config_entries.flow.async_configure(
+            result2["flow_id"],
+            {CONF_PASSWORD: "abc123"},
+        )
+    await hass.async_block_till_done()
+    assert result3["type"] is FlowResultType.CREATE_ENTRY
     assert len(mock_setup_entry.mock_calls) == 1
 
 
@@ -122,7 +164,13 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "password"
 
-    with patch_async_setup_entry() as mock_setup_entry:
+    with (
+        patch_async_setup_entry() as mock_setup_entry,
+        patch(
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_PASSWORD: "abc123"}
         )
@@ -198,7 +246,13 @@ async def test_async_step_user_takes_precedence_over_discovery(
         )
         assert result["type"] is FlowResultType.FORM
 
-    with patch_async_setup_entry() as mock_setup_entry:
+    with (
+        patch_async_setup_entry() as mock_setup_entry,
+        patch(
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input={CONF_PASSWORD: "abc123"},

@@ -26,6 +26,10 @@ from ..const import (
     CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
+    REQ_HEADER,
+    REQ_FOOTER,
+    DEVICE_CMD_HEADER,
+    DEVICE_CMD_FOOTER,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -92,6 +96,62 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
         fut.set_exception(asyncio.TimeoutError)
 
 
+def _password_to_words(password: str) -> tuple[str, ...]:
+    """Encode an ASCII password into 16-bit word hex strings."""
+    data = password.encode("ascii")
+    if len(data) % 2:
+        data += b"\x00"
+    return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
+
+
+def _wrap_command(key: str) -> bytes:
+    """Wrap a command with header, length and footer."""
+    command_word = key[:4]
+    value = key[4:]
+    contents = bytearray.fromhex(command_word + value)
+    length = len(contents).to_bytes(2, "little")
+    return (
+        bytearray.fromhex(REQ_HEADER)
+        + length
+        + contents
+        + bytearray.fromhex(REQ_FOOTER)
+    )
+
+
+def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
+    """Remove header and footer from a framed message."""
+    hdr = bytearray.fromhex(header)
+    ftr = bytearray.fromhex(footer)
+    if data.startswith(hdr) and data.endswith(ftr):
+        length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
+        return data[len(hdr) + 2 : len(hdr) + 2 + length]
+    return data
+
+
+def _unwrap_response(data: bytes) -> bytes:
+    """Remove header and footer from a response."""
+    return _unwrap_frame(data, REQ_HEADER, REQ_FOOTER)
+
+
+def _unwrap_device_command(data: bytes) -> bytes:
+    """Remove header and footer from a device command."""
+    return _unwrap_frame(data, DEVICE_CMD_HEADER, DEVICE_CMD_FOOTER)
+
+
+def _parse_response(key: str, data: bytes) -> bytes:
+    """Parse a notification response and verify the ACK."""
+    payload = _unwrap_response(data)
+    if len(payload) < 2:
+        raise OperationError("Response too short")
+    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+    command = payload[:2]
+    if command != expected_ack:
+        raise OperationError(
+            f"Unexpected response command {command.hex()} for {key[:4]}"
+        )
+    return payload[2:]
+
+
 class BaseDevice:
     """Base representation of a device."""
 
@@ -119,10 +179,12 @@ class BaseDevice:
         self._operation_lock = asyncio.Lock()
         if password is None or password == "":
             self._password_encoded = None
+            self._password_words: tuple[str, ...] = ()
         else:
             self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
+            self._password_words = _password_to_words(password)
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -198,7 +260,7 @@ class BaseDevice:
         """Send command to device and read response."""
         if retry is None:
             retry = self._retry_count
-        command = bytearray.fromhex(self._commandkey(key))
+        command = _wrap_command(self._commandkey(key))
         _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
         max_attempts = retry + 1
         if self._operation_lock.locked():
@@ -428,10 +490,33 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
-        if self._notify_future and not self._notify_future.done():
-            self._notify_future.set_result(data)
-            return
-        _LOGGER.debug("%s: Received unsolicited notification: %s", self.name, data)
+        if data.startswith(bytearray.fromhex(REQ_HEADER)):
+            parsed = _unwrap_response(data)
+            if self._notify_future and not self._notify_future.done():
+                _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
+                self._notify_future.set_result(data)
+                return
+            _LOGGER.debug(
+                "%s: Received unsolicited notification: %s", self.name, parsed.hex()
+            )
+        elif data.startswith(bytearray.fromhex(DEVICE_CMD_HEADER)):
+            payload = _unwrap_device_command(data)
+            if len(payload) >= 2:
+                command = payload[:2]
+                params = payload[2:]
+            else:
+                command = payload
+                params = b""
+            _LOGGER.debug(
+                "%s: Received device command: %s params: %s",
+                self.name,
+                command.hex(),
+                params.hex(),
+            )
+        else:
+            _LOGGER.debug(
+                "%s: Received unknown notification: %s", self.name, data.hex()
+            )
 
     async def _start_notify(self) -> None:
         """Start notification."""
@@ -455,7 +540,7 @@ class BaseDevice:
         )
         timeout_expired = False
         try:
-            notify_msg = await self._notify_future
+            notify_msg_raw = await self._notify_future
         except TimeoutError:
             timeout_expired = True
             raise
@@ -464,12 +549,10 @@ class BaseDevice:
                 timeout_handle.cancel()
             self._notify_future = None
 
-        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg.hex())
+        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg_raw.hex())
 
-        if notify_msg == b"\x07":
-            _LOGGER.error("Password required")
-        elif notify_msg == b"\t":
-            _LOGGER.error("Password incorrect")
+        notify_msg = _parse_response(key, notify_msg_raw)
+        _LOGGER.debug("%s: Parsed notification: %s", self.name, notify_msg.hex())
         return notify_msg
 
     def get_address(self) -> str:
