@@ -107,7 +107,7 @@ class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
             return
         if "modelName" in adv.data:
             self._ready_event.set()
-        _LOGGER.debug("%s: LD2410 data: %s", self.ble_device.address, self.device.data)
+        _LOGGER.debug("%s: Device data: %s", self.ble_device.address, self.device.data)
         if not self.device.advertisement_changed(adv) and not self._was_unavailable:
             return
         self._was_unavailable = False

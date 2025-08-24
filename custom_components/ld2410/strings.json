@@ -7,7 +7,7 @@
           "address": "MAC address"
         },
         "data_description": {
-          "address": "The Bluetooth MAC address of your LD2410 device"
+          "address": "The Bluetooth MAC address of your device"
         }
       },
       "confirm": {
@@ -17,9 +17,9 @@
     "error": {},
     "abort": {
       "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "No supported LD2410 devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as LD2410 devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the LD2410 device is present.",
+      "no_devices_found": "No supported devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as these devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the device is present.",
       "unknown": "[%key:common::config_flow::error::unknown%]",
-      "ld2410_unsupported_type": "Unsupported LD2410 type."
+      "ld2410_unsupported_type": "Unsupported device type."
     }
   },
   "options": {
@@ -29,7 +29,7 @@
           "retry_count": "Retry count"
         },
         "data_description": {
-          "retry_count": "How many times to retry sending commands to your LD2410 devices"
+          "retry_count": "How many times to retry sending commands to your devices"
         }
       }
     }
@@ -63,13 +63,13 @@
       "message": "An error occurred while performing the action: {error}"
     },
     "value_error": {
-      "message": "LD2410 device initialization failed because of incorrect configuration parameters: {error}"
+      "message": "Device initialization failed because of incorrect configuration parameters: {error}"
     },
     "advertising_state_error": {
       "message": "{address} is not advertising state"
     },
     "device_not_found_error": {
-      "message": "Could not find LD2410 {sensor_type} with address {address}"
+      "message": "Could not find {sensor_type} with address {address}"
     }
   }
 }

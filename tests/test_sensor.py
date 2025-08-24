@@ -1,4 +1,4 @@
-"""Test the ld2410 sensors."""
+"""Test the sensors."""
 
 import pytest
 

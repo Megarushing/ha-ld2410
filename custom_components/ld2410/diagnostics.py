@@ -1,4 +1,4 @@
-"""Diagnostics support for ld2410 integration."""
+"""Diagnostics support for device integration."""
 
 from __future__ import annotations
 

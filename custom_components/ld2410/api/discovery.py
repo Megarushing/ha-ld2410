@@ -51,13 +51,11 @@ class GetDevices:
 
         if devices is None:
             if retry < 1:
-                _LOGGER.error(
-                    "Scanning for LD2410 devices failed. Stop trying", exc_info=True
-                )
+                _LOGGER.error("Scanning for devices failed. Stop trying", exc_info=True)
                 return self._adv_data
 
             _LOGGER.warning(
-                "Error scanning for LD2410 devices. Retrying (remaining: %d)",
+                "Error scanning for devices. Retrying (remaining: %d)",
                 retry,
             )
             await asyncio.sleep(DEFAULT_RETRY_TIMEOUT)

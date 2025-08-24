@@ -1,4 +1,4 @@
-"""Test the ld2410 config flow."""
+"""Test the config flow."""
 
 from unittest.mock import patch
 
