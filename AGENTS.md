@@ -19,6 +19,7 @@
   pytest
   ```
 - Run tests and linters for every code change.
+- Snapshots should be kept under the `tests/__snapshots__` folder.
 
 ## Pull request rules
 - The pull request description must include:

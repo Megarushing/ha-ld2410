@@ -19,7 +19,7 @@ except ImportError:  # Home Assistant <2024.6
     )
 
 from .coordinator import ConfigEntryType, DataCoordinator
-from .entity import LD2410Entity
+from .entity import Entity
 
 PARALLEL_UPDATES = 0
 
@@ -51,7 +51,7 @@ async def async_setup_entry(
     )
 
 
-class LD2410BinarySensor(LD2410Entity, BinarySensorEntity):
+class LD2410BinarySensor(Entity, BinarySensorEntity):
     """Representation of a LD2410 binary sensor."""
 
     def __init__(
