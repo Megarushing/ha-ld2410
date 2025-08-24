@@ -68,18 +68,6 @@ engineering_frame_regex = (
 )
 
 
-class ApiError(RuntimeError):
-    """Raised when an API call fails."""
-
-
-class AuthenticationError(RuntimeError):
-    """Raised when authentication fails."""
-
-
-class AccountConnectionError(RuntimeError):
-    """Raised when connection to the LD2410 account fails."""
-
-
 class Model(StrEnum):
     """LD2410 device models."""
 
@@ -90,8 +78,5 @@ __all__ = [
     "DEFAULT_RETRY_COUNT",
     "DEFAULT_RETRY_TIMEOUT",
     "DEFAULT_SCAN_TIMEOUT",
-    "AccountConnectionError",
-    "ApiError",
-    "AuthenticationError",
     "Model",
 ]

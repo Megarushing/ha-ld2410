@@ -13,9 +13,6 @@ from .const import (
     DEFAULT_RETRY_COUNT,
     DEFAULT_RETRY_TIMEOUT,
     DEFAULT_SCAN_TIMEOUT,
-    AccountConnectionError,
-    ApiError,
-    AuthenticationError,
     Model,
 )
 from .devices.device import Device, OperationError
@@ -29,10 +26,7 @@ __all__ = [
     "DEFAULT_SCAN_TIMEOUT",
     "LD2410",
     "GetDevices",
-    "AccountConnectionError",
     "Advertisement",
-    "ApiError",
-    "AuthenticationError",
     "Device",
     "Model",
     "OperationError",
