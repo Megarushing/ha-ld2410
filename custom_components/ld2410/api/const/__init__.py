@@ -14,6 +14,10 @@ CHARACTERISTIC_WRITE = "0000fff2-0000-1000-8000-00805f9b34fb"
 REQ_HEADER = "FDFCFBFA"
 REQ_FOOTER = "04030201"
 
+# Command words
+CMD_ACK = "FF00"
+CMD_BT_PASSWORD = "A800"
+
 
 class Model(StrEnum):
     """Device models."""
@@ -26,6 +30,12 @@ __all__ = [
     "DEFAULT_RETRY_TIMEOUT",
     "DEFAULT_SCAN_TIMEOUT",
     "Model",
+    "CHARACTERISTIC_NOTIFY",
+    "CHARACTERISTIC_WRITE",
+    "REQ_HEADER",
+    "REQ_FOOTER",
+    "CMD_ACK",
+    "CMD_BT_PASSWORD",
 ]
 
 # OLD commands for reference

@@ -8,7 +8,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, TypeVar, cast
+from typing import Any, Sequence, TypeVar, cast
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
@@ -26,6 +26,9 @@ from ..const import (
     CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
+    REQ_HEADER,
+    REQ_FOOTER,
+    CMD_BT_PASSWORD,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -92,6 +95,38 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
         fut.set_exception(asyncio.TimeoutError)
 
 
+def _password_to_words(password: str) -> tuple[str, ...]:
+    """Encode an ASCII password into 16-bit word hex strings."""
+    data = password.encode("ascii")
+    if len(data) % 2:
+        data += b"\x00"
+    return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
+
+
+def _wrap_command(key: str) -> bytes:
+    """Wrap a command with header, length and footer."""
+    command_word = key[:4]
+    value = key[4:]
+    contents = bytearray.fromhex(command_word + value)
+    length = len(contents).to_bytes(2, "little")
+    return (
+        bytearray.fromhex(REQ_HEADER)
+        + length
+        + contents
+        + bytearray.fromhex(REQ_FOOTER)
+    )
+
+
+def _unwrap_response(data: bytes) -> bytes:
+    """Remove header and footer from a response."""
+    if data.startswith(bytearray.fromhex(REQ_HEADER)) and data.endswith(
+        bytearray.fromhex(REQ_FOOTER)
+    ):
+        length = int.from_bytes(data[4:6], "little")
+        return data[6 : 6 + length]
+    return data
+
+
 class BaseDevice:
     """Base representation of a device."""
 
@@ -119,10 +154,12 @@ class BaseDevice:
         self._operation_lock = asyncio.Lock()
         if password is None or password == "":
             self._password_encoded = None
+            self._password_words: tuple[str, ...] = ()
         else:
             self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
+            self._password_words = _password_to_words(password)
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -198,7 +235,7 @@ class BaseDevice:
         """Send command to device and read response."""
         if retry is None:
             retry = self._retry_count
-        command = bytearray.fromhex(self._commandkey(key))
+        command = _wrap_command(self._commandkey(key))
         _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
         max_attempts = retry + 1
         if self._operation_lock.locked():
@@ -211,6 +248,17 @@ class BaseDevice:
             return await self._send_command_locked_with_retry(
                 key, command, retry, max_attempts
             )
+
+    async def send_bluetooth_password(
+        self, words: Sequence[str] | None = None
+    ) -> bytes | None:
+        """Send the bluetooth password to the device."""
+        payload_words = words or self._password_words
+        if not payload_words:
+            raise OperationError("Password required")
+        payload = "".join(payload_words)
+        key = CMD_BT_PASSWORD + payload
+        return await self._send_command(key)
 
     @property
     def name(self) -> str:
@@ -429,9 +477,12 @@ class BaseDevice:
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
         if self._notify_future and not self._notify_future.done():
+            _LOGGER.debug("%s: Notification response: %s", self.name, data.hex())
             self._notify_future.set_result(data)
             return
-        _LOGGER.debug("%s: Received unsolicited notification: %s", self.name, data)
+        _LOGGER.debug(
+            "%s: Received unsolicited notification: %s", self.name, data.hex()
+        )
 
     async def _start_notify(self) -> None:
         """Start notification."""
@@ -455,7 +506,7 @@ class BaseDevice:
         )
         timeout_expired = False
         try:
-            notify_msg = await self._notify_future
+            notify_msg_raw = await self._notify_future
         except TimeoutError:
             timeout_expired = True
             raise
@@ -464,7 +515,9 @@ class BaseDevice:
                 timeout_handle.cancel()
             self._notify_future = None
 
-        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg.hex())
+        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg_raw.hex())
+
+        notify_msg = _unwrap_response(notify_msg_raw)
 
         if notify_msg == b"\x07":
             _LOGGER.error("Password required")
