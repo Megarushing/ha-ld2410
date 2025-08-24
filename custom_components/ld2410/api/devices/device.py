@@ -32,17 +32,9 @@ from ..models import Advertisement
 
 _LOGGER = logging.getLogger(__name__)
 
-REQ_HEADER = "570f"
-
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
-DEVICE_SET_MODE_KEY = "5703"
-DEVICE_SET_EXTENDED_KEY = REQ_HEADER
-COMMAND_GET_CK_IV = f"{REQ_HEADER}2103"
-
-# Base key when encryption is set
-KEY_PASSWORD_PREFIX = "571"
 
 DBUS_ERROR_BACKOFF_TIME = 0.25
 
@@ -151,12 +143,8 @@ class BaseDevice:
         )
 
     def _commandkey(self, key: str) -> str:
-        """Add password to key if set."""
-        if self._password_encoded is None:
-            return key
-        key_action = key[3]
-        key_suffix = key[4:]
-        return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
+        """Perform any necessary modifications to key."""
+        return key
 
     async def _send_command_locked_with_retry(
         self, key: str, command: bytes, retry: int, max_attempts: int

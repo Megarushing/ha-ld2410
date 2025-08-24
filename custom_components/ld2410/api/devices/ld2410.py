@@ -6,8 +6,6 @@ import logging
 from typing import Any
 
 from .device import (
-    DEVICE_SET_EXTENDED_KEY,
-    DEVICE_SET_MODE_KEY,
     Device,
     update_after_operation,
 )
@@ -87,14 +85,14 @@ class LD2410(Device):
         """Change device mode."""
         mode_key = format(switch_mode, "b") + format(inverse, "b")
         strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
-        result = await self._send_command(DEVICE_SET_MODE_KEY + strength_key + mode_key)
+        result = await self._send_command(strength_key + mode_key)
         return self._check_command_result(result, 0, {1})
 
     @update_after_operation
     async def set_long_press(self, duration: int = 0) -> bool:
         """Set device long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
-        result = await self._send_command(DEVICE_SET_EXTENDED_KEY + "08" + duration_key)
+        result = await self._send_command("08" + duration_key)
         return self._check_command_result(result, 0, {1})
 
     async def get_basic_info(self) -> dict[str, Any] | None:
