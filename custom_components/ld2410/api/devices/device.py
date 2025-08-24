@@ -28,6 +28,8 @@ from ..const import (
     DEFAULT_SCAN_TIMEOUT,
     REQ_HEADER,
     REQ_FOOTER,
+    DEVICE_CMD_HEADER,
+    DEVICE_CMD_FOOTER,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -116,14 +118,24 @@ def _wrap_command(key: str) -> bytes:
     )
 
 
+def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
+    """Remove header and footer from a framed message."""
+    hdr = bytearray.fromhex(header)
+    ftr = bytearray.fromhex(footer)
+    if data.startswith(hdr) and data.endswith(ftr):
+        length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
+        return data[len(hdr) + 2 : len(hdr) + 2 + length]
+    return data
+
+
 def _unwrap_response(data: bytes) -> bytes:
     """Remove header and footer from a response."""
-    if data.startswith(bytearray.fromhex(REQ_HEADER)) and data.endswith(
-        bytearray.fromhex(REQ_FOOTER)
-    ):
-        length = int.from_bytes(data[4:6], "little")
-        return data[6 : 6 + length]
-    return data
+    return _unwrap_frame(data, REQ_HEADER, REQ_FOOTER)
+
+
+def _unwrap_device_command(data: bytes) -> bytes:
+    """Remove header and footer from a device command."""
+    return _unwrap_frame(data, DEVICE_CMD_HEADER, DEVICE_CMD_FOOTER)
 
 
 def _parse_response(key: str, data: bytes) -> bytes:
@@ -478,14 +490,33 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
-        parsed = _unwrap_response(data)
-        if self._notify_future and not self._notify_future.done():
-            _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
-            self._notify_future.set_result(data)
-            return
-        _LOGGER.debug(
-            "%s: Received unsolicited notification: %s", self.name, parsed.hex()
-        )
+        if data.startswith(bytearray.fromhex(REQ_HEADER)):
+            parsed = _unwrap_response(data)
+            if self._notify_future and not self._notify_future.done():
+                _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
+                self._notify_future.set_result(data)
+                return
+            _LOGGER.debug(
+                "%s: Received unsolicited notification: %s", self.name, parsed.hex()
+            )
+        elif data.startswith(bytearray.fromhex(DEVICE_CMD_HEADER)):
+            payload = _unwrap_device_command(data)
+            if len(payload) >= 2:
+                command = payload[:2]
+                params = payload[2:]
+            else:
+                command = payload
+                params = b""
+            _LOGGER.debug(
+                "%s: Received device command: %s params: %s",
+                self.name,
+                command.hex(),
+                params.hex(),
+            )
+        else:
+            _LOGGER.debug(
+                "%s: Received unknown notification: %s", self.name, data.hex()
+            )
 
     async def _start_notify(self) -> None:
         """Start notification."""
