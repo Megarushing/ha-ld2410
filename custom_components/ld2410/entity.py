@@ -6,7 +6,7 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
-from .api import LD2410Device, LD2410OperationError
+from .api import Device, OperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
     PassiveBluetoothCoordinatorEntity,
@@ -18,18 +18,18 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import LD2410DataUpdateCoordinator
+from .coordinator import DataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class LD2410Entity(PassiveBluetoothCoordinatorEntity[LD2410DataUpdateCoordinator]):
+class LD2410Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
     """Generic entity encapsulating common features of LD2410 device."""
 
-    _device: LD2410Device
+    _device: Device
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: LD2410DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: DataCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self._device = coordinator.device
@@ -97,7 +97,7 @@ def exception_handler[_EntityT: LD2410Entity, **_P](
     async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:
         try:
             await func(self, *args, **kwargs)
-        except LD2410OperationError as error:
+        except OperationError as error:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="operation_error",

@@ -20,13 +20,13 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import (
     CONF_RETRY_COUNT,
-    CONNECTABLE_SUPPORTED_MODEL_TYPES,
+    CONNECTABLE_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
-    HASS_SENSOR_TYPE_TO_LD2410_MODEL,
+    HASS_SENSOR_TYPE_TO_MODEL,
     SupportedModels,
 )
-from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .coordinator import ConfigEntryType, DataCoordinator
 
 PLATFORMS_BY_TYPE = {
     SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
@@ -37,7 +37,7 @@ CLASS_BY_DEVICE = {SupportedModels.LD2410.value: api.LD2410}
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool:
     """Set up LD2410 from a config entry."""
     assert entry.unique_id is not None
     if CONF_ADDRESS not in entry.data and CONF_MAC in entry.data:
@@ -58,11 +58,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         )
 
     sensor_type: str = entry.data[CONF_SENSOR_TYPE]
-    ld2410_model = HASS_SENSOR_TYPE_TO_LD2410_MODEL.get(
-        sensor_type, api.LD2410Model.LD2410
-    )
+    model = HASS_SENSOR_TYPE_TO_MODEL.get(sensor_type, api.Model.LD2410)
     # connectable means we can make connections to the device
-    connectable = ld2410_model in CONNECTABLE_SUPPORTED_MODEL_TYPES
+    connectable = model in CONNECTABLE_MODEL_TYPES
     address: str = entry.data[CONF_ADDRESS]
 
     await api.close_stale_connections_by_address(address)
@@ -77,7 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
             translation_placeholders={"sensor_type": sensor_type, "address": address},
         )
 
-    cls = CLASS_BY_DEVICE.get(sensor_type, api.LD2410Device)
+    cls = CLASS_BY_DEVICE.get(sensor_type, api.Device)
     try:
         device = cls(
             device=ble_device,
@@ -91,7 +89,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         )
         return False
 
-    coordinator = entry.runtime_data = LD2410DataUpdateCoordinator(
+    coordinator = entry.runtime_data = DataCoordinator(
         hass,
         _LOGGER,
         ble_device,
@@ -99,7 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LD2410ConfigEntry) -> bo
         entry.unique_id,
         entry.data.get(CONF_NAME, entry.title),
         connectable,
-        ld2410_model,
+        model,
     )
     entry.async_on_unload(coordinator.async_start())
     if not await coordinator.async_wait_ready():

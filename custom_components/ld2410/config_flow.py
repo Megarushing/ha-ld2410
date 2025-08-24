@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .api import LD2410Advertisement, parse_advertisement_data
+from .api import Advertisement, parse_advertisement_data
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
@@ -23,7 +23,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
 from .const import (
     CONF_RETRY_COUNT,
-    CONNECTABLE_SUPPORTED_MODEL_TYPES,
+    CONNECTABLE_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
     DOMAIN,
     SUPPORTED_MODEL_TYPES,
@@ -43,7 +43,7 @@ def short_address(address: str) -> str:
     return f"{results[-2].upper()}{results[-1].upper()}"[-4:]
 
 
-def name_from_discovery(discovery: LD2410Advertisement) -> str:
+def name_from_discovery(discovery: Advertisement) -> str:
     """Get the name from a discovery."""
     return f"LD2410_{short_address(discovery.address)}"
 
@@ -63,8 +63,8 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        self._discovered_adv: LD2410Advertisement | None = None
-        self._discovered_advs: dict[str, LD2410Advertisement] = {}
+        self._discovered_adv: Advertisement | None = None
+        self._discovered_advs: dict[str, Advertisement] = {}
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -79,10 +79,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         if not parsed or parsed.data.get("modelName") not in SUPPORTED_MODEL_TYPES:
             return self.async_abort(reason="not_supported")
         model_name = parsed.data.get("modelName")
-        if (
-            not discovery_info.connectable
-            and model_name in CONNECTABLE_SUPPORTED_MODEL_TYPES
-        ):
+        if not discovery_info.connectable and model_name in CONNECTABLE_MODEL_TYPES:
             # Source is not connectable but the model is connectable
             return self.async_abort(reason="not_supported")
         self._discovered_adv = parsed
@@ -162,16 +159,13 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
                 if not parsed:
                     continue
                 model_name = parsed.data.get("modelName")
-                if (
-                    discovery_info.connectable
-                    and model_name in CONNECTABLE_SUPPORTED_MODEL_TYPES
-                ):
+                if discovery_info.connectable and model_name in CONNECTABLE_MODEL_TYPES:
                     self._discovered_advs[address] = parsed
 
         if not self._discovered_advs:
             raise AbortFlow("no_devices_found")
 
-    async def _async_set_device(self, discovery: LD2410Advertisement) -> None:
+    async def _async_set_device(self, discovery: Advertisement) -> None:
         """Set the device to work with."""
         self._discovered_adv = discovery
         address = discovery.address
@@ -185,7 +179,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the user step to pick discovered device."""
         errors: dict[str, str] = {}
-        device_adv: LD2410Advertisement | None = None
+        device_adv: Advertisement | None = None
         if user_input is not None:
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)

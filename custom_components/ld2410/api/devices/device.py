@@ -27,8 +27,8 @@ from ..const import (
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
 )
-from ..discovery import GetLD2410Devices
-from ..models import LD2410Advertisement
+from ..discovery import GetDevices
+from ..models import Advertisement
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class CharacteristicMissingError(Exception):
     """Raised when a characteristic is missing."""
 
 
-class LD2410OperationError(Exception):
+class OperationError(Exception):
     """Raised when an operation fails."""
 
 
@@ -74,7 +74,7 @@ def update_after_operation(func: WrapFuncType) -> WrapFuncType:
     """Define a wrapper to update after an operation."""
 
     async def _async_update_after_operation_wrap(
-        self: LD2410BaseDevice, *args: Any, **kwargs: Any
+        self: BaseDevice, *args: Any, **kwargs: Any
     ) -> None:
         ret = await func(self, *args, **kwargs)
         await self.update()
@@ -100,8 +100,8 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
         fut.set_exception(asyncio.TimeoutError)
 
 
-class LD2410BaseDevice:
-    """Base Representation of a LD2410 Device."""
+class BaseDevice:
+    """Base representation of a device."""
 
     _turn_on_command: str | None = None
     _turn_off_command: str | None = None
@@ -116,10 +116,10 @@ class LD2410BaseDevice:
         interface: int = 0,
         **kwargs: Any,
     ) -> None:
-        """LD2410 base class constructor."""
+        """Base class constructor."""
         self._interface = f"hci{interface}"
         self._device = device
-        self._sb_adv_data: LD2410Advertisement | None = None
+        self._sb_adv_data: Advertisement | None = None
         self._override_adv_data: dict[str, Any] | None = None
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
@@ -142,7 +142,7 @@ class LD2410BaseDevice:
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
 
-    def advertisement_changed(self, advertisement: LD2410Advertisement) -> bool:
+    def advertisement_changed(self, advertisement: Advertisement) -> bool:
         """Check if the advertisement has changed."""
         return bool(
             not self._sb_adv_data
@@ -515,7 +515,7 @@ class LD2410BaseDevice:
         """Return device battery level in percent."""
         return self._get_adv_value("battery")
 
-    def update_from_advertisement(self, advertisement: LD2410Advertisement) -> None:
+    def update_from_advertisement(self, advertisement: Advertisement) -> None:
         """Update device data from advertisement."""
         # Only accept advertisements if the data is not missing
         # if we already have an advertisement with data
@@ -523,7 +523,7 @@ class LD2410BaseDevice:
 
     async def get_device_data(
         self, retry: int | None = None, interface: int | None = None
-    ) -> LD2410Advertisement | None:
+    ) -> Advertisement | None:
         """Find ld2410 devices and their advertisement data."""
         if retry is None:
             retry = self._retry_count
@@ -533,7 +533,7 @@ class LD2410BaseDevice:
         else:
             _interface = int(self._interface.replace("hci", ""))
 
-        _data = await GetLD2410Devices(interface=_interface).discover(
+        _data = await GetDevices(interface=_interface).discover(
             retry=retry, scan_timeout=self._scan_timeout
         )
 
@@ -592,7 +592,7 @@ class LD2410BaseDevice:
         """Check command result."""
         if not result or len(result) - 1 < index:
             result_hex = result.hex() if result else "None"
-            raise LD2410OperationError(
+            raise OperationError(
                 f"{self.name}: Sending command failed (result={result_hex} index={index} expected={values} rssi={self.rssi})"
             )
         return result[index] in values
@@ -614,14 +614,14 @@ class LD2410BaseDevice:
         return True
 
     def _set_parsed_data(
-        self, advertisement: LD2410Advertisement, data: dict[str, Any]
+        self, advertisement: Advertisement, data: dict[str, Any]
     ) -> None:
         """Set data."""
         self._sb_adv_data = replace(
             advertisement, data=self._sb_adv_data.data | {"data": data}
         )
 
-    def _set_advertisement_data(self, advertisement: LD2410Advertisement) -> None:
+    def _set_advertisement_data(self, advertisement: Advertisement) -> None:
         """Set advertisement data."""
         new_data = advertisement.data.get("data") or {}
         if advertisement.active:
@@ -652,7 +652,7 @@ class LD2410BaseDevice:
     def _check_function_support(self, cmd: str | None = None) -> None:
         """Check if the command is supported by the device model."""
         if not cmd:
-            raise LD2410OperationError(
+            raise OperationError(
                 f"Current device {self._device.address} does not support this functionality"
             )
 
@@ -692,14 +692,10 @@ class LD2410BaseDevice:
         return self._check_command_result(result, 0, {1})
 
 
-class LD2410Device(LD2410BaseDevice):
-    """
-    Base representation of an LD2410 device.
+class Device(BaseDevice):
+    """Representation of an LD2410 device."""
 
-    This base class consumes advertisement data during connection.
-    """
-
-    def update_from_advertisement(self, advertisement: LD2410Advertisement) -> None:
+    def update_from_advertisement(self, advertisement: Advertisement) -> None:
         """Update device data from advertisement."""
         super().update_from_advertisement(advertisement)
         self._set_advertisement_data(advertisement)

@@ -8,13 +8,13 @@ from homeassistant.components import bluetooth
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-from .coordinator import LD2410ConfigEntry
+from .coordinator import ConfigEntryType
 
 TO_REDACT: list[str] = []
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: LD2410ConfigEntry
+    hass: HomeAssistant, entry: ConfigEntryType
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     coordinator = entry.runtime_data

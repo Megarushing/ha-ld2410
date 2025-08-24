@@ -18,7 +18,7 @@ except ImportError:  # Home Assistant <2024.6
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
-from .coordinator import LD2410ConfigEntry, LD2410DataUpdateCoordinator
+from .coordinator import ConfigEntryType, DataCoordinator
 from .entity import LD2410Entity
 
 PARALLEL_UPDATES = 0
@@ -39,7 +39,7 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: LD2410ConfigEntry,
+    entry: ConfigEntryType,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up LD2410 curtain based on a config entry."""
@@ -56,7 +56,7 @@ class LD2410BinarySensor(LD2410Entity, BinarySensorEntity):
 
     def __init__(
         self,
-        coordinator: LD2410DataUpdateCoordinator,
+        coordinator: DataCoordinator,
         binary_sensor: str,
     ) -> None:
         """Initialize the LD2410 sensor."""

@@ -1,4 +1,4 @@
-"""Library to handle connection with Switchbot."""
+"""Control commands for the LD2410 device."""
 
 from __future__ import annotations
 
@@ -8,27 +8,27 @@ from typing import Any
 from .device import (
     DEVICE_SET_EXTENDED_KEY,
     DEVICE_SET_MODE_KEY,
-    LD2410Device,
+    Device,
     update_after_operation,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-BOT_COMMAND_HEADER = "5701"
+DEVICE_COMMAND_HEADER = "5701"
 
-# Bot keys
-PRESS_KEY = f"{BOT_COMMAND_HEADER}00"
-ON_KEY = f"{BOT_COMMAND_HEADER}01"
-OFF_KEY = f"{BOT_COMMAND_HEADER}02"
-DOWN_KEY = f"{BOT_COMMAND_HEADER}03"
-UP_KEY = f"{BOT_COMMAND_HEADER}04"
+# Device command keys
+PRESS_KEY = f"{DEVICE_COMMAND_HEADER}00"
+ON_KEY = f"{DEVICE_COMMAND_HEADER}01"
+OFF_KEY = f"{DEVICE_COMMAND_HEADER}02"
+DOWN_KEY = f"{DEVICE_COMMAND_HEADER}03"
+UP_KEY = f"{DEVICE_COMMAND_HEADER}04"
 
 
-class LD2410(LD2410Device):
-    """Representation of a LD2410."""
+class LD2410(Device):
+    """Representation of an LD2410 device."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """LD2410 Bot/WoHand constructor."""
+        """Initialize the device control class."""
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
 
@@ -84,7 +84,7 @@ class LD2410(LD2410Device):
     async def set_switch_mode(
         self, switch_mode: bool = False, strength: int = 100, inverse: bool = False
     ) -> bool:
-        """Change bot mode."""
+        """Change device mode."""
         mode_key = format(switch_mode, "b") + format(inverse, "b")
         strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
         result = await self._send_command(DEVICE_SET_MODE_KEY + strength_key + mode_key)
@@ -92,7 +92,7 @@ class LD2410(LD2410Device):
 
     @update_after_operation
     async def set_long_press(self, duration: int = 0) -> bool:
-        """Set bot long press duration."""
+        """Set device long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
         result = await self._send_command(DEVICE_SET_EXTENDED_KEY + "08" + duration_key)
         return self._check_command_result(result, 0, {1})

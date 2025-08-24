@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from . import api
-from .api import LD2410Model
+from .api import Model
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.active_update_coordinator import (
@@ -25,10 +25,8 @@ _LOGGER = logging.getLogger(__name__)
 
 DEVICE_STARTUP_TIMEOUT = 30
 
-type LD2410ConfigEntry = ConfigEntry[LD2410DataUpdateCoordinator]
 
-
-class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
+class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
     """Class to manage fetching ld2410 data."""
 
     def __init__(
@@ -36,11 +34,11 @@ class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         hass: HomeAssistant,
         logger: logging.Logger,
         ble_device: BLEDevice,
-        device: api.LD2410Device,
+        device: api.Device,
         base_unique_id: str,
         device_name: str,
         connectable: bool,
-        model: LD2410Model,
+        model: Model,
     ) -> None:
         """Initialize global ld2410 data updater."""
         super().__init__(
@@ -124,3 +122,6 @@ class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
                 await self._ready_event.wait()
                 return True
         return False
+
+
+type ConfigEntryType = ConfigEntry[DataCoordinator]

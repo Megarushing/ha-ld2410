@@ -10,9 +10,9 @@ from typing import Any, TypedDict
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from .adv_parsers.ld2410 import process_ld2410
-from .const import LD2410Model
-from .models import LD2410Advertisement
+from .adv_parsers.firmware_parser import parse_firmware_data
+from .const import Model
+from .models import Advertisement
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,21 +20,21 @@ SERVICE_DATA_ORDER = ("0000af30-0000-1000-8000-00805f9b34fb",)
 MFR_DATA_ORDER = (256, 1494)
 
 
-class LD2410SupportedType(TypedDict):
+class SupportedType(TypedDict):
     """Supported type of LD2410."""
 
-    modelName: LD2410Model
+    modelName: Model
     modelFriendlyName: str
     func: Callable[[bytes, bytes | None], dict[str, bool | int]]
     manufacturer_id: int | None
     manufacturer_data_length: int | None
 
 
-SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
+SUPPORTED_TYPES: dict[str | bytes, SupportedType] = {
     "t": {
-        "modelName": LD2410Model.LD2410,
+        "modelName": Model.LD2410,
         "modelFriendlyName": "HLK-LD2410",
-        "func": process_ld2410,
+        "func": parse_firmware_data,
         "manufacturer_id": 256,
     },
 }
@@ -43,8 +43,8 @@ SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
 def parse_advertisement_data(
     device: BLEDevice,
     advertisement_data: AdvertisementData,
-    _model: LD2410Model | None = None,
-) -> LD2410Advertisement | None:
+    _model: Model | None = None,
+) -> Advertisement | None:
     """Parse advertisement data."""
     service_data = advertisement_data.service_data
 
@@ -75,7 +75,7 @@ def parse_advertisement_data(
     if not data:
         return None
 
-    return LD2410Advertisement(
+    return Advertisement(
         device.address, data, device, advertisement_data.rssi, bool(_service_data)
     )
 
