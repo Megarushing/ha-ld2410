@@ -7,8 +7,8 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
-from .api import ld2410
-from .api.ld2410 import LD2410Model
+from . import ld2410
+from .ld2410 import LD2410Model
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.active_update_coordinator import (

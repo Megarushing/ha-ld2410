@@ -2,7 +2,7 @@
 
 import logging
 
-from .api import ld2410
+from . import ld2410
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry

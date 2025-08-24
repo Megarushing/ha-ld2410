@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from custom_components.ld2410.api.ld2410 import parse_advertisement_data
+from custom_components.ld2410.ld2410 import parse_advertisement_data
 
 from . import LD2410b_SERVICE_INFO
 

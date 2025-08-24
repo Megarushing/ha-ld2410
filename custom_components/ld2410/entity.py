@@ -6,8 +6,7 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
-from .api.ld2410 import LD2410Device
-from .api.ld2410.devices.device import LD2410OperationError
+from .ld2410 import LD2410Device, LD2410OperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
     PassiveBluetoothCoordinatorEntity,
