@@ -71,7 +71,7 @@ engineering_frame_regex = (
 class Model(StrEnum):
     """Device models."""
 
-    LD2410 = "HLK-LD2410B"
+    LD2410 = "HLK-LD2410"
 
 
 __all__ = [
