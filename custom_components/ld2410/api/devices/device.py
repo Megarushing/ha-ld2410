@@ -490,15 +490,12 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
+        # Notification is a response to a command
         if data.startswith(bytearray.fromhex(TX_HEADER)):
-            parsed = _unwrap_response(data)
             if self._notify_future and not self._notify_future.done():
-                _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
                 self._notify_future.set_result(data)
                 return
-            _LOGGER.debug(
-                "%s: Received unsolicited notification: %s", self.name, parsed.hex()
-            )
+        # Notification is a device command to client
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_device_command(data)
             if len(payload) >= 2:
@@ -549,10 +546,8 @@ class BaseDevice:
                 timeout_handle.cancel()
             self._notify_future = None
 
-        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg_raw.hex())
-
         notify_msg = _parse_response(key, notify_msg_raw)
-        _LOGGER.debug("%s: Parsed notification: %s", self.name, notify_msg.hex())
+        _LOGGER.debug("%s: Command reponse: %s", self.name, notify_msg.hex())
         return notify_msg
 
     def get_address(self) -> str:
