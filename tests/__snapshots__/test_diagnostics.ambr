@@ -22,6 +22,6 @@
       'unique_id': 'aabbccddeeff',
       'version': 1,
     }),
-    'service_info': <BluetoothServiceInfoBleak name=HLK-LD2410_96D8 address=AA:BB:CC:DD:EE:FF rssi=-90 manufacturer_data={256: b'D\x02\x101\x07$\x00Bl\x99O\x96\xd8', 1494: b'\x08\x00JLAISDK'} service_data={} service_uuids=['0000af30-0000-1000-8000-00805f9b34fb'] source=local connectable=True time=0.0 tx_power=-127 raw=None>,
+    'service_info': <BluetoothServiceInfoBleak name=HLK-LD2410_96D8 address=AA:BB:CC:DD:EE:FF rssi=-90 manufacturer_data={256: b'D\x02\x101\x07$\x00\xaa\xbb\xcc\xdd\xee\xff', 1494: b'\x08\x00JLAISDK'} service_data={} service_uuids=['0000af30-0000-1000-8000-00805f9b34fb'] source=local connectable=True time=0.0 tx_power=-127 raw=None>,
   })
 # ---
