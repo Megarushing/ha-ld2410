@@ -10,7 +10,6 @@ from collections.abc import Callable
 from dataclasses import replace
 from typing import Any, TypeVar, cast
 
-import aiohttp
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
@@ -22,13 +21,11 @@ from bleak_retry_connector import (
     establish_connection,
 )
 
-from ..api_config import LD2410_APP_API_BASE_URL
 from ..const import (
     CHARACTERISTIC_NOTIFY,
     CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    LD2410ApiError,
 )
 from ..discovery import GetLD2410Devices
 from ..models import LD2410Advertisement
@@ -144,35 +141,6 @@ class LD2410BaseDevice:
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
-
-    @classmethod
-    async def api_request(
-        cls,
-        session: aiohttp.ClientSession,
-        subdomain: str,
-        path: str,
-        data: dict | None = None,
-        headers: dict | None = None,
-    ) -> dict:
-        url = f"https://{subdomain}.{LD2410_APP_API_BASE_URL}/{path}"
-        async with session.post(
-            url,
-            json=data,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=10),
-        ) as result:
-            if result.status > 299:
-                raise LD2410ApiError(
-                    f"Unexpected status code returned by LD2410 API: {result.status}"
-                )
-
-            response = await result.json()
-            if response["statusCode"] != 100:
-                raise LD2410ApiError(
-                    f"{response['message']}, status code: {response['statusCode']}"
-                )
-
-            return response["body"]
 
     def advertisement_changed(self, advertisement: LD2410Advertisement) -> bool:
         """Check if the advertisement has changed."""
