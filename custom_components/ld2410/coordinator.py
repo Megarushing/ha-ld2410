@@ -7,8 +7,8 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
-from .api import ld2410
-from .api.ld2410 import LD2410Model
+from . import api
+from .api import LD2410Model
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.active_update_coordinator import (
@@ -36,7 +36,7 @@ class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         hass: HomeAssistant,
         logger: logging.Logger,
         ble_device: BLEDevice,
-        device: ld2410.LD2410Device,
+        device: api.LD2410Device,
         base_unique_id: str,
         device_name: str,
         connectable: bool,
@@ -102,7 +102,7 @@ class LD2410DataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         """Handle a Bluetooth event."""
         self.ble_device = service_info.device
         if not (
-            adv := ld2410.parse_advertisement_data(
+            adv := api.parse_advertisement_data(
                 service_info.device, service_info.advertisement, self.model
             )
         ):

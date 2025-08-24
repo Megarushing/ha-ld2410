@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from .api.ld2410 import LD2410Model
+from .api import LD2410Model
 
 DOMAIN = "ld2410"
 MANUFACTURER = "ld2410"
