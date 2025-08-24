@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .api import Advertisement, Device, OperationError, parse_advertisement_data
+from .api import Advertisement, LD2410, OperationError, parse_advertisement_data
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
@@ -94,12 +94,12 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         assert self._discovered_adv is not None
         errors: dict[str, str] = {}
         if user_input is not None:
-            device = Device(
+            device = LD2410(
                 device=self._discovered_adv.device,
                 password=user_input[CONF_PASSWORD],
             )
             try:
-                await device.send_bluetooth_password()
+                await device.cmd_send_bluetooth_password()
             except OperationError:
                 errors["base"] = "wrong_password"
             if not errors:

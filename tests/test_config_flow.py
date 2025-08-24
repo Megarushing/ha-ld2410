@@ -48,7 +48,7 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "custom_components.ld2410.config_flow.Device.send_bluetooth_password",
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
     ):
@@ -77,7 +77,7 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
         data=LD2410b_SERVICE_INFO,
     )
     with patch(
-        "custom_components.ld2410.config_flow.Device.send_bluetooth_password",
+        "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
         side_effect=OperationError("Wrong password"),
     ):
         result2 = await hass.config_entries.flow.async_configure(
@@ -91,7 +91,7 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "custom_components.ld2410.config_flow.Device.send_bluetooth_password",
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
     ):
@@ -167,7 +167,7 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "custom_components.ld2410.config_flow.Device.send_bluetooth_password",
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
     ):
@@ -249,7 +249,7 @@ async def test_async_step_user_takes_precedence_over_discovery(
     with (
         patch_async_setup_entry() as mock_setup_entry,
         patch(
-            "custom_components.ld2410.config_flow.Device.send_bluetooth_password",
+            "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
     ):

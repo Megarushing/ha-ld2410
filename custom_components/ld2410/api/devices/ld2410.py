@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Sequence
 
+from ..const import CMD_BT_PASSWORD
 from .device import (
     Device,
+    OperationError,
     update_after_operation,
 )
 
@@ -29,6 +31,20 @@ class LD2410(Device):
         """Initialize the device control class."""
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
+
+    async def cmd_send_bluetooth_password(
+        self, words: Sequence[str] | None = None
+    ) -> bytes | None:
+        """Send the bluetooth password to the device."""
+        payload_words = words or self._password_words
+        if not payload_words:
+            raise OperationError("Password required")
+        payload = "".join(payload_words)
+        key = CMD_BT_PASSWORD + payload
+        response = await self._send_command(key)
+        if response == b"\x01\x00":
+            raise OperationError("Wrong password")
+        return response
 
     @update_after_operation
     async def turn_on(self) -> bool:

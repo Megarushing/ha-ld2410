@@ -8,7 +8,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, Sequence, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
@@ -28,7 +28,6 @@ from ..const import (
     DEFAULT_SCAN_TIMEOUT,
     REQ_HEADER,
     REQ_FOOTER,
-    CMD_BT_PASSWORD,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -264,20 +263,6 @@ class BaseDevice:
             return await self._send_command_locked_with_retry(
                 key, command, retry, max_attempts
             )
-
-    async def send_bluetooth_password(
-        self, words: Sequence[str] | None = None
-    ) -> bytes | None:
-        """Send the bluetooth password to the device."""
-        payload_words = words or self._password_words
-        if not payload_words:
-            raise OperationError("Password required")
-        payload = "".join(payload_words)
-        key = CMD_BT_PASSWORD + payload
-        response = await self._send_command(key)
-        if response == b"\x01\x00":
-            raise OperationError("Wrong password")
-        return response
 
     @property
     def name(self) -> str:

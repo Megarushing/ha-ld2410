@@ -130,7 +130,7 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
-            "custom_components.ld2410.api.Device.send_bluetooth_password",
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ) as mock_send,
     ):
