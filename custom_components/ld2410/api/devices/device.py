@@ -553,11 +553,6 @@ class BaseDevice:
 
         notify_msg = _parse_response(key, notify_msg_raw)
         _LOGGER.debug("%s: Parsed notification: %s", self.name, notify_msg.hex())
-
-        if notify_msg == b"\x07":
-            _LOGGER.error("Password required")
-        elif notify_msg == b"\t":
-            _LOGGER.error("Password incorrect")
         return notify_msg
 
     def get_address(self) -> str:
