@@ -129,8 +129,6 @@ def _unwrap_response(data: bytes) -> bytes:
 def _parse_response(key: str, data: bytes) -> bytes:
     """Parse a notification response and verify the ACK."""
     payload = _unwrap_response(data)
-    if payload in (b"\x07", b"\t"):
-        return payload
     if len(payload) < 2:
         raise OperationError("Response too short")
     expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")

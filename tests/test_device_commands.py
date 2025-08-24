@@ -64,3 +64,11 @@ def test_parse_response():
     """Ensure responses are parsed and ACK verified."""
     raw = bytes.fromhex("fdfcfbfa0400a801000004030201")
     assert _parse_response(CMD_BT_PASSWORD, raw) == bytes.fromhex("0000")
+
+
+@pytest.mark.parametrize("payload_hex", ["07", "09"])
+def test_parse_response_rejects_short_payload(payload_hex: str) -> None:
+    """Ensure single-byte payloads are rejected."""
+    raw = bytes.fromhex(f"fdfcfbfa0100{payload_hex}04030201")
+    with pytest.raises(OperationError):
+        _parse_response(CMD_BT_PASSWORD, raw)
