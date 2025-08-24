@@ -68,19 +68,19 @@ engineering_frame_regex = (
 )
 
 
-class LD2410ApiError(RuntimeError):
+class ApiError(RuntimeError):
     """Raised when an API call fails."""
 
 
-class LD2410AuthenticationError(RuntimeError):
+class AuthenticationError(RuntimeError):
     """Raised when authentication fails."""
 
 
-class LD2410AccountConnectionError(RuntimeError):
+class AccountConnectionError(RuntimeError):
     """Raised when connection to the LD2410 account fails."""
 
 
-class LD2410Model(StrEnum):
+class Model(StrEnum):
     """LD2410 device models."""
 
     LD2410 = "HLK-LD2410B"
@@ -90,8 +90,8 @@ __all__ = [
     "DEFAULT_RETRY_COUNT",
     "DEFAULT_RETRY_TIMEOUT",
     "DEFAULT_SCAN_TIMEOUT",
-    "LD2410AccountConnectionError",
-    "LD2410ApiError",
-    "LD2410AuthenticationError",
-    "LD2410Model",
+    "AccountConnectionError",
+    "ApiError",
+    "AuthenticationError",
+    "Model",
 ]

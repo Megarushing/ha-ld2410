@@ -9,8 +9,8 @@ from bleak.backends.device import BLEDevice
 
 
 @dataclass
-class LD2410Advertisement:
-    """LD2410 advertisement."""
+class Advertisement:
+    """Advertisement from an LD2410 device."""
 
     address: str
     data: dict[str, Any]

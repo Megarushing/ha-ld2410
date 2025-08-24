@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from .api import LD2410Model
+from .api import Model
 
 DOMAIN = "ld2410"
 MANUFACTURER = "ld2410"
@@ -18,15 +18,13 @@ class SupportedModels(StrEnum):
     LD2410 = "ld2410"
 
 
-CONNECTABLE_SUPPORTED_MODEL_TYPES: dict[LD2410Model, SupportedModels] = {
-    LD2410Model.LD2410: SupportedModels.LD2410,
+CONNECTABLE_MODEL_TYPES: dict[Model, SupportedModels] = {
+    Model.LD2410: SupportedModels.LD2410,
 }
 
-SUPPORTED_MODEL_TYPES = CONNECTABLE_SUPPORTED_MODEL_TYPES
+SUPPORTED_MODEL_TYPES = CONNECTABLE_MODEL_TYPES
 
-HASS_SENSOR_TYPE_TO_LD2410_MODEL = {
-    str(v): k for k, v in CONNECTABLE_SUPPORTED_MODEL_TYPES.items()
-}
+HASS_SENSOR_TYPE_TO_MODEL = {str(v): k for k, v in CONNECTABLE_MODEL_TYPES.items()}
 
 # Config Defaults
 DEFAULT_RETRY_COUNT = 3

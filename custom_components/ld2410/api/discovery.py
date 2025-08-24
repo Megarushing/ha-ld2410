@@ -11,19 +11,19 @@ from bleak.backends.scanner import AdvertisementData
 
 from .adv_parser import parse_advertisement_data
 from .const import DEFAULT_RETRY_COUNT, DEFAULT_RETRY_TIMEOUT, DEFAULT_SCAN_TIMEOUT
-from .models import LD2410Advertisement
+from .models import Advertisement
 
 _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = asyncio.Lock()
 
 
-class GetLD2410Devices:
+class GetDevices:
     """Scan for all LD2410 devices and return by type."""
 
     def __init__(self, interface: int = 0) -> None:
         """Get ld2410 devices class constructor."""
         self._interface = f"hci{interface}"
-        self._adv_data: dict[str, LD2410Advertisement] = {}
+        self._adv_data: dict[str, Advertisement] = {}
 
     def detection_callback(
         self,
@@ -37,7 +37,7 @@ class GetLD2410Devices:
 
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
-    ) -> dict[str, LD2410Advertisement]:
+    ) -> dict[str, Advertisement]:
         """Find ld2410 devices and their advertisement data."""
         devices = bleak.BleakScanner(
             detection_callback=self.detection_callback,
@@ -68,7 +68,7 @@ class GetLD2410Devices:
     async def _get_devices_by_model(
         self,
         model: str,
-    ) -> dict[str, LD2410Advertisement]:
+    ) -> dict[str, Advertisement]:
         """Get ld2410 devices by type."""
         if not self._adv_data:
             await self.discover()
@@ -79,9 +79,7 @@ class GetLD2410Devices:
             if adv.data.get("model") == model
         }
 
-    async def get_device_data(
-        self, address: str
-    ) -> dict[str, LD2410Advertisement] | None:
+    async def get_device_data(self, address: str) -> dict[str, Advertisement] | None:
         """Return data for specific device."""
         if not self._adv_data:
             await self.discover()
