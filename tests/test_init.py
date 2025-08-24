@@ -1,4 +1,4 @@
-"""Test the ld2410 init."""
+"""Test the integration init."""
 
 from collections.abc import Callable
 from unittest.mock import AsyncMock, patch
@@ -28,7 +28,7 @@ except ImportError:
     [
         (
             ValueError("wrong model"),
-            "LD2410 device initialization failed because of incorrect configuration parameters: wrong model",
+            "Device initialization failed because of incorrect configuration parameters: wrong model",
         ),
     ],
 )
@@ -71,7 +71,7 @@ async def test_setup_entry_without_ble_device(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert "Could not find LD2410 test with address AA:BB:CC:DD:EE:FF" in caplog.text
+    assert "Could not find test with address AA:BB:CC:DD:EE:FF" in caplog.text
 
 
 async def test_coordinator_wait_ready_timeout(

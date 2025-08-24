@@ -1,4 +1,4 @@
-"""Tests for the ld2410 integration."""
+"""Tests for the integration."""
 
 from unittest.mock import patch
 
@@ -56,7 +56,7 @@ def patch_async_setup(domain="ld2410"):
 
 
 async def init_integration(hass: HomeAssistant) -> MockConfigEntry:
-    """Set up the LD2410 integration in Home Assistant."""
+    """Set up the integration in Home Assistant."""
     entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_CONFIG)
     entry.add_to_hass(hass)
 

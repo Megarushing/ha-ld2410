@@ -4,13 +4,13 @@
             "message": "An error occurred while performing the action: {error}"
         },
         "value_error": {
-            "message": "LD2410 device initialization failed because of incorrect configuration parameters: {error}"
+            "message": "Device initialization failed because of incorrect configuration parameters: {error}"
         },
         "advertising_state_error": {
             "message": "{address} is not advertising state"
         },
         "device_not_found_error": {
-            "message": "Could not find LD2410 {sensor_type} with address {address}"
+            "message": "Could not find {sensor_type} with address {address}"
         }
     }
 }

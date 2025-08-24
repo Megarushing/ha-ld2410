@@ -1,4 +1,4 @@
-"""Test advertisement parser for LD2410."""
+"""Test advertisement parser for device."""
 
 from datetime import datetime, timezone
 

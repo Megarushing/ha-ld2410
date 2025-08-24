@@ -84,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         )
     except ValueError as err:
         _LOGGER.error(
-            "LD2410 device initialization failed because of incorrect configuration parameters: %s",
+            "Device initialization failed because of incorrect configuration parameters: %s",
             err,
         )
         return False

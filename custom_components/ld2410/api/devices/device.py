@@ -524,7 +524,7 @@ class BaseDevice:
     async def get_device_data(
         self, retry: int | None = None, interface: int | None = None
     ) -> Advertisement | None:
-        """Find ld2410 devices and their advertisement data."""
+        """Find devices and their advertisement data."""
         if retry is None:
             retry = self._retry_count
 
