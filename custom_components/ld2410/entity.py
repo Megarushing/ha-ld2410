@@ -1,4 +1,4 @@
-"""An abstract class common to all LD2410 entities."""
+"""An abstract class common to all entities."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
-    """Generic entity encapsulating common features of an LD2410 device."""
+    """Generic entity encapsulating common features of a device."""
 
     _device: Device
     _attr_has_entity_name = True
@@ -89,9 +89,9 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
 def exception_handler[_EntityT: Entity, **_P](
     func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],
 ) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:
-    """Decorate LD2410 calls to handle exceptions..
+    """Decorate device calls to handle exceptions.
 
-    A decorator that wraps the passed in function, catches LD2410 errors.
+    A decorator that wraps the passed in function, catching device errors.
     """
 
     async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:

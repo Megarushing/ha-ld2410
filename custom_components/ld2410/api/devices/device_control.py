@@ -1,4 +1,4 @@
-"""Control commands for the LD2410 device."""
+"""Control commands for the device."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ UP_KEY = f"{DEVICE_COMMAND_HEADER}04"
 
 
 class LD2410(Device):
-    """Representation of an LD2410 device."""
+    """Representation of a device."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the device control class."""

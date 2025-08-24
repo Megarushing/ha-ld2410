@@ -1,4 +1,4 @@
-"""Discover ld2410 devices."""
+"""Discover devices."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ CONNECT_LOCK = asyncio.Lock()
 
 
 class GetDevices:
-    """Scan for all LD2410 devices and return by type."""
+    """Scan for all devices and return by type."""
 
     def __init__(self, interface: int = 0) -> None:
-        """Get ld2410 devices class constructor."""
+        """Get devices class constructor."""
         self._interface = f"hci{interface}"
         self._adv_data: dict[str, Advertisement] = {}
 
@@ -38,7 +38,7 @@ class GetDevices:
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
     ) -> dict[str, Advertisement]:
-        """Find ld2410 devices and their advertisement data."""
+        """Find devices and their advertisement data."""
         devices = bleak.BleakScanner(
             detection_callback=self.detection_callback,
             adapter=self._interface,
@@ -69,7 +69,7 @@ class GetDevices:
         self,
         model: str,
     ) -> dict[str, Advertisement]:
-        """Get ld2410 devices by type."""
+        """Get devices by type."""
         if not self._adv_data:
             await self.discover()
 

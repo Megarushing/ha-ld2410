@@ -1,4 +1,4 @@
-"""Tests for the diagnostics data provided by the LD2410 integration."""
+"""Tests for the diagnostics data provided by the integration."""
 
 from unittest.mock import patch
 

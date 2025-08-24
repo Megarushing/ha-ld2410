@@ -1,4 +1,4 @@
-"""LD2410 advertisement parser."""
+"""Advertisement parser."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ MFR_DATA_ORDER = (256, 1494)
 
 
 class SupportedType(TypedDict):
-    """Supported type of LD2410."""
+    """Supported device type."""
 
     modelName: Model
     modelFriendlyName: str

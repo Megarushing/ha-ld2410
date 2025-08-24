@@ -1,4 +1,4 @@
-"""Library to handle connection with LD2410."""
+"""Library to handle device connection."""
 
 from __future__ import annotations
 
@@ -693,7 +693,7 @@ class BaseDevice:
 
 
 class Device(BaseDevice):
-    """Representation of an LD2410 device."""
+    """Representation of a device."""
 
     def update_from_advertisement(self, advertisement: Advertisement) -> None:
         """Update device data from advertisement."""

@@ -1,1 +1,1 @@
-"""LD2410 Advertisement Parser Library."""
+"""Advertisement parser library."""

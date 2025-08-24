@@ -1,1 +1,1 @@
-"""LD2410 Device Library."""
+"""Device library."""

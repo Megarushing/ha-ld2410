@@ -1,4 +1,4 @@
-"""Parse manufacturer firmware data for the LD2410 sensor."""
+"""Parse manufacturer firmware data for the device."""
 
 from __future__ import annotations
 
