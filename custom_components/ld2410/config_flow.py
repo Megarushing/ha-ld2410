@@ -45,7 +45,7 @@ def short_address(address: str) -> str:
 
 def name_from_discovery(discovery: Advertisement) -> str:
     """Get the name from a discovery."""
-    return f"LD2410_{short_address(discovery.address)}"
+    return f"{discovery.data['modelFriendlyName']}_{short_address(discovery.address)}"
 
 
 class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):

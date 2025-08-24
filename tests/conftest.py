@@ -1,6 +1,8 @@
 """Define fixtures available for all tests."""
 
 import pytest
+from syrupy.assertion import SnapshotAssertion
+from syrupy.extensions.amber import AmberSnapshotExtension
 from bleak.backends.device import BLEDevice
 
 from custom_components.ld2410.const import (
@@ -13,6 +15,12 @@ try:
 except ImportError:
     from .mocks import MockConfigEntry
 
+class MySnapshots(AmberSnapshotExtension):
+    _dirname = "__snapshots__"   # or "snapshots"
+
+@pytest.fixture
+def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
+    return snapshot.use_extension(MySnapshots)
 
 # Make HA load integrations from ./custom_components/*
 @pytest.fixture(autouse=True)

@@ -16,7 +16,7 @@ from .const import (
     Model,
 )
 from .devices.device import Device, OperationError
-from .devices.device_control import LD2410
+from .devices.ld2410 import LD2410
 from .discovery import GetDevices
 from .models import Advertisement
 

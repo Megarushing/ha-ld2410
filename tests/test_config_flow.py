@@ -52,7 +52,7 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "LD2410_EEFF"
+    assert result["title"] == "HLK-LD2410_EEFF"
     assert result["data"] == {
         CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
@@ -129,7 +129,7 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "LD2410_EEFF"
+    assert result["title"] == "HLK-LD2410_EEFF"
     assert result["data"] == {
         CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
@@ -205,7 +205,7 @@ async def test_async_step_user_takes_precedence_over_discovery(
         )
 
     assert result2["type"] is FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "LD2410_EEFF"
+    assert result2["title"] == "HLK-LD2410_EEFF"
     assert result2["data"] == {
         CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
