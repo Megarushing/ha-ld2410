@@ -274,7 +274,10 @@ class BaseDevice:
             raise OperationError("Password required")
         payload = "".join(payload_words)
         key = CMD_BT_PASSWORD + payload
-        return await self._send_command(key)
+        response = await self._send_command(key)
+        if response == b"\x01\x00":
+            raise OperationError("Wrong password")
+        return response
 
     @property
     def name(self) -> str:

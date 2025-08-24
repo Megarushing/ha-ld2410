@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .api import Advertisement, parse_advertisement_data
+from .api import Advertisement, Device, OperationError, parse_advertisement_data
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
@@ -92,20 +92,35 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the password step."""
         assert self._discovered_adv is not None
+        errors: dict[str, str] = {}
         if user_input is not None:
-            # There is currently no api to validate the password
-            # that does not operate the device so we have
-            # to accept it as-is
-            return await self._async_create_entry_from_discovery(user_input)
+            device = Device(
+                device=self._discovered_adv.device,
+                password=user_input[CONF_PASSWORD],
+            )
+            try:
+                await device.send_bluetooth_password()
+            except OperationError:
+                errors["base"] = "wrong_password"
+            if not errors:
+                return await self._async_create_entry_from_discovery(user_input)
 
         return self.async_show_form(
             step_id="password",
             data_schema=vol.Schema(
-                {vol.Required(CONF_PASSWORD, default="HiLink"): str}
+                {
+                    vol.Required(
+                        CONF_PASSWORD,
+                        default=user_input.get(CONF_PASSWORD, "HiLink")
+                        if user_input
+                        else "HiLink",
+                    ): str
+                }
             ),
             description_placeholders={
                 "name": name_from_discovery(self._discovered_adv)
             },
+            errors=errors or None,
         )
 
     async def _async_create_entry_from_discovery(

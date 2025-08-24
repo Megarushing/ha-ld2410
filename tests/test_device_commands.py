@@ -7,6 +7,7 @@ from custom_components.ld2410.api.devices.device import (
     _wrap_command,
     _parse_response,
     BaseDevice,
+    OperationError,
 )
 from custom_components.ld2410.api.const import CMD_BT_PASSWORD
 
@@ -25,15 +26,16 @@ def test_wrap_command_bt_password():
 
 
 class _TestDevice(BaseDevice):
-    def __init__(self, password: str | None) -> None:
+    def __init__(self, password: str | None, response: bytes = b"\x00\x00") -> None:
         super().__init__(
             device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
             password=password,
         )
+        self._response = response
 
     async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
         self.last_key = key
-        return b""
+        return self._response
 
 
 @pytest.mark.asyncio
@@ -42,6 +44,14 @@ async def test_send_bluetooth_password_uses_config_password() -> None:
     dev = _TestDevice(password="HiLink")
     await dev.send_bluetooth_password()
     assert dev.last_key == CMD_BT_PASSWORD + "".join(_password_to_words("HiLink"))
+
+
+@pytest.mark.asyncio
+async def test_send_bluetooth_password_wrong_password() -> None:
+    """Ensure a wrong password raises an error."""
+    dev = _TestDevice(password="HiLink", response=b"\x01\x00")
+    with pytest.raises(OperationError):
+        await dev.send_bluetooth_password()
 
 
 def test_unwrap_response():
