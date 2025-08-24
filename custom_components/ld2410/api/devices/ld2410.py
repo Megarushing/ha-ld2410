@@ -46,71 +46,6 @@ class LD2410(Device):
             raise OperationError("Wrong password")
         return response
 
-    @update_after_operation
-    async def turn_on(self) -> bool:
-        """Turn device on."""
-        result = await self._send_command(ON_KEY)
-        ret = self._check_command_result(result, 0, {1, 5})
-        self._override_state({"isOn": True})
-        _LOGGER.debug(
-            "%s: Turn on result: %s -> %s",
-            self.name,
-            result.hex() if result else None,
-            self._override_adv_data,
-        )
-        self._fire_callbacks()
-        return ret
-
-    @update_after_operation
-    async def turn_off(self) -> bool:
-        """Turn device off."""
-        result = await self._send_command(OFF_KEY)
-        ret = self._check_command_result(result, 0, {1, 5})
-        self._override_state({"isOn": False})
-        _LOGGER.debug(
-            "%s: Turn off result: %s -> %s",
-            self.name,
-            result.hex() if result else None,
-            self._override_adv_data,
-        )
-        self._fire_callbacks()
-        return ret
-
-    @update_after_operation
-    async def hand_up(self) -> bool:
-        """Raise device arm."""
-        result = await self._send_command(UP_KEY)
-        return self._check_command_result(result, 0, {1, 5})
-
-    @update_after_operation
-    async def hand_down(self) -> bool:
-        """Lower device arm."""
-        result = await self._send_command(DOWN_KEY)
-        return self._check_command_result(result, 0, {1, 5})
-
-    @update_after_operation
-    async def press(self) -> bool:
-        """Press command to device."""
-        result = await self._send_command(PRESS_KEY)
-        return self._check_command_result(result, 0, {1, 5})
-
-    @update_after_operation
-    async def set_switch_mode(
-        self, switch_mode: bool = False, strength: int = 100, inverse: bool = False
-    ) -> bool:
-        """Change device mode."""
-        mode_key = format(switch_mode, "b") + format(inverse, "b")
-        strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
-        result = await self._send_command(strength_key + mode_key)
-        return self._check_command_result(result, 0, {1})
-
-    @update_after_operation
-    async def set_long_press(self, duration: int = 0) -> bool:
-        """Set device long press duration."""
-        duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
-        result = await self._send_command("08" + duration_key)
-        return self._check_command_result(result, 0, {1})
-
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         if not (_data := await self._get_basic_info()):
@@ -124,14 +59,3 @@ class LD2410(Device):
             "inverseDirection": bool(_data[9] & 1),
             "holdSeconds": _data[10],
         }
-
-    def is_on(self) -> bool | None:
-        """Return switch state from cache."""
-        # To get actual position call update() first.
-        value = self._get_adv_value("isOn")
-        if value is None:
-            return None
-
-        if self._inverse:
-            return not value
-        return value
