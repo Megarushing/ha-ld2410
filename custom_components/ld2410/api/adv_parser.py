@@ -10,7 +10,7 @@ from typing import Any, TypedDict
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from .adv_parsers.ld2410 import process_ld2410
+from .adv_parsers.firmware_parser import parse_firmware_data
 from .const import LD2410Model
 from .models import LD2410Advertisement
 
@@ -34,7 +34,7 @@ SUPPORTED_TYPES: dict[str | bytes, LD2410SupportedType] = {
     "t": {
         "modelName": LD2410Model.LD2410,
         "modelFriendlyName": "HLK-LD2410",
-        "func": process_ld2410,
+        "func": parse_firmware_data,
         "manufacturer_id": 256,
     },
 }

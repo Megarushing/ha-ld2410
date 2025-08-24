@@ -1,4 +1,4 @@
-"""LD2410 parser."""
+"""Parse manufacturer firmware data for the LD2410 sensor."""
 
 from __future__ import annotations
 
@@ -15,10 +15,10 @@ def _bcd_str(byte: int) -> str:
     return f"{byte >> 4}{byte & 0x0F}"
 
 
-def process_ld2410(
+def parse_firmware_data(
     data: bytes | None, mfr_data: bytes | None
 ) -> dict[str, bool | int | str | datetime]:
-    """Process LD2410 manufacturer data."""
+    """Return firmware details extracted from manufacturer data."""
     if not mfr_data or len(mfr_data) < 13:
         return {}
 

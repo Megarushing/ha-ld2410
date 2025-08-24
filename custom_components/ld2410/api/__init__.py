@@ -19,9 +19,7 @@ from .const import (
     LD2410Model,
 )
 from .devices.device import LD2410Device, LD2410OperationError
-from .devices.ld2410 import (
-    LD2410,
-)
+from .devices.device_control import LD2410
 from .discovery import GetLD2410Devices
 from .models import LD2410Advertisement
 
