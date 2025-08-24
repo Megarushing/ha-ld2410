@@ -1,4 +1,4 @@
-"""Library to handle connection with LD2410."""
+"""Library to handle device connection."""
 
 from __future__ import annotations
 

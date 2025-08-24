@@ -1,4 +1,4 @@
-"""Support for LD2410 devices."""
+"""Support for devices."""
 
 import logging
 
@@ -38,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool:
-    """Set up LD2410 from a config entry."""
+    """Set up the device from a config entry."""
     assert entry.unique_id is not None
     if CONF_ADDRESS not in entry.data and CONF_MAC in entry.data:
         # Bleak uses addresses not mac addresses which are actually

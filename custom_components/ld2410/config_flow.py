@@ -1,4 +1,4 @@
-"""Config flow for LD2410."""
+"""Config flow."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def format_unique_id(address: str) -> str:
-    """Format the unique ID for a ld2410."""
+    """Format the unique ID for a device."""
     return address.replace(":", "").lower()
 
 
@@ -49,7 +49,7 @@ def name_from_discovery(discovery: Advertisement) -> str:
 
 
 class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for LD2410."""
+    """Handle a config flow."""
 
     VERSION = 1
 
@@ -211,12 +211,12 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class LD2410OptionsFlowHandler(OptionsFlow):
-    """Handle LD2410 options."""
+    """Handle options."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage LD2410 options."""
+        """Manage options."""
         if user_input is not None:
             # Update common entity options for all other entities.
             return self.async_create_entry(title="", data=user_input)

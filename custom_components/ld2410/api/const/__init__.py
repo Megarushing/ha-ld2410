@@ -1,4 +1,4 @@
-"""LD2410 Device Consts Library."""
+"""Device constants library."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ engineering_frame_regex = (
 
 
 class Model(StrEnum):
-    """LD2410 device models."""
+    """Device models."""
 
     LD2410 = "HLK-LD2410B"
 

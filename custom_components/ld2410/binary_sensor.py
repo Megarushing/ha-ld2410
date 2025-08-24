@@ -1,4 +1,4 @@
-"""Support for LD2410 binary sensors."""
+"""Support for binary sensors."""
 
 from __future__ import annotations
 
@@ -42,24 +42,24 @@ async def async_setup_entry(
     entry: ConfigEntryType,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up LD2410 curtain based on a config entry."""
+    """Set up binary sensors based on a config entry."""
     coordinator = entry.runtime_data
     async_add_entities(
-        LD2410BinarySensor(coordinator, binary_sensor)
+        BinarySensor(coordinator, binary_sensor)
         for binary_sensor in coordinator.device.parsed_data
         if binary_sensor in BINARY_SENSOR_TYPES
     )
 
 
-class LD2410BinarySensor(Entity, BinarySensorEntity):
-    """Representation of a LD2410 binary sensor."""
+class BinarySensor(Entity, BinarySensorEntity):
+    """Representation of a binary sensor."""
 
     def __init__(
         self,
         coordinator: DataCoordinator,
         binary_sensor: str,
     ) -> None:
-        """Initialize the LD2410 sensor."""
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self._sensor = binary_sensor
         self._attr_unique_id = f"{coordinator.base_unique_id}-{binary_sensor}"

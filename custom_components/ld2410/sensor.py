@@ -1,4 +1,4 @@
-"""Support for LD2410 sensors."""
+"""Support for sensors."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ async def async_setup_entry(
     entry: ConfigEntryType,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up LD2410 sensor based on a config entry."""
+    """Set up sensors based on a config entry."""
     coordinator = entry.runtime_data
     entities = [
         Sensor(coordinator, sensor)
@@ -70,14 +70,14 @@ async def async_setup_entry(
 
 
 class Sensor(Entity, SensorEntity):
-    """Representation of a LD2410 sensor."""
+    """Representation of a sensor."""
 
     def __init__(
         self,
         coordinator: DataCoordinator,
         sensor: str,
     ) -> None:
-        """Initialize the LD2410 sensor."""
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self._sensor = sensor
         self._attr_unique_id = f"{coordinator.base_unique_id}-{sensor}"
@@ -90,12 +90,12 @@ class Sensor(Entity, SensorEntity):
 
 
 class RSSISensor(Sensor):
-    """Representation of a LD2410 RSSI sensor."""
+    """Representation of a RSSI sensor."""
 
     @property
     def native_value(self) -> str | int | None:
         """Return the state of the sensor."""
-        # LD2410 supports both connectable and non-connectable devices
+        # The device supports both connectable and non-connectable devices
         # so we need to request the rssi value based on the connectable instead
         # of the nearest scanner since that is the RSSI that matters for controlling
         # the device.

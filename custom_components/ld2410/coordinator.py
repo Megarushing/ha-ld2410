@@ -1,4 +1,4 @@
-"""Provides the ld2410 DataUpdateCoordinator."""
+"""Provides the data update coordinator."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ DEVICE_STARTUP_TIMEOUT = 30
 
 
 class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
-    """Class to manage fetching ld2410 data."""
+    """Class to manage fetching device data."""
 
     def __init__(
         self,
@@ -40,7 +40,7 @@ class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         connectable: bool,
         model: Model,
     ) -> None:
-        """Initialize global ld2410 data updater."""
+        """Initialize the global data updater."""
         super().__init__(
             hass=hass,
             logger=logger,

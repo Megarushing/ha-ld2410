@@ -1,4 +1,4 @@
-"""Library to handle connection with LD2410."""
+"""Library to handle device connection."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from bleak.backends.device import BLEDevice
 
 @dataclass
 class Advertisement:
-    """Advertisement from an LD2410 device."""
+    """Advertisement from a device."""
 
     address: str
     data: dict[str, Any]

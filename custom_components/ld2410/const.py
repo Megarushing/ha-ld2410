@@ -1,4 +1,4 @@
-"""Constants for the ld2410 integration."""
+"""Constants for the integration."""
 
 from enum import StrEnum
 
@@ -13,7 +13,7 @@ DEFAULT_NAME = "LD2410"
 
 
 class SupportedModels(StrEnum):
-    """Supported LD2410 models."""
+    """Supported models."""
 
     LD2410 = "ld2410"
 
