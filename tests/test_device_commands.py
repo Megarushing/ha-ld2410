@@ -48,7 +48,7 @@ class _TestDevice(LD2410):
 async def test_send_bluetooth_password_uses_config_password() -> None:
     """Ensure the device uses the configured password when none provided."""
     dev = _TestDevice(password="HiLink")
-    await dev.cmd_send_bluetooth_password()
+    assert await dev.cmd_send_bluetooth_password()
     assert dev.last_key == CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
 
 
