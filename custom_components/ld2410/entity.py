@@ -23,8 +23,8 @@ from .coordinator import DataCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 
-class LD2410Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
-    """Generic entity encapsulating common features of LD2410 device."""
+class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
+    """Generic entity encapsulating common features of an LD2410 device."""
 
     _device: Device
     _attr_has_entity_name = True
@@ -86,7 +86,7 @@ class LD2410Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
         await self._device.update()
 
 
-def exception_handler[_EntityT: LD2410Entity, **_P](
+def exception_handler[_EntityT: Entity, **_P](
     func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],
 ) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:
     """Decorate LD2410 calls to handle exceptions..

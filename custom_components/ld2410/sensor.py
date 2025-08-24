@@ -25,7 +25,7 @@ except ImportError:  # Home Assistant <2024.6
     )
 
 from .coordinator import ConfigEntryType, DataCoordinator
-from .entity import LD2410Entity
+from .entity import Entity
 
 PARALLEL_UPDATES = 0
 
@@ -61,15 +61,15 @@ async def async_setup_entry(
     """Set up LD2410 sensor based on a config entry."""
     coordinator = entry.runtime_data
     entities = [
-        LD2410Sensor(coordinator, sensor)
+        Sensor(coordinator, sensor)
         for sensor in coordinator.device.parsed_data
         if sensor in SENSOR_TYPES and sensor != "rssi"
     ]
-    entities.append(LD2410RSSISensor(coordinator, "rssi"))
+    entities.append(RSSISensor(coordinator, "rssi"))
     async_add_entities(entities)
 
 
-class LD2410Sensor(LD2410Entity, SensorEntity):
+class Sensor(Entity, SensorEntity):
     """Representation of a LD2410 sensor."""
 
     def __init__(
@@ -89,7 +89,7 @@ class LD2410Sensor(LD2410Entity, SensorEntity):
         return self.parsed_data[self._sensor]
 
 
-class LD2410RSSISensor(LD2410Sensor):
+class RSSISensor(Sensor):
     """Representation of a LD2410 RSSI sensor."""
 
     @property
