@@ -12,9 +12,9 @@ from custom_components.ld2410.api.devices.ld2410 import LD2410
 import logging
 
 from custom_components.ld2410.api.const import (
-    CMD_BT_PASSWORD,
-    DEVICE_CMD_HEADER,
-    DEVICE_CMD_FOOTER,
+    CMD_BT_GET_PERMISSION,
+    RX_HEADER,
+    RX_FOOTER,
 )
 
 
@@ -26,7 +26,7 @@ def test_wrap_command_ack():
 
 def test_wrap_command_bt_password():
     """Ensure bluetooth password command is wrapped correctly."""
-    key = CMD_BT_PASSWORD + "".join(_password_to_words("HiLink"))
+    key = CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
     wrapped = _wrap_command(key).hex()
     assert wrapped == "fdfcfbfa0800a80048694c696e6b04030201"
 
@@ -49,7 +49,7 @@ async def test_send_bluetooth_password_uses_config_password() -> None:
     """Ensure the device uses the configured password when none provided."""
     dev = _TestDevice(password="HiLink")
     await dev.cmd_send_bluetooth_password()
-    assert dev.last_key == CMD_BT_PASSWORD + "".join(_password_to_words("HiLink"))
+    assert dev.last_key == CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
 
 
 @pytest.mark.asyncio
@@ -69,7 +69,7 @@ def test_unwrap_response():
 def test_parse_response():
     """Ensure responses are parsed and ACK verified."""
     raw = bytes.fromhex("fdfcfbfa0400a801000004030201")
-    assert _parse_response(CMD_BT_PASSWORD, raw) == bytes.fromhex("0000")
+    assert _parse_response(CMD_BT_GET_PERMISSION, raw) == bytes.fromhex("0000")
 
 
 @pytest.mark.parametrize("payload_hex", ["07", "09"])
@@ -77,7 +77,7 @@ def test_parse_response_rejects_short_payload(payload_hex: str) -> None:
     """Ensure single-byte payloads are rejected."""
     raw = bytes.fromhex(f"fdfcfbfa0100{payload_hex}04030201")
     with pytest.raises(OperationError):
-        _parse_response(CMD_BT_PASSWORD, raw)
+        _parse_response(CMD_BT_GET_PERMISSION, raw)
 
 
 def test_device_command_notification(caplog) -> None:
@@ -85,7 +85,7 @@ def test_device_command_notification(caplog) -> None:
     dev = _TestDevice(password="HiLink")
     dev._notify_future = dev.loop.create_future()
     caplog.set_level(logging.DEBUG)
-    frame_hex = DEVICE_CMD_HEADER + "0400a1000203" + DEVICE_CMD_FOOTER
+    frame_hex = RX_HEADER + "0400a1000203" + RX_FOOTER
     dev._notification_handler(0, bytearray.fromhex(frame_hex))
     assert not dev._notify_future.done()
     assert any(

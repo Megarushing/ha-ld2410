@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Sequence
 
-from ..const import CMD_BT_PASSWORD
+from ..const import CMD_BT_GET_PERMISSION
 from .device import (
     Device,
     OperationError,
@@ -40,7 +40,7 @@ class LD2410(Device):
         if not payload_words:
             raise OperationError("Password required")
         payload = "".join(payload_words)
-        key = CMD_BT_PASSWORD + payload
+        key = CMD_BT_GET_PERMISSION + payload
         response = await self._send_command(key)
         if response == b"\x01\x00":
             raise OperationError("Wrong password")

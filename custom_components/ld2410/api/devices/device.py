@@ -26,10 +26,10 @@ from ..const import (
     CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    REQ_HEADER,
-    REQ_FOOTER,
-    DEVICE_CMD_HEADER,
-    DEVICE_CMD_FOOTER,
+    TX_HEADER,
+    TX_FOOTER,
+    RX_HEADER,
+    RX_FOOTER,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -111,10 +111,10 @@ def _wrap_command(key: str) -> bytes:
     contents = bytearray.fromhex(command_word + value)
     length = len(contents).to_bytes(2, "little")
     return (
-        bytearray.fromhex(REQ_HEADER)
+        bytearray.fromhex(TX_HEADER)
         + length
         + contents
-        + bytearray.fromhex(REQ_FOOTER)
+        + bytearray.fromhex(TX_FOOTER)
     )
 
 
@@ -130,12 +130,12 @@ def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
 
 def _unwrap_response(data: bytes) -> bytes:
     """Remove header and footer from a response."""
-    return _unwrap_frame(data, REQ_HEADER, REQ_FOOTER)
+    return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
 
 
 def _unwrap_device_command(data: bytes) -> bytes:
     """Remove header and footer from a device command."""
-    return _unwrap_frame(data, DEVICE_CMD_HEADER, DEVICE_CMD_FOOTER)
+    return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
 
 
 def _parse_response(key: str, data: bytes) -> bytes:
@@ -490,7 +490,7 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
-        if data.startswith(bytearray.fromhex(REQ_HEADER)):
+        if data.startswith(bytearray.fromhex(TX_HEADER)):
             parsed = _unwrap_response(data)
             if self._notify_future and not self._notify_future.done():
                 _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
@@ -499,7 +499,7 @@ class BaseDevice:
             _LOGGER.debug(
                 "%s: Received unsolicited notification: %s", self.name, parsed.hex()
             )
-        elif data.startswith(bytearray.fromhex(DEVICE_CMD_HEADER)):
+        elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_device_command(data)
             if len(payload) >= 2:
                 command = payload[:2]
