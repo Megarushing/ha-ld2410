@@ -5,6 +5,7 @@ from custom_components.ld2410.api.devices.device import (
     _password_to_words,
     _unwrap_response,
     _wrap_command,
+    _parse_response,
     BaseDevice,
 )
 from custom_components.ld2410.api.const import CMD_BT_PASSWORD
@@ -47,3 +48,9 @@ def test_unwrap_response():
     """Ensure responses are unwrapped correctly."""
     raw = bytes.fromhex("fdfcfbfa0400ff00010004030201")
     assert _unwrap_response(raw) == bytes.fromhex("ff000100")
+
+
+def test_parse_response():
+    """Ensure responses are parsed and ACK verified."""
+    raw = bytes.fromhex("fdfcfbfa0400a801000004030201")
+    assert _parse_response(CMD_BT_PASSWORD, raw) == bytes.fromhex("0000")

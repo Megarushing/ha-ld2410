@@ -127,6 +127,22 @@ def _unwrap_response(data: bytes) -> bytes:
     return data
 
 
+def _parse_response(key: str, data: bytes) -> bytes:
+    """Parse a notification response and verify the ACK."""
+    payload = _unwrap_response(data)
+    if payload in (b"\x07", b"\t"):
+        return payload
+    if len(payload) < 2:
+        raise OperationError("Response too short")
+    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+    command = payload[:2]
+    if command != expected_ack:
+        raise OperationError(
+            f"Unexpected response command {command.hex()} for {key[:4]}"
+        )
+    return payload[2:]
+
+
 class BaseDevice:
     """Base representation of a device."""
 
@@ -476,12 +492,13 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
+        parsed = _unwrap_response(data)
         if self._notify_future and not self._notify_future.done():
-            _LOGGER.debug("%s: Notification response: %s", self.name, data.hex())
+            _LOGGER.debug("%s: Notification response: %s", self.name, parsed.hex())
             self._notify_future.set_result(data)
             return
         _LOGGER.debug(
-            "%s: Received unsolicited notification: %s", self.name, data.hex()
+            "%s: Received unsolicited notification: %s", self.name, parsed.hex()
         )
 
     async def _start_notify(self) -> None:
@@ -517,7 +534,8 @@ class BaseDevice:
 
         _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg_raw.hex())
 
-        notify_msg = _unwrap_response(notify_msg_raw)
+        notify_msg = _parse_response(key, notify_msg_raw)
+        _LOGGER.debug("%s: Parsed notification: %s", self.name, notify_msg.hex())
 
         if notify_msg == b"\x07":
             _LOGGER.error("Password required")
