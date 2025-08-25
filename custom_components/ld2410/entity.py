@@ -63,6 +63,11 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
         """Return the state attributes."""
         return {"last_run_success": self._last_run_success}
 
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.device.is_connected or super().available
+
     @callback
     def _async_update_attrs(self) -> None:
         """Update the entity attributes."""

@@ -87,6 +87,8 @@ class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         self, service_info: bluetooth.BluetoothServiceInfoBleak
     ) -> None:
         """Handle the device going unavailable."""
+        if self.device.is_connected:
+            return
         super()._async_handle_unavailable(service_info)
         self._was_unavailable = True
         _LOGGER.info("Device %s is unavailable", self.device_name)
