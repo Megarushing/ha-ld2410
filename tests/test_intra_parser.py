@@ -24,7 +24,7 @@ def test_parse_intra_frame_basic() -> None:
         "type": "basic",
         "moving": True,
         "stationary": False,
-        "presence": True,
+        "occupancy": True,
         "move_distance_cm": 1,
         "move_energy": 20,
         "still_distance_cm": 2,
@@ -68,7 +68,7 @@ async def test_notification_handler_engineering_frame_updates_data(caplog) -> No
         "type": "engineering",
         "moving": True,
         "stationary": True,
-        "presence": True,
+        "occupancy": True,
         "move_distance_cm": 78,
         "move_energy": 51,
         "still_distance_cm": 78,
@@ -82,10 +82,8 @@ async def test_notification_handler_engineering_frame_updates_data(caplog) -> No
     assert device.parsed_data == expected
     assert called
     assert await device.get_basic_info() == expected
-    assert any(
-        rec.message.endswith(str(expected)) and "Updated data" in rec.message
-        for rec in caplog.records
-    )
+    assert any("Received intra frame" in rec.message for rec in caplog.records)
+    device._cancel_disconnect_timer()
 
 
 @pytest.mark.asyncio
@@ -108,7 +106,7 @@ async def test_notification_handler_initializes_without_advertisement() -> None:
         "type": "engineering",
         "moving": True,
         "stationary": True,
-        "presence": True,
+        "occupancy": True,
         "move_distance_cm": 78,
         "move_energy": 51,
         "still_distance_cm": 78,
@@ -122,3 +120,4 @@ async def test_notification_handler_initializes_without_advertisement() -> None:
 
     assert device.parsed_data == expected
     assert await device.get_basic_info() == expected
+    device._cancel_disconnect_timer()

@@ -83,13 +83,13 @@ class LD2410(Device):
 
         moving = status_raw in (0x01, 0x03)
         stationary = status_raw in (0x02, 0x03)
-        presence = moving or stationary
+        occupancy = moving or stationary
 
         result: Dict[str, Any] = {
             "type": ftype,
             "moving": moving,
             "stationary": stationary,
-            "presence": presence,
+            "occupancy": occupancy,
             "move_distance_cm": move_distance_cm,
             "move_energy": move_energy,
             "still_distance_cm": still_distance_cm,
