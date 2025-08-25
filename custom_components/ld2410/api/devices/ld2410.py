@@ -48,13 +48,6 @@ class LD2410(Device):
             raise OperationError("Wrong password")
         return response == b"\x00\x00"
 
-    _STATUS_MAP = {
-        0x00: "no_target",
-        0x01: "moving",
-        0x02: "stationary",
-        0x03: "moving_and_stationary",
-    }
-
     def parse_intra_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink intra frame.
 
@@ -88,14 +81,12 @@ class LD2410(Device):
         detect_distance_cm = int.from_bytes(content[7:9], "little")
         idx = 9
 
-        status = self._STATUS_MAP.get(status_raw, "no_target")
         moving = status_raw in (0x01, 0x03)
         stationary = status_raw in (0x02, 0x03)
         presence = moving or stationary
 
         result: Dict[str, Any] = {
             "type": ftype,
-            "status": status,
             "moving": moving,
             "stationary": stationary,
             "presence": presence,

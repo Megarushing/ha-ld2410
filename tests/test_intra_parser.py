@@ -20,7 +20,6 @@ def test_parse_intra_frame_basic() -> None:
     result = device.parse_intra_frame(payload)
     assert result == {
         "type": "basic",
-        "status": "moving",
         "moving": True,
         "stationary": False,
         "presence": True,
@@ -64,7 +63,6 @@ async def test_notification_handler_engineering_frame_updates_data() -> None:
 
     expected = {
         "type": "engineering",
-        "status": "moving_and_stationary",
         "moving": True,
         "stationary": True,
         "presence": True,

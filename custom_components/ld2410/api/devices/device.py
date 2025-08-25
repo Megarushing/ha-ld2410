@@ -495,7 +495,13 @@ class BaseDevice:
         if data.startswith(bytearray.fromhex(TX_HEADER)):
             if self._notify_future and not self._notify_future.done():
                 self._notify_future.set_result(data)
-                return
+            else:
+                _LOGGER.debug(
+                    "%s: Received unexpected command response: %s",
+                    self.name,
+                    data.hex(),
+                )
+            return
         # Notification is a device command to client
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_device_command(data)
