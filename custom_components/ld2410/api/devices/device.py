@@ -405,6 +405,17 @@ class BaseDevice:
             self._disconnect_timer.cancel()
             self._disconnect_timer = None
 
+    async def async_disconnect(self) -> None:
+        """Disconnect the device and stop active notifications."""
+        self._cancel_disconnect_timer()
+        client = self._client
+        if client and self._read_char:
+            try:
+                await client.stop_notify(self._read_char)
+            except BLEAK_RETRY_EXCEPTIONS as ex:
+                _LOGGER.debug("%s: Error stopping notify: %s", self.name, ex)
+        await self._execute_disconnect()
+
     async def _execute_forced_disconnect(self) -> None:
         """Execute forced disconnection."""
         self._cancel_disconnect_timer()
@@ -507,9 +518,7 @@ class BaseDevice:
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_intra_frame(data)
             try:
-                _LOGGER.debug(
-                    "%s: Received intra frame: %s", self.name, payload.hex()
-                )
+                _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
                 parsed = self.parse_intra_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
                 _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
