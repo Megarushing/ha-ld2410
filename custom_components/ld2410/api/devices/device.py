@@ -111,10 +111,7 @@ def _wrap_command(key: str) -> bytes:
     contents = bytearray.fromhex(command_word + value)
     length = len(contents).to_bytes(2, "little")
     return (
-        bytearray.fromhex(TX_HEADER)
-        + length
-        + contents
-        + bytearray.fromhex(TX_FOOTER)
+        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
     )
 
 
@@ -488,6 +485,13 @@ class BaseDevice:
             await self._execute_forced_disconnect()
             raise
 
+    def parse_intra_frame(self, data: bytes) -> dict[str, Any] | None:
+        """Parse an uplink intra frame.
+
+        Subclasses should override this to handle device specific frames.
+        """
+        return None
+
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
         # Notification is a response to a command
@@ -498,18 +502,23 @@ class BaseDevice:
         # Notification is a device command to client
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_device_command(data)
-            if len(payload) >= 2:
-                command = payload[:2]
-                params = payload[2:]
+            parsed = self.parse_intra_frame(payload)
+            if parsed and self._update_parsed_data(parsed):
+                self._last_full_update = time.monotonic()
+                self._fire_callbacks()
             else:
-                command = payload
-                params = b""
-            _LOGGER.debug(
-                "%s: Received device command: %s params: %s",
-                self.name,
-                command.hex(),
-                params.hex(),
-            )
+                if len(payload) >= 2:
+                    command = payload[:2]
+                    params = payload[2:]
+                else:
+                    command = payload
+                    params = b""
+                _LOGGER.debug(
+                    "%s: Received device command: %s params: %s",
+                    self.name,
+                    command.hex(),
+                    params.hex(),
+                )
         else:
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()
