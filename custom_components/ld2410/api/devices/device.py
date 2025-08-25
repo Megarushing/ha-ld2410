@@ -383,7 +383,6 @@ class BaseDevice:
             self.rssi,
         )
         self._cancel_disconnect_timer()
-        self.loop.create_task(self._restart_connection())
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -405,16 +404,6 @@ class BaseDevice:
         if self._disconnect_timer:
             self._disconnect_timer.cancel()
             self._disconnect_timer = None
-
-    async def _restart_connection(self) -> None:
-        """Reconnect and reauthorize after an unexpected disconnect."""
-        try:
-            await self._ensure_connected()
-            send_password = getattr(self, "cmd_send_bluetooth_password", None)
-            if send_password and self._password_words:
-                await send_password()
-        except Exception as ex:  # pragma: no cover - best effort
-            _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
 
     async def async_disconnect(self) -> None:
         """Disconnect the device and stop active notifications."""

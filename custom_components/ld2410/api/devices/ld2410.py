@@ -5,11 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Sequence
 
+from bleak_retry_connector import BleakClientWithServiceCache
+
 from ..const import CMD_BT_GET_PERMISSION
-from .device import (
-    Device,
-    OperationError,
-)
+from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +29,22 @@ class LD2410(Device):
         """Initialize the device control class."""
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
+
+    def _disconnected(self, client: BleakClientWithServiceCache) -> None:
+        """Handle disconnection and schedule reconnect."""
+        super()._disconnected(client)
+        if not self._expected_disconnect:
+            self.loop.create_task(self._restart_connection())
+
+    async def _restart_connection(self) -> None:
+        """Reconnect and reauthorize after an unexpected disconnect."""
+        try:
+            await self._ensure_connected()
+            send_password = getattr(self, "cmd_send_bluetooth_password", None)
+            if send_password and self._password_words:
+                await send_password()
+        except Exception as ex:  # pragma: no cover - best effort
+            _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
 
     async def cmd_send_bluetooth_password(
         self, words: Sequence[str] | None = None
