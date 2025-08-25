@@ -1,7 +1,7 @@
 """Test the sensors."""
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 from homeassistant.components.sensor import SensorDeviceClass
 from custom_components.ld2410.const import (
@@ -15,6 +15,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_SENSOR_TYPE,
+    STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -80,3 +81,95 @@ async def test_sensors(hass: HomeAssistant) -> None:
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_entities_created_without_initial_data(hass: HomeAssistant) -> None:
+    """Test entities are added even when no initial data is available."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.parsed_data",
+            new_callable=PropertyMock,
+            return_value={},
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert hass.states.get("binary_sensor.test_name_motion") is not None
+    assert hass.states.get("sensor.test_name_firmware_version") is not None
+    for gate in range(9):
+        move = hass.states.get(f"sensor.test_name_moving_gate_{gate}_energy")
+        still = hass.states.get(f"sensor.test_name_still_gate_{gate}_energy")
+        assert move is not None
+        assert move.state == STATE_UNKNOWN
+        assert still is not None
+        assert still.state == STATE_UNKNOWN
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
+    """Test gate energy sensors report values when data is present."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    mock_parsed = {
+        "firmware_version": "2.44.24073110",
+        "firmware_build_date": "2024-07-31T10:00:00+00:00",
+        "move_gate_energy": list(range(1, 10)),
+        "still_gate_energy": list(range(9, 0, -1)),
+    }
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value=mock_parsed),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    for gate in range(9):
+        move = hass.states.get(f"sensor.test_name_moving_gate_{gate}_energy")
+        still = hass.states.get(f"sensor.test_name_still_gate_{gate}_energy")
+        assert move is not None
+        assert move.state == str(mock_parsed["move_gate_energy"][gate])
+        assert still is not None
+        assert still.state == str(mock_parsed["still_gate_energy"][gate])
