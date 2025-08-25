@@ -103,17 +103,12 @@ async def async_setup_entry(
     """Set up sensors based on a config entry."""
     coordinator = entry.runtime_data
     entities = [
-        Sensor(coordinator, sensor)
-        for sensor, description in SENSOR_TYPES.items()
-        if sensor != "rssi" and description.key in coordinator.device.parsed_data
+        Sensor(coordinator, sensor) for sensor in SENSOR_TYPES if sensor != "rssi"
     ]
-    if "move_gate_energy" in coordinator.device.parsed_data:
-        for gate in range(len(coordinator.device.parsed_data["move_gate_energy"])):
-            entities.append(GateEnergySensor(coordinator, "move_gate_energy", gate))
-    if "still_gate_energy" in coordinator.device.parsed_data:
-        for gate in range(len(coordinator.device.parsed_data["still_gate_energy"])):
-            entities.append(GateEnergySensor(coordinator, "still_gate_energy", gate))
     entities.append(RSSISensor(coordinator, "rssi"))
+    for key in ("move_gate_energy", "still_gate_energy"):
+        for gate in range(9):
+            entities.append(GateEnergySensor(coordinator, key, gate))
     async_add_entities(entities)
 
 

@@ -12,9 +12,9 @@ CHARACTERISTIC_NOTIFY = "0000fff1-0000-1000-8000-00805f9b34fb"
 CHARACTERISTIC_WRITE = "0000fff2-0000-1000-8000-00805f9b34fb"
 
 # ---------- Frame constants (hex strings) ----------
-TX_HEADER  = "FDFCFBFA"  # Downlink (host→radar) command frame header. Command/ACK use same header/footer.
+TX_HEADER = "FDFCFBFA"  # Downlink (host→radar) command frame header. Command/ACK use same header/footer.
 TX_FOOTER = "04030201"  # Downlink frame footer. ACK frames use this too.  status(2): "0000"=success, "0100"=failure. :contentReference[oaicite:1]{index=1}
-RX_HEADER  = "F4F3F2F1"  # Uplink (radar→host) data frame header. Types: "01"=engineering, "02"=basic. :contentReference[oaicite:2]{index=2}
+RX_HEADER = "F4F3F2F1"  # Uplink (radar→host) data frame header. Types: "01"=engineering, "02"=basic. :contentReference[oaicite:2]{index=2}
 RX_FOOTER = "F8F7F6F5"  # Uplink data frame footer.
 
 # NOTE on ACKs: ACK intra-frame data begins with (sent_cmd | 0x0100) then the return payload.
@@ -81,7 +81,9 @@ CMD_GET_MAC = "A500"  # value: "0001"
 # return: status(2) + fixed_type(1B="00") + MAC(6B; shown big-endian in example). :contentReference[oaicite:16]{index=16}
 
 # Obtain Bluetooth permission (checks password) — reply is sent via Bluetooth, not UART.
-CMD_BT_GET_PERMISSION = "A800"  # value: 6B password ("4869 4C69 6E6B" for "HiLink" split in LE pairs)
+CMD_BT_GET_PERMISSION = (
+    "A800"  # value: 6B password ("4869 4C69 6E6B" for "HiLink" split in LE pairs)
+)
 # return: status(2). Treat "0000"=allowed, "0100"=denied (per generic success/fail). :contentReference[oaicite:17]{index=17}
 
 # Set Bluetooth password (stores new 6B password).
@@ -98,21 +100,21 @@ CMD_GET_RES = "AB00"  # value: (none)
 
 
 # ---------- Parameter words (for 0x0060 “max gates & nobody”) ----------
-PAR_MAX_MOVE_GATE   = "0000"  # u32 move gate: 2..8
-PAR_MAX_STILL_GATE  = "0100"  # u32 still gate: 2..8
+PAR_MAX_MOVE_GATE = "0000"  # u32 move gate: 2..8
+PAR_MAX_STILL_GATE = "0100"  # u32 still gate: 2..8
 PAR_NOBODY_DURATION = "0200"  # u32 seconds: 0..65535  (aka "no-one duration"). :contentReference[oaicite:21]{index=21}
 
 # ---------- Parameter words (for 0x0064 “set sensitivity”) ----------
-PAR_DISTANCE_GATE = "0000"    # u32 gate: 0..8, or ALL_GATES
-PAR_MOVE_SENS     = "0100"    # u32 sensitivity: 0..100
-PAR_STILL_SENS    = "0200"    # u32 sensitivity: 0..100
-ALL_GATES         = "FFFF"    # special selector meaning "apply to all gates". :contentReference[oaicite:22]{index=22}
+PAR_DISTANCE_GATE = "0000"  # u32 gate: 0..8, or ALL_GATES
+PAR_MOVE_SENS = "0100"  # u32 sensitivity: 0..100
+PAR_STILL_SENS = "0200"  # u32 sensitivity: 0..100
+ALL_GATES = "FFFF"  # special selector meaning "apply to all gates". :contentReference[oaicite:22]{index=22}
 
 # ---------- Baud rate indices (for CMD_SET_BAUD A100) ----------
-BAUD_9600   = "0001"
-BAUD_19200  = "0002"
-BAUD_38400  = "0003"
-BAUD_57600  = "0004"
+BAUD_9600 = "0001"
+BAUD_19200 = "0002"
+BAUD_38400 = "0003"
+BAUD_57600 = "0004"
 BAUD_115200 = "0005"
 BAUD_230400 = "0006"
 BAUD_256000 = "0007"  # factory default
@@ -120,12 +122,13 @@ BAUD_460800 = "0008"  # per Table 6. :contentReference[oaicite:23]{index=23}
 
 # ---------- Distance resolution indices (for CMD_SET_RES / CMD_GET_RES) ----------
 RES_PER_GATE_0_75M = "0000"  # each distance gate = 0.75 m
-RES_PER_GATE_0_2M  = "0001"  # each distance gate = 0.20 m  (query example returns "0001"). :contentReference[oaicite:24]{index=24}
+RES_PER_GATE_0_2M = "0001"  # each distance gate = 0.20 m  (query example returns "0001"). :contentReference[oaicite:24]{index=24}
 
 # ---------- Uplink data types (for RX payload interpretation) ----------
 UPLINK_TYPE_ENGINEERING = "01"  # per-gate energies appended to basic target info
-UPLINK_TYPE_BASIC       = "02"  # basic target info only (default). :contentReference[oaicite:25]{index=25}
-
+UPLINK_TYPE_BASIC = (
+    "02"  # basic target info only (default). :contentReference[oaicite:25]{index=25}
+)
 
 
 class Model(StrEnum):
@@ -142,13 +145,11 @@ __all__ = [
     "Model",
     "CHARACTERISTIC_NOTIFY",
     "CHARACTERISTIC_WRITE",
-
     # frame constants (hex strings)
     "TX_HEADER",
     "TX_FOOTER",
     "RX_HEADER",
     "RX_FOOTER",
-
     # command words (hex strings, little-endian)
     "CMD_ENABLE_CFG",
     "CMD_END_CFG",
@@ -167,7 +168,6 @@ __all__ = [
     "CMD_BT_SET_PWD",
     "CMD_SET_RES",
     "CMD_GET_RES",
-
     # parameter words
     "PAR_MAX_MOVE_GATE",
     "PAR_MAX_STILL_GATE",
@@ -176,7 +176,6 @@ __all__ = [
     "PAR_MOVE_SENS",
     "PAR_STILL_SENS",
     "ALL_GATES",
-
     # baud rate indices
     "BAUD_9600",
     "BAUD_19200",
@@ -186,11 +185,9 @@ __all__ = [
     "BAUD_230400",
     "BAUD_256000",
     "BAUD_460800",
-
     # distance resolution indices
     "RES_PER_GATE_0_75M",
     "RES_PER_GATE_0_2M",
-
     # uplink data types
     "UPLINK_TYPE_ENGINEERING",
     "UPLINK_TYPE_BASIC",
