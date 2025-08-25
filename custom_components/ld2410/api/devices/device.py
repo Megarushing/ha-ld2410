@@ -249,7 +249,7 @@ class BaseDevice:
         if retry is None:
             retry = self._retry_count
         command = _wrap_command(self._commandkey(key))
-        _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
+        # _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
         max_attempts = retry + 1
         if self._operation_lock.locked():
             _LOGGER.debug(
