@@ -9,13 +9,8 @@ from custom_components.ld2410.api.devices.device import (
     OperationError,
 )
 from custom_components.ld2410.api.devices.ld2410 import LD2410
-import logging
 
-from custom_components.ld2410.api.const import (
-    CMD_BT_GET_PERMISSION,
-    RX_HEADER,
-    RX_FOOTER,
-)
+from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
 
 
 def test_wrap_command_ack():
@@ -78,17 +73,3 @@ def test_parse_response_rejects_short_payload(payload_hex: str) -> None:
     raw = bytes.fromhex(f"fdfcfbfa0100{payload_hex}04030201")
     with pytest.raises(OperationError):
         _parse_response(CMD_BT_GET_PERMISSION, raw)
-
-
-def test_device_command_notification(caplog) -> None:
-    """Ensure device command frames are logged separately."""
-    dev = _TestDevice(password="HiLink")
-    dev._notify_future = dev.loop.create_future()
-    caplog.set_level(logging.DEBUG)
-    frame_hex = RX_HEADER + "0400a1000203" + RX_FOOTER
-    dev._notification_handler(0, bytearray.fromhex(frame_hex))
-    assert not dev._notify_future.done()
-    assert any(
-        "Received device command: a100 params: 0203" in record.getMessage()
-        for record in caplog.records
-    )

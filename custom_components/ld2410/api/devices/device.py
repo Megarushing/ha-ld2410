@@ -37,9 +37,6 @@ from ..models import Advertisement
 _LOGGER = logging.getLogger(__name__)
 
 
-# Keys common to all device types
-DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
-
 DBUS_ERROR_BACKOFF_TIME = 0.25
 
 # How long to hold the connection
@@ -111,10 +108,7 @@ def _wrap_command(key: str) -> bytes:
     contents = bytearray.fromhex(command_word + value)
     length = len(contents).to_bytes(2, "little")
     return (
-        bytearray.fromhex(TX_HEADER)
-        + length
-        + contents
-        + bytearray.fromhex(TX_FOOTER)
+        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
     )
 
 
@@ -133,8 +127,8 @@ def _unwrap_response(data: bytes) -> bytes:
     return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
 
 
-def _unwrap_device_command(data: bytes) -> bytes:
-    """Remove header and footer from a device command."""
+def _unwrap_intra_frame(data: bytes) -> bytes:
+    """Remove header and footer from an intra frame."""
     return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
 
 
@@ -488,28 +482,37 @@ class BaseDevice:
             await self._execute_forced_disconnect()
             raise
 
+    def parse_intra_frame(self, data: bytes) -> dict[str, Any] | None:
+        """Parse an uplink intra frame.
+
+        Subclasses should override this to handle device specific frames.
+        """
+        return None
+
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
         # Notification is a response to a command
         if data.startswith(bytearray.fromhex(TX_HEADER)):
             if self._notify_future and not self._notify_future.done():
                 self._notify_future.set_result(data)
-                return
-        # Notification is a device command to client
-        elif data.startswith(bytearray.fromhex(RX_HEADER)):
-            payload = _unwrap_device_command(data)
-            if len(payload) >= 2:
-                command = payload[:2]
-                params = payload[2:]
             else:
-                command = payload
-                params = b""
-            _LOGGER.debug(
-                "%s: Received device command: %s params: %s",
-                self.name,
-                command.hex(),
-                params.hex(),
-            )
+                _LOGGER.debug(
+                    "%s: Received unexpected command response: %s",
+                    self.name,
+                    data.hex(),
+                )
+            return
+        # Notification is an intra frame from the device
+        elif data.startswith(bytearray.fromhex(RX_HEADER)):
+            payload = _unwrap_intra_frame(data)
+            try:
+                parsed = self.parse_intra_frame(payload)
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
+            else:
+                if parsed and self._update_parsed_data(parsed):
+                    self._last_full_update = time.monotonic()
+                    self._fire_callbacks()
         else:
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()
@@ -608,18 +611,6 @@ class BaseDevice:
 
         return self._sb_adv_data
 
-    async def _get_basic_info(
-        self, cmd: str = DEVICE_GET_BASIC_SETTINGS_KEY
-    ) -> bytes | None:
-        """Return basic info of device."""
-        _data = await self._send_command(key=cmd, retry=self._retry_count)
-
-        if _data in (b"\x07", b"\x00"):
-            _LOGGER.error("Unsuccessful, please try again")
-            return None
-
-        return _data
-
     def _fire_callbacks(self) -> None:
         """Fire callbacks."""
         _LOGGER.debug("%s: Fire callbacks", self.name)
@@ -644,13 +635,8 @@ class BaseDevice:
             self._fire_callbacks()
 
     async def get_basic_info(self) -> dict[str, Any] | None:
-        """Get device basic settings."""
-        if not (_data := await self._get_basic_info()):
-            return None
-        return {
-            "battery": _data[1],
-            "firmware": _data[2] / 10.0,
-        }
+        """Return cached device data."""
+        return self.parsed_data or None
 
     def _check_command_result(
         self, result: bytes | None, index: int, values: set[int]
@@ -670,13 +656,21 @@ class BaseDevice:
         Returns true if data has changed and False if not.
         """
         if not self._sb_adv_data:
-            _LOGGER.exception("No advertisement data to update")
-            return None
+            # Initialize advertisement data if we have not yet received any
+            self._sb_adv_data = Advertisement(
+                address=self._device.address,
+                data={"data": new_data},
+                device=self._device,
+                rssi=self.rssi,
+            )
+            _LOGGER.debug("%s: Updated data: %s", self.name, new_data)
+            return True
         old_data = self._sb_adv_data.data.get("data") or {}
         merged_data = _merge_data(old_data, new_data)
         if merged_data == old_data:
             return False
         self._set_parsed_data(self._sb_adv_data, merged_data)
+        _LOGGER.debug("%s: Updated data: %s", self.name, merged_data)
         return True
 
     def _set_parsed_data(
