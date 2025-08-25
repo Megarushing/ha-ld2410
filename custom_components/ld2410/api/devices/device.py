@@ -499,23 +499,27 @@ class BaseDevice:
         # Notification is a device command to client
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_device_command(data)
-            parsed = self.parse_intra_frame(payload)
-            if parsed and self._update_parsed_data(parsed):
-                self._last_full_update = time.monotonic()
-                self._fire_callbacks()
+            try:
+                parsed = self.parse_intra_frame(payload)
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
             else:
-                if len(payload) >= 2:
-                    command = payload[:2]
-                    params = payload[2:]
+                if parsed and self._update_parsed_data(parsed):
+                    self._last_full_update = time.monotonic()
+                    self._fire_callbacks()
                 else:
-                    command = payload
-                    params = b""
-                _LOGGER.debug(
-                    "%s: Received device command: %s params: %s",
-                    self.name,
-                    command.hex(),
-                    params.hex(),
-                )
+                    if len(payload) >= 2:
+                        command = payload[:2]
+                        params = payload[2:]
+                    else:
+                        command = payload
+                        params = b""
+                    _LOGGER.debug(
+                        "%s: Received device command: %s params: %s",
+                        self.name,
+                        command.hex(),
+                        params.hex(),
+                    )
         else:
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()

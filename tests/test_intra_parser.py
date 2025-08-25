@@ -6,7 +6,7 @@ import pytest
 
 from bleak.backends.device import BLEDevice
 
-from custom_components.ld2410.api.devices.ld2410 import LD2410, parse_intra_frame
+from custom_components.ld2410.api.devices.ld2410 import LD2410
 from custom_components.ld2410.api.const import RX_HEADER, RX_FOOTER
 from custom_components.ld2410.api.models import Advertisement
 
@@ -14,7 +14,10 @@ from custom_components.ld2410.api.models import Advertisement
 def test_parse_intra_frame_basic() -> None:
     """Ensure basic intra frames are parsed correctly."""
     payload = bytes.fromhex("02aa0101001402002803005500")
-    result = parse_intra_frame(payload)
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60)
+    )
+    result = device.parse_intra_frame(payload)
     assert result == {
         "type": "basic",
         "status": "moving",
