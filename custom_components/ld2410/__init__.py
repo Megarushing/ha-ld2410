@@ -29,7 +29,7 @@ from .const import (
 from .coordinator import ConfigEntryType, DataCoordinator
 
 PLATFORMS_BY_TYPE = {
-    SupportedModels.LD2410.value: [Platform.BINARY_SENSOR, Platform.SENSOR],
+    SupportedModels.LD2410.value: [Platform.SENSOR],
 }
 CLASS_BY_DEVICE = {SupportedModels.LD2410.value: api.LD2410}
 

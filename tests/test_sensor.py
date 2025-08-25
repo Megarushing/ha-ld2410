@@ -73,10 +73,10 @@ async def test_sensors(hass: HomeAssistant) -> None:
     assert build_attrs[ATTR_FRIENDLY_NAME] == "test-name Firmware build date"
     assert build_attrs[ATTR_DEVICE_CLASS] == SensorDeviceClass.TIMESTAMP
 
-    rssi_sensor = hass.states.get("sensor.test_name_signal_strength")
+    rssi_sensor = hass.states.get("sensor.test_name_bluetooth_signal")
     rssi_attrs = rssi_sensor.attributes
     assert rssi_sensor.state == "-90"
-    assert rssi_attrs[ATTR_FRIENDLY_NAME] == "test-name Signal strength"
+    assert rssi_attrs[ATTR_FRIENDLY_NAME] == "test-name Bluetooth signal"
     assert rssi_attrs[ATTR_UNIT_OF_MEASUREMENT] == "dBm"
 
     assert await hass.config_entries.async_unload(entry.entry_id)

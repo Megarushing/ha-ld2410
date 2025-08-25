@@ -34,6 +34,7 @@ PARALLEL_UPDATES = 0
 SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     "rssi": SensorEntityDescription(
         key="rssi",
+        name="Bluetooth signal",
         translation_key="bluetooth_signal",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -54,20 +55,66 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     ),
 }
 
-for key, t_key, unit in (
-    ("move_distance_cm", "move_distance", UnitOfLength.CENTIMETERS),
-    ("move_energy", "move_energy", PERCENTAGE),
-    ("still_distance_cm", "still_distance", UnitOfLength.CENTIMETERS),
-    ("still_energy", "still_energy", PERCENTAGE),
-    ("detect_distance_cm", "detect_distance", UnitOfLength.CENTIMETERS),
-    ("max_move_gate", "max_move_gate", None),
-    ("max_still_gate", "max_still_gate", None),
+for key, t_key, unit, name, state in (
+    (
+        "move_distance_cm",
+        "move_distance",
+        UnitOfLength.CENTIMETERS,
+        "Moving distance",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "move_energy",
+        "move_energy",
+        PERCENTAGE,
+        "Moving energy",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "still_distance_cm",
+        "still_distance",
+        UnitOfLength.CENTIMETERS,
+        "Still distance",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "still_energy",
+        "still_energy",
+        PERCENTAGE,
+        "Still energy",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "detect_distance_cm",
+        "detect_distance",
+        UnitOfLength.CENTIMETERS,
+        "Detection distance",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "max_move_gate",
+        "max_move_gate",
+        None,
+        "Max moving gate",
+        SensorStateClass.MEASUREMENT,
+    ),
+    (
+        "max_still_gate",
+        "max_still_gate",
+        None,
+        "Max still gate",
+        SensorStateClass.MEASUREMENT,
+    ),
+    ("moving", "motion", None, "Motion", None),
+    ("stationary", "static", None, "Static", None),
+    ("presence", "presence", None, "Presence", None),
 ):
     SENSOR_TYPES[key] = SensorEntityDescription(
         key=key,
         translation_key=t_key,
+        name=name,
         native_unit_of_measurement=unit,
-        state_class=SensorStateClass.MEASUREMENT,
+        state_class=state,
     )
 
 for gate in range(9):
