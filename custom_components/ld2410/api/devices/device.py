@@ -517,7 +517,7 @@ class BaseDevice:
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_intra_frame(data)
             try:
-                _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
+                # _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
                 parsed = self.parse_intra_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
                 _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
@@ -682,7 +682,7 @@ class BaseDevice:
         if merged_data == old_data:
             return False
         self._set_parsed_data(self._sb_adv_data, merged_data)
-        _LOGGER.debug("%s: Updated data: %s", self.name, merged_data)
+        # _LOGGER.debug("%s: Updated data: %s", self.name, merged_data)
         return True
 
     def _set_parsed_data(
