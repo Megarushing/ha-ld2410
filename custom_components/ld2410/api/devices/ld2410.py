@@ -12,16 +12,6 @@ from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_COMMAND_HEADER = "5701"
-
-# Device command keys
-PRESS_KEY = f"{DEVICE_COMMAND_HEADER}00"
-ON_KEY = f"{DEVICE_COMMAND_HEADER}01"
-OFF_KEY = f"{DEVICE_COMMAND_HEADER}02"
-DOWN_KEY = f"{DEVICE_COMMAND_HEADER}03"
-UP_KEY = f"{DEVICE_COMMAND_HEADER}04"
-
-
 class LD2410(Device):
     """Representation of a device."""
 
@@ -39,6 +29,7 @@ class LD2410(Device):
     async def _restart_connection(self) -> None:
         """Reconnect and reauthorize after an unexpected disconnect."""
         try:
+            _LOGGER.debug("%s: Reconnecting...", self.name)
             await self._ensure_connected()
             if self._password_words:
                 await self.cmd_send_bluetooth_password()

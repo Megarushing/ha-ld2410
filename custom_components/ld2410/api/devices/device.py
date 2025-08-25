@@ -149,12 +149,6 @@ def _parse_response(key: str, data: bytes) -> bytes:
 class BaseDevice:
     """Base representation of a device."""
 
-    _turn_on_command: str | None = None
-    _turn_off_command: str | None = None
-    _open_command: str | None = None
-    _close_command: str | None = None
-    _press_command: str | None = None
-
     def __init__(
         self,
         device: BLEDevice,
@@ -707,11 +701,6 @@ class BaseDevice:
             self._update_parsed_data(new_data)
         self._override_adv_data = None
 
-    def switch_mode(self) -> bool | None:
-        """Return true or false from cache."""
-        # To get actual position call update() first.
-        return self._get_adv_value("switchMode")
-
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
         if (
@@ -728,41 +717,6 @@ class BaseDevice:
             raise OperationError(
                 f"Current device {self._device.address} does not support this functionality"
             )
-
-    @update_after_operation
-    async def turn_on(self) -> bool:
-        """Turn device on."""
-        self._check_function_support(self._turn_on_command)
-        result = await self._send_command(self._turn_on_command)
-        return self._check_command_result(result, 0, {1})
-
-    @update_after_operation
-    async def turn_off(self) -> bool:
-        """Turn device off."""
-        self._check_function_support(self._turn_off_command)
-        result = await self._send_command(self._turn_off_command)
-        return self._check_command_result(result, 0, {1})
-
-    @update_after_operation
-    async def open(self) -> bool:
-        """Open the device."""
-        self._check_function_support(self._open_command)
-        result = await self._send_command(self._open_command)
-        return self._check_command_result(result, 0, {1})
-
-    @update_after_operation
-    async def close(self) -> bool:
-        """Close the device."""
-        self._check_function_support(self._close_command)
-        result = await self._send_command(self._close_command)
-        return self._check_command_result(result, 0, {1})
-
-    @update_after_operation
-    async def press(self) -> bool:
-        """Press the device."""
-        self._check_function_support(self._press_command)
-        result = await self._send_command(self._press_command)
-        return self._check_command_result(result, 0, {1})
 
 
 class Device(BaseDevice):
