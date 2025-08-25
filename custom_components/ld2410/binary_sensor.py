@@ -24,15 +24,20 @@ from .entity import Entity
 PARALLEL_UPDATES = 0
 
 BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
-    "motion_detected": BinarySensorEntityDescription(
-        key="pir_state",
-        name=None,
-        device_class=BinarySensorDeviceClass.MOTION,
+    "motion": BinarySensorEntityDescription(
+        key="moving",
+        name="Motion",
+        device_class=BinarySensorDeviceClass.MOVING,
     ),
-    "presence_detected": BinarySensorEntityDescription(
-        key="presence_state",
-        name=None,
-        device_class=BinarySensorDeviceClass.PRESENCE,
+    "static": BinarySensorEntityDescription(
+        key="stationary",
+        name="Static",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+    ),
+    "presence": BinarySensorEntityDescription(
+        key="presence",
+        name="Presence",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
 }
 
@@ -46,8 +51,8 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities(
         BinarySensor(coordinator, binary_sensor)
-        for binary_sensor in coordinator.device.parsed_data
-        if binary_sensor in BINARY_SENSOR_TYPES
+        for binary_sensor, description in BINARY_SENSOR_TYPES.items()
+        if description.key in coordinator.device.parsed_data
     )
 
 
@@ -68,4 +73,4 @@ class BinarySensor(Entity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the sensor."""
-        return self.parsed_data[self._sensor]
+        return bool(self.parsed_data.get(self.entity_description.key))

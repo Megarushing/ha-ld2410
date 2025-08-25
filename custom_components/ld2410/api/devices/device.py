@@ -491,6 +491,7 @@ class BaseDevice:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
+        self._reset_disconnect_timer()
         # Notification is a response to a command
         if data.startswith(bytearray.fromhex(TX_HEADER)):
             if self._notify_future and not self._notify_future.done():
@@ -666,7 +667,7 @@ class BaseDevice:
                 device=self._device,
                 rssi=self.rssi,
             )
-            _LOGGER.debug("%s: Updated data: %s", self.name, new_data)
+            # _LOGGER.debug("%s: Updated data: %s", self.name, new_data)
             return True
         old_data = self._sb_adv_data.data.get("data") or {}
         merged_data = _merge_data(old_data, new_data)
