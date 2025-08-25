@@ -135,10 +135,6 @@ class LD2410(Device):
             raise OperationError("Wrong password")
         return response == b"\x00\x00"
 
-    async def get_basic_info(self) -> dict[str, Any] | None:
-        """Return cached device data."""
-        return self.parsed_data or None
-
     def parse_intra_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink intra frame."""
         return parse_intra_frame(data)

@@ -37,9 +37,6 @@ from ..models import Advertisement
 _LOGGER = logging.getLogger(__name__)
 
 
-# Keys common to all device types
-DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
-
 DBUS_ERROR_BACKOFF_TIME = 0.25
 
 # How long to hold the connection
@@ -617,18 +614,6 @@ class BaseDevice:
 
         return self._sb_adv_data
 
-    async def _get_basic_info(
-        self, cmd: str = DEVICE_GET_BASIC_SETTINGS_KEY
-    ) -> bytes | None:
-        """Return basic info of device."""
-        _data = await self._send_command(key=cmd, retry=self._retry_count)
-
-        if _data in (b"\x07", b"\x00"):
-            _LOGGER.error("Unsuccessful, please try again")
-            return None
-
-        return _data
-
     def _fire_callbacks(self) -> None:
         """Fire callbacks."""
         _LOGGER.debug("%s: Fire callbacks", self.name)
@@ -653,13 +638,8 @@ class BaseDevice:
             self._fire_callbacks()
 
     async def get_basic_info(self) -> dict[str, Any] | None:
-        """Get device basic settings."""
-        if not (_data := await self._get_basic_info()):
-            return None
-        return {
-            "battery": _data[1],
-            "firmware": _data[2] / 10.0,
-        }
+        """Return cached device data."""
+        return self.parsed_data or None
 
     def _check_command_result(
         self, result: bytes | None, index: int, values: set[int]
