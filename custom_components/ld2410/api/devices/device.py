@@ -518,7 +518,7 @@ class BaseDevice:
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_intra_frame(data)
             try:
-                _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
+                # _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
                 parsed = self.parse_intra_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
                 _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
@@ -626,7 +626,7 @@ class BaseDevice:
 
     def _fire_callbacks(self) -> None:
         """Fire callbacks."""
-        _LOGGER.debug("%s: Fire callbacks", self.name)
+        # _LOGGER.debug("%s: Fire callbacks", self.name)
         for callback in self._callbacks:
             callback()
 
