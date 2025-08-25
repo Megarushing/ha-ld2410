@@ -37,17 +37,19 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=True,
+        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "firmware_version": SensorEntityDescription(
         key="firmware_version",
         name="Firmware version",
+        entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "firmware_build_date": SensorEntityDescription(
         key="firmware_build_date",
         name="Firmware build date",
+        entity_registry_enabled_default=True,
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -63,11 +65,14 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfLength.CENTIMETERS,
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
     ),
     "move_energy": SensorEntityDescription(
         key="move_energy",
         name="Moving energy",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "still_distance": SensorEntityDescription(
         key="still_distance_cm",
@@ -75,11 +80,14 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfLength.CENTIMETERS,
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
     ),
     "still_energy": SensorEntityDescription(
         key="still_energy",
         name="Still energy",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "detect_distance": SensorEntityDescription(
         key="detect_distance_cm",
@@ -87,16 +95,21 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfLength.CENTIMETERS,
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
     ),
     "max_move_gate": SensorEntityDescription(
         key="max_move_gate",
         name="Max moving gate",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "max_still_gate": SensorEntityDescription(
         key="max_still_gate",
         name="Max still gate",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
 
@@ -156,6 +169,7 @@ class GateEnergySensor(Entity, SensorEntity):
             key=f"{data_key}_{gate}",
             name=f"{prefix} gate {gate} energy",
             state_class=SensorStateClass.MEASUREMENT,
+            entity_registry_enabled_default=False,
         )
         self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-{gate}"
 
