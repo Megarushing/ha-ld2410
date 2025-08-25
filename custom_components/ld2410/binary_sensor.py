@@ -34,9 +34,9 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
         name="Static",
         device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
-    "presence": BinarySensorEntityDescription(
-        key="presence",
-        name="Presence",
+    "occupancy": BinarySensorEntityDescription(
+        key="occupancy",
+        name="Occupancy",
         device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
 }
