@@ -127,8 +127,8 @@ def _unwrap_response(data: bytes) -> bytes:
     return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
 
 
-def _unwrap_device_command(data: bytes) -> bytes:
-    """Remove header and footer from a device command."""
+def _unwrap_intra_frame(data: bytes) -> bytes:
+    """Remove header and footer from an intra frame."""
     return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
 
 
@@ -502,9 +502,9 @@ class BaseDevice:
                     data.hex(),
                 )
             return
-        # Notification is a device command to client
+        # Notification is an intra frame from the device
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
-            payload = _unwrap_device_command(data)
+            payload = _unwrap_intra_frame(data)
             try:
                 parsed = self.parse_intra_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
@@ -513,19 +513,6 @@ class BaseDevice:
                 if parsed and self._update_parsed_data(parsed):
                     self._last_full_update = time.monotonic()
                     self._fire_callbacks()
-                else:
-                    if len(payload) >= 2:
-                        command = payload[:2]
-                        params = payload[2:]
-                    else:
-                        command = payload
-                        params = b""
-                    _LOGGER.debug(
-                        "%s: Received device command: %s params: %s",
-                        self.name,
-                        command.hex(),
-                        params.hex(),
-                    )
         else:
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()
