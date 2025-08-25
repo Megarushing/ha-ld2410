@@ -41,6 +41,7 @@ class LD2410(Device):
                 await self.cmd_send_bluetooth_password()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
+            self.loop.create_task(self._restart_connection())
 
     async def _execute_timed_disconnect(self) -> None:
         """Execute timed disconnection and schedule reconnect."""
