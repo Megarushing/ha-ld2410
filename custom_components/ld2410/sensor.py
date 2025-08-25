@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
+    UnitOfLength,
 )
 from homeassistant.core import HomeAssistant
 
@@ -50,6 +51,47 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    "move_distance": SensorEntityDescription(
+        key="move_distance_cm",
+        name="Moving distance",
+        native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "move_energy": SensorEntityDescription(
+        key="move_energy",
+        name="Moving energy",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "still_distance": SensorEntityDescription(
+        key="still_distance_cm",
+        name="Still distance",
+        native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "still_energy": SensorEntityDescription(
+        key="still_energy",
+        name="Still energy",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "detect_distance": SensorEntityDescription(
+        key="detect_distance_cm",
+        name="Detect distance",
+        native_unit_of_measurement=UnitOfLength.CENTIMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "max_move_gate": SensorEntityDescription(
+        key="max_move_gate",
+        name="Max moving gate",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "max_still_gate": SensorEntityDescription(
+        key="max_still_gate",
+        name="Max still gate",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 }
 
 
@@ -62,9 +104,15 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     entities = [
         Sensor(coordinator, sensor)
-        for sensor in coordinator.device.parsed_data
-        if sensor in SENSOR_TYPES and sensor != "rssi"
+        for sensor, description in SENSOR_TYPES.items()
+        if sensor != "rssi" and description.key in coordinator.device.parsed_data
     ]
+    if "move_gate_energy" in coordinator.device.parsed_data:
+        for gate in range(len(coordinator.device.parsed_data["move_gate_energy"])):
+            entities.append(GateEnergySensor(coordinator, "move_gate_energy", gate))
+    if "still_gate_energy" in coordinator.device.parsed_data:
+        for gate in range(len(coordinator.device.parsed_data["still_gate_energy"])):
+            entities.append(GateEnergySensor(coordinator, "still_gate_energy", gate))
     entities.append(RSSISensor(coordinator, "rssi"))
     async_add_entities(entities)
 
@@ -86,7 +134,37 @@ class Sensor(Entity, SensorEntity):
     @property
     def native_value(self) -> str | int | None:
         """Return the state of the sensor."""
-        return self.parsed_data[self._sensor]
+        return self.parsed_data.get(self.entity_description.key)
+
+
+class GateEnergySensor(Entity, SensorEntity):
+    """Representation of a gate energy sensor."""
+
+    def __init__(
+        self,
+        coordinator: DataCoordinator,
+        data_key: str,
+        gate: int,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._data_key = data_key
+        self._gate = gate
+        prefix = "Moving" if data_key == "move_gate_energy" else "Still"
+        self.entity_description = SensorEntityDescription(
+            key=f"{data_key}_{gate}",
+            name=f"{prefix} gate {gate} energy",
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-{gate}"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the state of the sensor."""
+        values = self.parsed_data.get(self._data_key)
+        if values is None or len(values) <= self._gate:
+            return None
+        return values[self._gate]
 
 
 class RSSISensor(Sensor):

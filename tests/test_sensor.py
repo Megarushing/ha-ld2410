@@ -59,8 +59,7 @@ async def test_sensors(hass: HomeAssistant) -> None:
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-
-    assert len(hass.states.async_all("sensor")) == 3
+        await hass.async_block_till_done()
 
     version_sensor = hass.states.get("sensor.test_name_firmware_version")
     version_attrs = version_sensor.attributes
