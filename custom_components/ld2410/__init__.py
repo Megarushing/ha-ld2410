@@ -90,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         return False
 
     if entry.data.get(CONF_PASSWORD):
-        await device.cmd_send_bluetooth_password()
+        await device.connect_and_subscribe()
 
     coordinator = entry.runtime_data = DataCoordinator(
         hass,

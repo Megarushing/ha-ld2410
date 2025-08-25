@@ -32,13 +32,20 @@ class LD2410(Device):
         if not self._expected_disconnect:
             self.loop.create_task(self._restart_connection())
 
+    async def connect_and_subscribe(self):
+        """ Begin connection, sends password and enables engineering mode."""
+        await self._ensure_connected()
+        if self._password_words:
+            await self.cmd_send_bluetooth_password()
+        await self.cmd_enable_config()
+        await self.cmd_enable_engineering_mode()
+        await self.cmd_end_config()
+
     async def _restart_connection(self) -> None:
         """Reconnect and reauthorize after an unexpected disconnect."""
         try:
             _LOGGER.debug("%s: Reconnecting...", self.name)
-            await self._ensure_connected()
-            if self._password_words:
-                await self.cmd_send_bluetooth_password()
+            await self.connect_and_subscribe()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             self.loop.create_task(self._restart_connection())
