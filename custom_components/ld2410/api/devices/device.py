@@ -286,6 +286,11 @@ class BaseDevice:
             return self._sb_adv_data.rssi
         return -127
 
+    @property
+    def is_connected(self) -> bool:
+        """Return if the BLE client is connected."""
+        return bool(self._client and self._client.is_connected)
+
     async def _ensure_connected(self):
         """Ensure connection to device is established."""
         if self._connect_lock.locked():
