@@ -51,8 +51,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities(
         BinarySensor(coordinator, binary_sensor)
-        for binary_sensor, description in BINARY_SENSOR_TYPES.items()
-        if description.key in coordinator.device.parsed_data
+        for binary_sensor in BINARY_SENSOR_TYPES
     )
 
 
