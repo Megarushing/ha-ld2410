@@ -55,6 +55,27 @@
       },
       "firmware_build_date": {
         "name": "Firmware build date"
+      },
+      "move_distance": {
+        "name": "Moving distance"
+      },
+      "move_energy": {
+        "name": "Moving energy"
+      },
+      "still_distance": {
+        "name": "Still distance"
+      },
+      "still_energy": {
+        "name": "Still energy"
+      },
+      "detect_distance": {
+        "name": "Detection distance"
+      },
+      "max_move_gate": {
+        "name": "Max moving gate"
+      },
+      "max_still_gate": {
+        "name": "Max still gate"
       }
     }
   },

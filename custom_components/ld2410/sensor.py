@@ -10,8 +10,10 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
+    UnitOfLength,
 )
 from homeassistant.core import HomeAssistant
 
@@ -51,6 +53,42 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
+
+for key, t_key, unit in (
+    ("move_distance_cm", "move_distance", UnitOfLength.CENTIMETERS),
+    ("move_energy", "move_energy", PERCENTAGE),
+    ("still_distance_cm", "still_distance", UnitOfLength.CENTIMETERS),
+    ("still_energy", "still_energy", PERCENTAGE),
+    ("detect_distance_cm", "detect_distance", UnitOfLength.CENTIMETERS),
+    ("max_move_gate", "max_move_gate", None),
+    ("max_still_gate", "max_still_gate", None),
+):
+    SENSOR_TYPES[key] = SensorEntityDescription(
+        key=key,
+        translation_key=t_key,
+        native_unit_of_measurement=unit,
+        state_class=SensorStateClass.MEASUREMENT,
+    )
+
+for gate in range(9):
+    SENSOR_TYPES.update(
+        {
+            f"move_gate_energy_{gate}": SensorEntityDescription(
+                key=f"move_gate_energy_{gate}",
+                name=f"Moving gate {gate} energy",
+                native_unit_of_measurement=PERCENTAGE,
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_registry_enabled_default=False,
+            ),
+            f"still_gate_energy_{gate}": SensorEntityDescription(
+                key=f"still_gate_energy_{gate}",
+                name=f"Still gate {gate} energy",
+                native_unit_of_measurement=PERCENTAGE,
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_registry_enabled_default=False,
+            ),
+        }
+    )
 
 
 async def async_setup_entry(

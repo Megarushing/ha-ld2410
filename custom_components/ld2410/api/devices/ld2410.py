@@ -118,5 +118,9 @@ class LD2410(Device):
                     "still_gate_energy": still_gate_energy,
                 }
             )
+            for gate, energy in enumerate(move_gate_energy):
+                result[f"move_gate_energy_{gate}"] = energy
+            for gate, energy in enumerate(still_gate_energy):
+                result[f"still_gate_energy_{gate}"] = energy
 
         return result
