@@ -27,17 +27,17 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
     "motion": BinarySensorEntityDescription(
         key="moving",
         name="Motion",
-        device_class=BinarySensorDeviceClass.MOTION,
+        device_class=BinarySensorDeviceClass.MOVING,
     ),
     "static": BinarySensorEntityDescription(
         key="stationary",
         name="Static",
-        device_class=BinarySensorDeviceClass.PRESENCE,
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
     "presence": BinarySensorEntityDescription(
         key="presence",
         name="Presence",
-        device_class=BinarySensorDeviceClass.PRESENCE,
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
     ),
 }
 
