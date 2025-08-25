@@ -79,3 +79,39 @@ async def test_notification_handler_engineering_frame_updates_data() -> None:
     assert device.parsed_data == expected
     assert called
     assert await device.get_basic_info() == expected
+
+
+@pytest.mark.asyncio
+async def test_notification_handler_initializes_without_advertisement() -> None:
+    """Ensure frames populate data even when no advertisement seen."""
+    payload_hex = (
+        "01aa034e00334e00643e000808123318050403050306000064202627190f1501015500"
+    )
+    payload = bytes.fromhex(payload_hex)
+    length = len(payload).to_bytes(2, "little").hex()
+    frame_hex = RX_HEADER + length + payload_hex + RX_FOOTER
+
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60)
+    )
+
+    device._notification_handler(0, bytearray.fromhex(frame_hex))
+
+    expected = {
+        "type": "engineering",
+        "moving": True,
+        "stationary": True,
+        "presence": True,
+        "move_distance_cm": 78,
+        "move_energy": 51,
+        "still_distance_cm": 78,
+        "still_energy": 100,
+        "detect_distance_cm": 62,
+        "max_move_gate": 8,
+        "max_still_gate": 8,
+        "move_gate_energy": [18, 51, 24, 5, 4, 3, 5, 3, 6],
+        "still_gate_energy": [0, 0, 100, 32, 38, 39, 25, 15, 21],
+    }
+
+    assert device.parsed_data == expected
+    assert await device.get_basic_info() == expected

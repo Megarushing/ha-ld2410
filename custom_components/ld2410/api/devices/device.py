@@ -656,8 +656,14 @@ class BaseDevice:
         Returns true if data has changed and False if not.
         """
         if not self._sb_adv_data:
-            _LOGGER.exception("No advertisement data to update")
-            return None
+            # Initialize advertisement data if we have not yet received any
+            self._sb_adv_data = Advertisement(
+                address=self._device.address,
+                data={"data": new_data},
+                device=self._device,
+                rssi=self.rssi,
+            )
+            return True
         old_data = self._sb_adv_data.data.get("data") or {}
         merged_data = _merge_data(old_data, new_data)
         if merged_data == old_data:
