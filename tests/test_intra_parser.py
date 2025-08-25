@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+import logging
+
 from bleak.backends.device import BLEDevice
 
 from custom_components.ld2410.api.devices.ld2410 import LD2410
@@ -32,7 +34,7 @@ def test_parse_intra_frame_basic() -> None:
 
 
 @pytest.mark.asyncio
-async def test_notification_handler_engineering_frame_updates_data() -> None:
+async def test_notification_handler_engineering_frame_updates_data(caplog) -> None:
     """Ensure engineering intra frames update device data and cache."""
     payload_hex = (
         "01aa034e00334e00643e000808123318050403050306000064202627190f1501015500"
@@ -59,7 +61,8 @@ async def test_notification_handler_engineering_frame_updates_data() -> None:
         called = True
 
     device.subscribe(_cb)
-    device._notification_handler(0, bytearray.fromhex(frame_hex))
+    with caplog.at_level(logging.DEBUG):
+        device._notification_handler(0, bytearray.fromhex(frame_hex))
 
     expected = {
         "type": "engineering",
@@ -79,6 +82,10 @@ async def test_notification_handler_engineering_frame_updates_data() -> None:
     assert device.parsed_data == expected
     assert called
     assert await device.get_basic_info() == expected
+    assert any(
+        rec.message.endswith(str(expected)) and "Updated data" in rec.message
+        for rec in caplog.records
+    )
 
 
 @pytest.mark.asyncio
