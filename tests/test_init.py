@@ -138,3 +138,43 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     mock_send.assert_awaited_once()
+
+
+async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
+    """Ensure unloading disconnects the device and stops notifications."""
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device = entry.runtime_data.device
+    mock_client = AsyncMock()
+    mock_client.is_connected = True
+    mock_char = object()
+    device._client = mock_client
+    device._read_char = mock_char
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    mock_client.stop_notify.assert_awaited_once_with(mock_char)
+    mock_client.disconnect.assert_awaited_once()
