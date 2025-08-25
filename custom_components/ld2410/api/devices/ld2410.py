@@ -7,10 +7,16 @@ from typing import Any, Dict, Sequence
 
 from bleak_retry_connector import BleakClientWithServiceCache
 
-from ..const import CMD_BT_GET_PERMISSION
+from ..const import (
+    CMD_BT_GET_PERMISSION,
+    CMD_ENABLE_CFG,
+    CMD_END_CFG,
+    CMD_ENABLE_ENGINEERING,
+)
 from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class LD2410(Device):
     """Representation of a device."""
@@ -57,6 +63,30 @@ class LD2410(Device):
         if response == b"\x01\x00":
             raise OperationError("Wrong password")
         return response == b"\x00\x00"
+
+    async def cmd_enable_config(self) -> tuple[int, int]:
+        """Enable configuration session.
+
+        Returns the protocol version and buffer size.
+        """
+        response = await self._send_command(CMD_ENABLE_CFG + "0001")
+        if not response or len(response) < 6 or response[:2] != b"\x00\x00":
+            raise OperationError("Failed to enable configuration")
+        proto_ver = int.from_bytes(response[2:4], "little")
+        buf_size = int.from_bytes(response[4:6], "little")
+        return proto_ver, buf_size
+
+    async def cmd_end_config(self) -> None:
+        """End configuration session."""
+        response = await self._send_command(CMD_END_CFG)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to end configuration")
+
+    async def cmd_enable_engineering_mode(self) -> None:
+        """Enable engineering mode."""
+        response = await self._send_command(CMD_ENABLE_ENGINEERING)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to enable engineering mode")
 
     def parse_intra_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink intra frame.

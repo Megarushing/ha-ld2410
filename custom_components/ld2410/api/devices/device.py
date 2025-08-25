@@ -512,7 +512,7 @@ class BaseDevice:
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
             payload = _unwrap_intra_frame(data)
             try:
-                # _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
+                _LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
                 parsed = self.parse_intra_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
                 _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)

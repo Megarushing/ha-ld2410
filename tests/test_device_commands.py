@@ -10,7 +10,12 @@ from custom_components.ld2410.api.devices.device import (
 )
 from custom_components.ld2410.api.devices.ld2410 import LD2410
 
-from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
+from custom_components.ld2410.api.const import (
+    CMD_BT_GET_PERMISSION,
+    CMD_ENABLE_CFG,
+    CMD_END_CFG,
+    CMD_ENABLE_ENGINEERING,
+)
 
 
 def test_wrap_command_ack():
@@ -53,6 +58,55 @@ async def test_send_bluetooth_password_wrong_password() -> None:
     dev = _TestDevice(password="HiLink", response=b"\x01\x00")
     with pytest.raises(OperationError):
         await dev.cmd_send_bluetooth_password()
+
+
+@pytest.mark.asyncio
+async def test_enable_config_success() -> None:
+    """Enable config command parses response."""
+    dev = _TestDevice(password=None, response=b"\x00\x00\x01\x00\x00@")
+    proto, buf = await dev.cmd_enable_config()
+    assert (proto, buf) == (1, 16384)
+    assert dev.last_key == CMD_ENABLE_CFG + "0001"
+
+
+@pytest.mark.asyncio
+async def test_enable_config_fail() -> None:
+    """Enable config command raises on failure."""
+    dev = _TestDevice(password=None, response=b"\x01\x00\x01\x00\x00@")
+    with pytest.raises(OperationError):
+        await dev.cmd_enable_config()
+
+
+@pytest.mark.asyncio
+async def test_end_config_success() -> None:
+    """End config command sends correct key."""
+    dev = _TestDevice(password=None, response=b"\x00\x00")
+    await dev.cmd_end_config()
+    assert dev.last_key == CMD_END_CFG
+
+
+@pytest.mark.asyncio
+async def test_end_config_fail() -> None:
+    """End config command raises on failure."""
+    dev = _TestDevice(password=None, response=b"\x01\x00")
+    with pytest.raises(OperationError):
+        await dev.cmd_end_config()
+
+
+@pytest.mark.asyncio
+async def test_enable_engineering_success() -> None:
+    """Enable engineering command sends correct key."""
+    dev = _TestDevice(password=None, response=b"\x00\x00")
+    await dev.cmd_enable_engineering_mode()
+    assert dev.last_key == CMD_ENABLE_ENGINEERING
+
+
+@pytest.mark.asyncio
+async def test_enable_engineering_fail() -> None:
+    """Enable engineering command raises on failure."""
+    dev = _TestDevice(password=None, response=b"\x01\x00")
+    with pytest.raises(OperationError):
+        await dev.cmd_enable_engineering_mode()
 
 
 def test_unwrap_response():
