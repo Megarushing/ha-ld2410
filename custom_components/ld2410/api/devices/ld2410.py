@@ -40,9 +40,8 @@ class LD2410(Device):
         """Reconnect and reauthorize after an unexpected disconnect."""
         try:
             await self._ensure_connected()
-            send_password = getattr(self, "cmd_send_bluetooth_password", None)
-            if send_password and self._password_words:
-                await send_password()
+            if self._password_words:
+                await self.cmd_send_bluetooth_password()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
 
