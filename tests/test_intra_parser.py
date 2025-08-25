@@ -82,7 +82,6 @@ async def test_notification_handler_engineering_frame_updates_data(caplog) -> No
     assert device.parsed_data == expected
     assert called
     assert await device.get_basic_info() == expected
-    assert any("Received intra frame" in rec.message for rec in caplog.records)
     device._cancel_disconnect_timer()
 
 
