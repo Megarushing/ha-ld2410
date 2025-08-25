@@ -51,6 +51,12 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    "type": SensorEntityDescription(
+        key="type",
+        name="Frame type",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     "move_distance": SensorEntityDescription(
         key="move_distance_cm",
         name="Moving distance",

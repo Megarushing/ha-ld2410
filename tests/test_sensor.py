@@ -18,6 +18,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 from . import LD2410b_SERVICE_INFO
@@ -173,3 +174,39 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
         assert move.state == str(mock_parsed["move_gate_energy"][gate])
         assert still is not None
         assert still.state == str(mock_parsed["still_gate_energy"][gate])
+
+
+async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> None:
+    """Ensure the frame type sensor is disabled by default."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    entity_id = "sensor.test_name_frame_type"
+    entity = registry.async_get(entity_id)
+    assert entity
+    assert entity.disabled
+    assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert hass.states.get(entity_id) is None
