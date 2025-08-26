@@ -133,6 +133,22 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ) as mock_send,
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_end_config",
+            AsyncMock(),
+        ),
     ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -160,6 +176,22 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_end_config",
             AsyncMock(),
         ),
     ):

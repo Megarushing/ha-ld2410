@@ -16,6 +16,9 @@ async def test_reconnect_after_unexpected_disconnect():
     )
     device._ensure_connected = AsyncMock()
     device.cmd_send_bluetooth_password = AsyncMock()
+    device.cmd_enable_config = AsyncMock()
+    device.cmd_enable_engineering_mode = AsyncMock()
+    device.cmd_end_config = AsyncMock()
 
     device._disconnected(None)
     await asyncio.sleep(0)
