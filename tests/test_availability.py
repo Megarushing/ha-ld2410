@@ -52,6 +52,10 @@ async def test_entities_stay_available_with_intra_frames(hass: HomeAssistant) ->
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
+        patch(
+            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            AsyncMock(),
+        ),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
