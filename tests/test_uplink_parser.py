@@ -1,4 +1,4 @@
-"""Tests for intra frame parser and notification handling."""
+"""Tests for uplink frame parser and notification handling."""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ from custom_components.ld2410.api.const import RX_HEADER, RX_FOOTER
 from custom_components.ld2410.api.models import Advertisement
 
 
-def test_parse_intra_frame_basic() -> None:
-    """Ensure basic intra frames are parsed correctly."""
+def test_parse_uplink_frame_basic() -> None:
+    """Ensure basic uplink frames are parsed correctly."""
     payload = bytes.fromhex("02aa0101001402002803005500")
     device = LD2410(
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60)
     )
-    result = device.parse_intra_frame(payload)
+    result = device._parse_uplink_frame(payload)
     assert result == {
         "type": "basic",
         "moving": True,
@@ -35,7 +35,7 @@ def test_parse_intra_frame_basic() -> None:
 
 @pytest.mark.asyncio
 async def test_notification_handler_engineering_frame_updates_data(caplog) -> None:
-    """Ensure engineering intra frames update device data and cache."""
+    """Ensure engineering uplink frames update device data and cache."""
     payload_hex = (
         "01aa034e00334e00643e000808123318050403050306000064202627190f1501015500"
     )
@@ -78,6 +78,8 @@ async def test_notification_handler_engineering_frame_updates_data(caplog) -> No
         "max_still_gate": 8,
         "move_gate_energy": [18, 51, 24, 5, 4, 3, 5, 3, 6],
         "still_gate_energy": [0, 0, 100, 32, 38, 39, 25, 15, 21],
+        "photo_sensor": 1,
+        "out_pin": True,
     }
     assert device.parsed_data == expected
     assert called
@@ -115,6 +117,8 @@ async def test_notification_handler_initializes_without_advertisement() -> None:
         "max_still_gate": 8,
         "move_gate_energy": [18, 51, 24, 5, 4, 3, 5, 3, 6],
         "still_gate_energy": [0, 0, 100, 32, 38, 39, 25, 15, 21],
+        "photo_sensor": 1,
+        "out_pin": True,
     }
 
     assert device.parsed_data == expected

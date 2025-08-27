@@ -127,8 +127,8 @@ def _unwrap_response(data: bytes) -> bytes:
     return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
 
 
-def _unwrap_intra_frame(data: bytes) -> bytes:
-    """Remove header and footer from an intra frame."""
+def _unwrap_uplink_frame(data: bytes) -> bytes:
+    """Remove header and footer from an uplink frame."""
     return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
 
 
@@ -492,8 +492,8 @@ class BaseDevice:
             await self._execute_forced_disconnect()
             raise
 
-    def parse_intra_frame(self, data: bytes) -> dict[str, Any] | None:
-        """Parse an uplink intra frame.
+    def _parse_uplink_frame(self, data: bytes) -> dict[str, Any] | None:
+        """Parse an uplink frame.
 
         Subclasses should override this to handle device specific frames.
         """
@@ -513,14 +513,14 @@ class BaseDevice:
                     data.hex(),
                 )
             return
-        # Notification is an intra frame from the device
+        # Notification is an uplink frame from the device
         elif data.startswith(bytearray.fromhex(RX_HEADER)):
-            payload = _unwrap_intra_frame(data)
+            payload = _unwrap_uplink_frame(data)
             try:
-                #_LOGGER.debug("%s: Received intra frame: %s", self.name, payload.hex())
-                parsed = self.parse_intra_frame(payload)
+                # _LOGGER.debug("%s: Received uplink frame: %s", self.name, payload.hex())
+                parsed = self._parse_uplink_frame(payload)
             except Exception as err:  # pragma: no cover - defensive
-                _LOGGER.error("%s: Failed to parse intra frame: %s", self.name, err)
+                _LOGGER.error("%s: Failed to parse uplink frame: %s", self.name, err)
             else:
                 if parsed and self._update_parsed_data(parsed):
                     self._last_full_update = time.monotonic()

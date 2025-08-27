@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
@@ -19,6 +19,14 @@ async def test_reconnect_after_unexpected_disconnect():
     device.cmd_enable_config = AsyncMock()
     device.cmd_enable_engineering_mode = AsyncMock()
     device.cmd_end_config = AsyncMock()
+    device.cmd_read_params = AsyncMock(
+        return_value={
+            "move_gate_sensitivity": [],
+            "still_gate_sensitivity": [],
+            "nobody_duration": 0,
+        }
+    )
+    device._update_parsed_data = MagicMock()
 
     device._disconnected(None)
     await asyncio.sleep(0)

@@ -13,6 +13,7 @@ from ..const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
     UPLINK_TYPE_BASIC,
@@ -42,9 +43,15 @@ class LD2410(Device):
         await self._ensure_connected()
         if self._password_words:
             await self.cmd_send_bluetooth_password()
-        await self.cmd_enable_config()
         await self.cmd_enable_engineering_mode()
-        await self.cmd_end_config()
+        params = await self.cmd_read_params()
+        self._update_parsed_data(
+            {
+                "move_gate_sensitivity": params.get("move_gate_sensitivity"),
+                "still_gate_sensitivity": params.get("still_gate_sensitivity"),
+                "nobody_duration": params.get("nobody_duration"),
+            }
+        )
 
     async def _restart_connection(self) -> None:
         """Reconnect and reauthorize after an unexpected disconnect."""
@@ -98,9 +105,13 @@ class LD2410(Device):
 
     async def cmd_enable_engineering_mode(self) -> None:
         """Enable engineering mode."""
-        response = await self._send_command(CMD_ENABLE_ENGINEERING)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to enable engineering mode")
+        await self.cmd_enable_config()
+        try:
+            response = await self._send_command(CMD_ENABLE_ENGINEERING)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to enable engineering mode")
+        finally:
+            await self.cmd_end_config()
 
     async def cmd_auto_thresholds(self, duration_sec: int) -> None:
         """Start automatic threshold detection for the specified duration."""
@@ -122,15 +133,52 @@ class LD2410(Device):
             raise OperationError("Failed to query automatic threshold status")
         return int.from_bytes(response[2:4], "little")
 
-    def parse_intra_frame(self, data: bytes) -> Dict[str, Any] | None:
-        """Parse an uplink intra frame.
+    async def cmd_read_params(self) -> Dict[str, Any]:
+        """Read and parse device configuration parameters."""
+        await self.cmd_enable_config()
+        try:
+            response = await self._send_command(CMD_READ_PARAMS)
+            if (
+                not response
+                or len(response) < 10
+                or response[:2] != b"\x00\x00"
+                or response[2] != 0xAA
+            ):
+                raise OperationError("Failed to read parameters")
+            payload = response[3:]
+            max_gate = payload[0]
+            max_move_gate = payload[1]
+            max_still_gate = payload[2]
+            move_len = max_gate + 1
+            expected_len = 3 + move_len * 2 + 2
+            if len(payload) < expected_len:
+                raise OperationError("Failed to read parameters")
+            idx = 3
+            move_gate_sensitivity = list(payload[idx : idx + move_len])
+            idx += move_len
+            still_gate_sensitivity = list(payload[idx : idx + move_len])
+            idx += move_len
+            nobody_duration = int.from_bytes(payload[idx : idx + 2], "little")
+            return {
+                "max_gate": max_gate,
+                "max_move_gate": max_move_gate,
+                "max_still_gate": max_still_gate,
+                "move_gate_sensitivity": move_gate_sensitivity,
+                "still_gate_sensitivity": still_gate_sensitivity,
+                "nobody_duration": nobody_duration,
+            }
+        finally:
+            await self.cmd_end_config()
+
+    def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
+        """Parse an uplink frame.
 
         ``data`` must be the payload after removing the frame header and footer.
-        Returns ``None`` if the payload is not an intra frame and raises
+        Returns ``None`` if the payload is not an uplink frame and raises
         ``ValueError`` if the frame is malformed.
         """
         if len(data) < 2 or data[1] != 0xAA:
-            # Not an intra frame
+            # Not an uplink frame
             return None
 
         frame_type = data[:1].hex()
@@ -184,12 +232,19 @@ class LD2410(Device):
             move_gate_energy = list(content[idx : idx + move_len])
             idx += move_len
             still_gate_energy = list(content[idx : idx + still_len])
+            idx += still_len
+            if len(content) < idx + 2:
+                raise ValueError("missing photo sensor or OUT pin status")
+            photo_sensor = content[idx]
+            out_pin = content[idx + 1]
             result.update(
                 {
                     "max_move_gate": max_move_gate,
                     "max_still_gate": max_still_gate,
                     "move_gate_energy": move_gate_energy,
                     "still_gate_energy": still_gate_energy,
+                    "photo_sensor": photo_sensor,
+                    "out_pin": bool(out_pin),
                 }
             )
 
