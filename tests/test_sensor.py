@@ -59,7 +59,7 @@ async def test_sensors(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(
@@ -122,7 +122,7 @@ async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(
@@ -182,7 +182,7 @@ async def test_entities_created_without_initial_data(hass: HomeAssistant) -> Non
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(
@@ -248,7 +248,7 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(
@@ -305,7 +305,7 @@ async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(
@@ -356,7 +356,7 @@ async def test_frame_type_and_photo_sensors_disabled_by_default(
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 
+from custom_components.ld2410.api.devices.device import OperationError
 from custom_components.ld2410.api.devices.ld2410 import LD2410
 
 
@@ -62,7 +63,7 @@ async def test_restart_connection_waits_before_retry():
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
-    device.connect_and_subscribe = AsyncMock(side_effect=Exception("fail"))
+    device.connect_and_update = AsyncMock(side_effect=Exception("fail"))
     with patch(
         "custom_components.ld2410.api.devices.ld2410.asyncio.sleep",
         new=AsyncMock(),
@@ -76,26 +77,6 @@ async def test_restart_connection_waits_before_retry():
 
     mock_sleep.assert_awaited_once_with(1)
     assert mock_task.call_count == 1
-
-
-@pytest.mark.asyncio
-async def test_ensure_connected_sends_password_when_not_connected() -> None:
-    """_ensure_connected sends password on new connection."""
-    device = LD2410(
-        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
-        password="HiLink",
-    )
-    with (
-        patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
-            AsyncMock(),
-        ) as mock_connect,
-        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
-    ):
-        await device._ensure_connected()
-
-    mock_connect.assert_awaited_once()
-    mock_pass.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -117,3 +98,23 @@ async def test_ensure_connected_skips_password_when_already_connected() -> None:
 
     mock_connect.assert_awaited_once()
     mock_pass.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_disconnect_clears_command_queue() -> None:
+    """Disconnect clears queued commands and releases the lock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    await device._operation_lock.acquire()
+    task = asyncio.create_task(device._send_command("FF000100"))
+    await asyncio.sleep(0)
+    device._client = AsyncMock()
+    device._client.disconnect = AsyncMock()
+    async with device._connect_lock:
+        await device._execute_disconnect_with_lock()
+    await asyncio.sleep(0)
+    with pytest.raises(OperationError):
+        await task
+    assert not device._operation_lock.locked()

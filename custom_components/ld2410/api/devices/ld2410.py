@@ -42,6 +42,7 @@ class LD2410(Device):
         await super()._ensure_connected()
         if not already_connected and self._password_words:
             await self.cmd_send_bluetooth_password()
+            await self.cmd_enable_engineering_mode()
 
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
         """Handle disconnection and schedule reconnect."""
@@ -49,10 +50,9 @@ class LD2410(Device):
         if not self._expected_disconnect:
             self.loop.create_task(self._restart_connection())
 
-    async def connect_and_subscribe(self):
+    async def connect_and_update(self):
         """Begin connection, sends password and enables engineering mode."""
         await self._ensure_connected()
-        await self.cmd_enable_engineering_mode()
         params = await self.cmd_read_params()
         self._update_parsed_data(
             {
@@ -66,7 +66,7 @@ class LD2410(Device):
         """Reconnect and reauthorize after an unexpected disconnect."""
         try:
             _LOGGER.debug("%s: Reconnecting...", self.name)
-            await self.connect_and_subscribe()
+            await self.connect_and_update()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             await asyncio.sleep(1)
@@ -115,36 +115,31 @@ class LD2410(Device):
     async def cmd_enable_engineering_mode(self) -> None:
         """Enable engineering mode."""
         await self.cmd_enable_config()
-        try:
-            response = await self._send_command(CMD_ENABLE_ENGINEERING)
-            if response != b"\x00\x00":
-                raise OperationError("Failed to enable engineering mode")
-        finally:
-            await self.cmd_end_config()
+        response = await self._send_command(CMD_ENABLE_ENGINEERING)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to enable engineering mode")
+        await self.cmd_end_config()
 
     async def cmd_auto_thresholds(self, duration_sec: int) -> None:
         """Start automatic threshold detection for the specified duration."""
         if not 0 <= duration_sec <= 0xFFFF:
             raise ValueError("duration_sec must be 0..65535")
         await self.cmd_enable_config()
-        try:
-            key = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
-            response = await self._send_command(key)
-            if response != b"\x00\x00":
-                raise OperationError("Failed to start automatic threshold detection")
-        finally:
-            await self.cmd_end_config()
+        key = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
+        response = await self._send_command(key)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to start automatic threshold detection")
+        await self.cmd_end_config()
 
     async def cmd_query_auto_thresholds(self) -> int:
         """Query automatic threshold detection status."""
         await self.cmd_enable_config()
-        try:
-            response = await self._send_command(CMD_QUERY_AUTO_THRESH)
-            if not response or len(response) < 4 or response[:2] != b"\x00\x00":
-                raise OperationError("Failed to query automatic threshold status")
-            return int.from_bytes(response[2:4], "little")
-        finally:
-            await self.cmd_end_config()
+        response = await self._send_command(CMD_QUERY_AUTO_THRESH)
+        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+            raise OperationError("Failed to query automatic threshold status")
+        r = int.from_bytes(response[2:4], "little")
+        await self.cmd_end_config()
+        return r
 
     async def cmd_set_gate_sensitivity(self, gate: int, move: int, still: int) -> None:
         """Set move and still sensitivity for a gate."""
@@ -155,69 +150,66 @@ class LD2410(Device):
         if not 0 <= still <= 100:
             raise ValueError("still must be 0..100")
         await self.cmd_enable_config()
-        try:
-            payload = (
-                PAR_DISTANCE_GATE
-                + gate.to_bytes(4, "little").hex()
-                + PAR_MOVE_SENS
-                + move.to_bytes(4, "little").hex()
-                + PAR_STILL_SENS
-                + still.to_bytes(4, "little").hex()
-            )
-            response = await self._send_command(CMD_SET_SENSITIVITY + payload)
-            if response != b"\x00\x00":
-                raise OperationError("Failed to set sensitivity")
-            move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
-            still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
-            if gate < len(move_list):
-                move_list[gate] = move
-            if gate < len(still_list):
-                still_list[gate] = still
-            self._update_parsed_data(
-                {
-                    "move_gate_sensitivity": move_list,
-                    "still_gate_sensitivity": still_list,
-                }
-            )
-        finally:
-            await self.cmd_end_config()
+        payload = (
+            PAR_DISTANCE_GATE
+            + gate.to_bytes(4, "little").hex()
+            + PAR_MOVE_SENS
+            + move.to_bytes(4, "little").hex()
+            + PAR_STILL_SENS
+            + still.to_bytes(4, "little").hex()
+        )
+        response = await self._send_command(CMD_SET_SENSITIVITY + payload)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set sensitivity")
+        move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
+        still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
+        if gate < len(move_list):
+            move_list[gate] = move
+        if gate < len(still_list):
+            still_list[gate] = still
+        self._update_parsed_data(
+            {
+                "move_gate_sensitivity": move_list,
+                "still_gate_sensitivity": still_list,
+            }
+        )
+        await self.cmd_end_config()
 
     async def cmd_read_params(self) -> Dict[str, Any]:
         """Read and parse device configuration parameters."""
         await self.cmd_enable_config()
-        try:
-            response = await self._send_command(CMD_READ_PARAMS)
-            if (
-                not response
-                or len(response) < 10
-                or response[:2] != b"\x00\x00"
-                or response[2] != 0xAA
-            ):
-                raise OperationError("Failed to read parameters")
-            payload = response[3:]
-            max_gate = payload[0]
-            max_move_gate = payload[1]
-            max_still_gate = payload[2]
-            move_len = max_gate + 1
-            expected_len = 3 + move_len * 2 + 2
-            if len(payload) < expected_len:
-                raise OperationError("Failed to read parameters")
-            idx = 3
-            move_gate_sensitivity = list(payload[idx : idx + move_len])
-            idx += move_len
-            still_gate_sensitivity = list(payload[idx : idx + move_len])
-            idx += move_len
-            nobody_duration = int.from_bytes(payload[idx : idx + 2], "little")
-            return {
-                "max_gate": max_gate,
-                "max_move_gate": max_move_gate,
-                "max_still_gate": max_still_gate,
-                "move_gate_sensitivity": move_gate_sensitivity,
-                "still_gate_sensitivity": still_gate_sensitivity,
-                "nobody_duration": nobody_duration,
-            }
-        finally:
-            await self.cmd_end_config()
+        response = await self._send_command(CMD_READ_PARAMS)
+        if (
+            not response
+            or len(response) < 10
+            or response[:2] != b"\x00\x00"
+            or response[2] != 0xAA
+        ):
+            raise OperationError("Failed to read parameters")
+        payload = response[3:]
+        max_gate = payload[0]
+        max_move_gate = payload[1]
+        max_still_gate = payload[2]
+        move_len = max_gate + 1
+        expected_len = 3 + move_len * 2 + 2
+        if len(payload) < expected_len:
+            raise OperationError("Failed to read parameters")
+        idx = 3
+        move_gate_sensitivity = list(payload[idx : idx + move_len])
+        idx += move_len
+        still_gate_sensitivity = list(payload[idx : idx + move_len])
+        idx += move_len
+        nobody_duration = int.from_bytes(payload[idx : idx + 2], "little")
+        r = {
+            "max_gate": max_gate,
+            "max_move_gate": max_move_gate,
+            "max_still_gate": max_still_gate,
+            "move_gate_sensitivity": move_gate_sensitivity,
+            "still_gate_sensitivity": still_gate_sensitivity,
+            "nobody_duration": nobody_duration,
+        }
+        await self.cmd_end_config()
+        return r
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink frame.

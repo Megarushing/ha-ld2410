@@ -45,7 +45,7 @@ async def test_auto_threshold_button(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
-        patch("custom_components.ld2410.api.LD2410.connect_and_subscribe", AsyncMock()),
+        patch("custom_components.ld2410.api.LD2410.connect_and_update", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
             AsyncMock(return_value={}),

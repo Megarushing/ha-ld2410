@@ -95,9 +95,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         return False
 
     if entry.data.get(CONF_PASSWORD):
-        await device.connect_and_subscribe()
+        await device.connect_and_update()
 
-    coordinator = entry.runtime_data = DataCoordinator(
+    data_coordinator = entry.runtime_data = DataCoordinator(
         hass,
         _LOGGER,
         ble_device,
@@ -107,8 +107,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         connectable,
         model,
     )
-    entry.async_on_unload(coordinator.async_start())
-    if not await coordinator.async_wait_ready():
+    entry.async_on_unload(data_coordinator.async_start())
+    if not await data_coordinator.async_wait_ready():
         raise ConfigEntryNotReady(
             translation_domain=DOMAIN,
             translation_key="advertising_state_error",
