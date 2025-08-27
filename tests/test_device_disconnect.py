@@ -14,8 +14,6 @@ async def test_reconnect_after_unexpected_disconnect():
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
-    device._ensure_connected = AsyncMock()
-    device.cmd_send_bluetooth_password = AsyncMock()
     device.cmd_enable_config = AsyncMock()
     device.cmd_enable_engineering_mode = AsyncMock()
     device.cmd_end_config = AsyncMock()
@@ -28,11 +26,18 @@ async def test_reconnect_after_unexpected_disconnect():
     )
     device._update_parsed_data = MagicMock()
 
-    device._disconnected(None)
-    await asyncio.sleep(0)
+    with (
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            AsyncMock(),
+        ) as mock_connect,
+        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
+    ):
+        device._disconnected(None)
+        await asyncio.sleep(0)
 
-    device._ensure_connected.assert_awaited_once()
-    device.cmd_send_bluetooth_password.assert_awaited_once()
+    mock_connect.assert_awaited_once()
+    mock_pass.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -71,3 +76,44 @@ async def test_restart_connection_waits_before_retry():
 
     mock_sleep.assert_awaited_once_with(1)
     assert mock_task.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_ensure_connected_sends_password_when_not_connected() -> None:
+    """_ensure_connected sends password on new connection."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    with (
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            AsyncMock(),
+        ) as mock_connect,
+        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
+    ):
+        await device._ensure_connected()
+
+    mock_connect.assert_awaited_once()
+    mock_pass.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_ensure_connected_skips_password_when_already_connected() -> None:
+    """_ensure_connected does not send password if already connected."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    device._client = AsyncMock(is_connected=True)
+    with (
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            AsyncMock(),
+        ) as mock_connect,
+        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
+    ):
+        await device._ensure_connected()
+
+    mock_connect.assert_awaited_once()
+    mock_pass.assert_not_called()
