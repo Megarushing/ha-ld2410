@@ -18,6 +18,7 @@ from custom_components.ld2410.api.const import (
     CMD_ENABLE_ENGINEERING,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    CMD_SET_SENSITIVITY,
     CMD_READ_PARAMS,
 )
 
@@ -184,18 +185,94 @@ async def test_auto_thresholds_fail() -> None:
 @pytest.mark.asyncio
 async def test_query_auto_thresholds_success() -> None:
     """Query auto thresholds command parses response."""
-    dev = _TestDevice(password=None, response=b"\x00\x00\x02\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00\x02\x00",
+            b"\x00\x00",
+        ],
+    )
     status = await dev.cmd_query_auto_thresholds()
     assert status == 2
-    assert dev.last_key == CMD_QUERY_AUTO_THRESH
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_QUERY_AUTO_THRESH,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
 async def test_query_auto_thresholds_fail() -> None:
     """Query auto thresholds command raises on failure."""
-    dev = _TestDevice(password=None, response=b"\x00\x00\x01")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00\x01",
+            b"\x00\x00",
+        ],
+    )
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_QUERY_AUTO_THRESH,
+        CMD_END_CFG,
+    ]
+
+
+@pytest.mark.asyncio
+async def test_set_gate_sensitivity_success() -> None:
+    """Set gate sensitivity command sends correct key and updates cache."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    dev._update_parsed_data(
+        {
+            "move_gate_sensitivity": [0] * 9,
+            "still_gate_sensitivity": [0] * 9,
+        }
+    )
+    await dev.cmd_set_gate_sensitivity(4, 15, 40)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
+        CMD_END_CFG,
+    ]
+    assert dev.parsed_data["move_gate_sensitivity"][4] == 15
+    assert dev.parsed_data["still_gate_sensitivity"][4] == 40
+
+
+@pytest.mark.asyncio
+async def test_set_gate_sensitivity_fail() -> None:
+    """Set gate sensitivity command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+            b"\x00\x00",
+        ],
+    )
+    dev._update_parsed_data(
+        {
+            "move_gate_sensitivity": [0] * 9,
+            "still_gate_sensitivity": [0] * 9,
+        }
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_set_gate_sensitivity(4, 15, 40)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio

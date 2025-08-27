@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import binascii
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -183,6 +184,7 @@ class BaseDevice:
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
+        self._rssi: int = getattr(device, "rssi", -127) or -127
 
     def advertisement_changed(self, advertisement: Advertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -282,9 +284,29 @@ class BaseDevice:
     @property
     def rssi(self) -> int:
         """Return RSSI of device."""
+        return self._rssi
+
+    async def read_rssi(self) -> int | None:
+        """Update and return the RSSI using the active connection."""
+        if self._client and self._client.is_connected:
+            with contextlib.suppress(Exception):
+                rssi = await self._client.get_rssi()  # type: ignore[attr-defined]
+                if isinstance(rssi, int):
+                    self._rssi = rssi
+                    if self._sb_adv_data:
+                        self._sb_adv_data = replace(self._sb_adv_data, rssi=rssi)
+                    else:
+                        self._sb_adv_data = Advertisement(
+                            address=self._device.address,
+                            data={},
+                            device=self._device,
+                            rssi=rssi,
+                        )
+                    return rssi
         if self._sb_adv_data:
-            return self._sb_adv_data.rssi
-        return -127
+            self._rssi = self._sb_adv_data.rssi
+            return self._rssi
+        return None
 
     @property
     def is_connected(self) -> bool:
@@ -704,6 +726,7 @@ class BaseDevice:
             self._sb_adv_data = advertisement
         elif new_data:
             self._update_parsed_data(new_data)
+        self._rssi = advertisement.rssi
         self._override_adv_data = None
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:

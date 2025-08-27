@@ -98,6 +98,65 @@ async def test_sensors(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
 
+async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
+    """RSSI sensor should poll the device for current signal strength."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+        sensor_id = "sensor.test_name_signal_strength"
+        registry = er.async_get(hass)
+        registry.async_update_entity(sensor_id, disabled_by=None)
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+        await hass.helpers.entity_component.async_update_entity(sensor_id)
+
+        assert hass.states.get(sensor_id) is not None
+
+        device = entry.runtime_data.device
+
+        async def mock_read_rssi() -> int:
+            device._rssi = -70
+            return -70
+
+        with patch.object(device, "read_rssi", mock_read_rssi):
+            await hass.helpers.entity_component.async_update_entity(sensor_id)
+
+        assert hass.states.get(sensor_id).state == "-70"
+
+
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_entities_created_without_initial_data(hass: HomeAssistant) -> None:
     """Test entities are added even when no initial data is available."""
@@ -215,7 +274,6 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
         )
 
 
-@pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
     """Ensure photo sensor and OUT pin report values."""
     await async_setup_component(hass, DOMAIN, {})
@@ -260,17 +318,22 @@ async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
         inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
         await hass.async_block_till_done()
-    coordinator = entry.runtime_data
-    coordinator.device._update_parsed_data(mock_parsed)
-    coordinator.device._fire_callbacks()
-    assert hass.states.get("sensor.test_name_photo_sensor").state == str(
-        mock_parsed["photo_sensor"]
-    )
+        registry = er.async_get(hass)
+        entity_id = "sensor.test_name_photo_sensor"
+        registry.async_update_entity(entity_id, disabled_by=None)
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data
+        coordinator.device._update_parsed_data(mock_parsed)
+        coordinator.device._fire_callbacks()
+        assert hass.states.get(entity_id).state == str(mock_parsed["photo_sensor"])
     assert hass.states.get("binary_sensor.test_name_out_pin").state == "on"
 
 
-async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> None:
-    """Ensure the frame type sensor is disabled by default."""
+async def test_frame_type_and_photo_sensors_disabled_by_default(
+    hass: HomeAssistant,
+) -> None:
+    """Ensure the frame type and photo sensors are disabled by default."""
     await async_setup_component(hass, DOMAIN, {})
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
@@ -313,9 +376,10 @@ async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> Non
         await hass.async_block_till_done()
 
     registry = er.async_get(hass)
-    entity_id = "sensor.test_name_frame_type"
-    entity = registry.async_get(entity_id)
-    assert entity
-    assert entity.disabled
-    assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert hass.states.get(entity_id) is None
+    for sensor in ("frame_type", "photo_sensor"):
+        entity_id = f"sensor.test_name_{sensor}"
+        entity = registry.async_get(entity_id)
+        assert entity
+        assert entity.disabled
+        assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert hass.states.get(entity_id) is None

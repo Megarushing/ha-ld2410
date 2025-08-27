@@ -16,6 +16,10 @@ from ..const import (
     CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    CMD_SET_SENSITIVITY,
+    PAR_DISTANCE_GATE,
+    PAR_MOVE_SENS,
+    PAR_STILL_SENS,
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
 )
@@ -128,10 +132,50 @@ class LD2410(Device):
 
     async def cmd_query_auto_thresholds(self) -> int:
         """Query automatic threshold detection status."""
-        response = await self._send_command(CMD_QUERY_AUTO_THRESH)
-        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
-            raise OperationError("Failed to query automatic threshold status")
-        return int.from_bytes(response[2:4], "little")
+        await self.cmd_enable_config()
+        try:
+            response = await self._send_command(CMD_QUERY_AUTO_THRESH)
+            if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+                raise OperationError("Failed to query automatic threshold status")
+            return int.from_bytes(response[2:4], "little")
+        finally:
+            await self.cmd_end_config()
+
+    async def cmd_set_gate_sensitivity(self, gate: int, move: int, still: int) -> None:
+        """Set move and still sensitivity for a gate."""
+        if not 0 <= gate <= 8:
+            raise ValueError("gate must be 0..8")
+        if not 0 <= move <= 100:
+            raise ValueError("move must be 0..100")
+        if not 0 <= still <= 100:
+            raise ValueError("still must be 0..100")
+        await self.cmd_enable_config()
+        try:
+            payload = (
+                PAR_DISTANCE_GATE
+                + gate.to_bytes(4, "little").hex()
+                + PAR_MOVE_SENS
+                + move.to_bytes(4, "little").hex()
+                + PAR_STILL_SENS
+                + still.to_bytes(4, "little").hex()
+            )
+            response = await self._send_command(CMD_SET_SENSITIVITY + payload)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set sensitivity")
+            move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
+            still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
+            if gate < len(move_list):
+                move_list[gate] = move
+            if gate < len(still_list):
+                still_list[gate] = still
+            self._update_parsed_data(
+                {
+                    "move_gate_sensitivity": move_list,
+                    "still_gate_sensitivity": still_list,
+                }
+            )
+        finally:
+            await self.cmd_end_config()
 
     async def cmd_read_params(self) -> Dict[str, Any]:
         """Read and parse device configuration parameters."""

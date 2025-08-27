@@ -33,6 +33,7 @@ PLATFORMS_BY_TYPE = {
         Platform.BINARY_SENSOR,
         Platform.SENSOR,
         Platform.BUTTON,
+        Platform.NUMBER,
     ],
 }
 CLASS_BY_DEVICE = {SupportedModels.LD2410.value: api.LD2410}
