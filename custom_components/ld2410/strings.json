@@ -1,75 +1,54 @@
 {
-  "config": {
-    "flow_title": "{name}",
-    "step": {
-      "user": {
-        "data": {
-          "address": "MAC address"
+    "config": {
+        "flow_title": "{name}",
+        "step": {
+            "user": {
+                "data": {"address": "MAC address"},
+                "data_description": {
+                    "address": "The Bluetooth MAC address of your device"
+                },
+            },
+            "confirm": {"description": "Do you want to set up {name}?"},
         },
-        "data_description": {
-          "address": "The Bluetooth MAC address of your device"
-        }
-      },
-      "confirm": {
-        "description": "Do you want to set up {name}?"
-      }
-    },
-    "error": {},
-    "abort": {
-      "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "No supported devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as these devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the device is present.",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
-      "unsupported_type": "Unsupported device type."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "retry_count": "Retry count"
+        "error": {},
+        "abort": {
+            "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
+            "no_devices_found": "No supported devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as these devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the device is present.",
+            "unknown": "[%key:common::config_flow::error::unknown%]",
+            "unsupported_type": "Unsupported device type.",
         },
-        "data_description": {
-          "retry_count": "How many times to retry sending commands to your devices"
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {"retry_count": "Retry count"},
+                "data_description": {
+                    "retry_count": "How many times to retry sending commands to your devices"
+                },
+            }
         }
-      }
-    }
-  },
-  "entity": {
-    "binary_sensor": {
-      "door_timeout": {
-        "name": "Timeout"
-      }
     },
-    "sensor": {
-      "bluetooth_signal": {
-        "name": "Bluetooth signal"
-      },
-      "wifi_signal": {
-        "name": "Wi-Fi signal"
-      },
-      "light_level": {
-        "name": "Light level"
-      },
-      "firmware_version": {
-        "name": "Firmware version"
-      },
-      "firmware_build_date": {
-        "name": "Firmware build date"
-      }
-    }
-  },
-  "exceptions": {
-    "operation_error": {
-      "message": "An error occurred while performing the action: {error}"
+    "entity": {
+        "binary_sensor": {"door_timeout": {"name": "Timeout"}},
+        "button": {"auto_threshold": {"name": "Auto threshold"}},
+        "sensor": {
+            "bluetooth_signal": {"name": "Bluetooth signal"},
+            "wifi_signal": {"name": "Wi-Fi signal"},
+            "light_level": {"name": "Light level"},
+            "firmware_version": {"name": "Firmware version"},
+            "firmware_build_date": {"name": "Firmware build date"},
+        },
     },
-    "value_error": {
-      "message": "Device initialization failed because of incorrect configuration parameters: {error}"
+    "exceptions": {
+        "operation_error": {
+            "message": "An error occurred while performing the action: {error}"
+        },
+        "value_error": {
+            "message": "Device initialization failed because of incorrect configuration parameters: {error}"
+        },
+        "advertising_state_error": {"message": "{address} is not advertising state"},
+        "device_not_found_error": {
+            "message": "Could not find {sensor_type} with address {address}"
+        },
     },
-    "advertising_state_error": {
-      "message": "{address} is not advertising state"
-    },
-    "device_not_found_error": {
-      "message": "Could not find {sensor_type} with address {address}"
-    }
-  }
 }

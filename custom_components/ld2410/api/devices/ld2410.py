@@ -13,6 +13,8 @@ from ..const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_START_AUTO_THRESH,
+    CMD_QUERY_AUTO_THRESH,
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
 )
@@ -99,6 +101,26 @@ class LD2410(Device):
         response = await self._send_command(CMD_ENABLE_ENGINEERING)
         if response != b"\x00\x00":
             raise OperationError("Failed to enable engineering mode")
+
+    async def cmd_auto_thresholds(self, duration_sec: int) -> None:
+        """Start automatic threshold detection for the specified duration."""
+        if not 0 <= duration_sec <= 0xFFFF:
+            raise ValueError("duration_sec must be 0..65535")
+        await self.cmd_enable_config()
+        try:
+            key = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
+            response = await self._send_command(key)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to start automatic threshold detection")
+        finally:
+            await self.cmd_end_config()
+
+    async def cmd_query_auto_thresholds(self) -> int:
+        """Query automatic threshold detection status."""
+        response = await self._send_command(CMD_QUERY_AUTO_THRESH)
+        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+            raise OperationError("Failed to query automatic threshold status")
+        return int.from_bytes(response[2:4], "little")
 
     def parse_intra_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink intra frame.

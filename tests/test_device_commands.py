@@ -15,6 +15,8 @@ from custom_components.ld2410.api.const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_START_AUTO_THRESH,
+    CMD_QUERY_AUTO_THRESH,
 )
 
 
@@ -32,15 +34,21 @@ def test_wrap_command_bt_password():
 
 
 class _TestDevice(LD2410):
-    def __init__(self, password: str | None, response: bytes = b"\x00\x00") -> None:
+    def __init__(
+        self, password: str | None, response: bytes | list[bytes] = b"\x00\x00"
+    ) -> None:
         super().__init__(
             device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
             password=password,
         )
         self._response = response
+        self.keys: list[str] = []
 
     async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
         self.last_key = key
+        self.keys.append(key)
+        if isinstance(self._response, list):
+            return self._response.pop(0)
         return self._response
 
 
@@ -107,6 +115,62 @@ async def test_enable_engineering_fail() -> None:
     dev = _TestDevice(password=None, response=b"\x01\x00")
     with pytest.raises(OperationError):
         await dev.cmd_enable_engineering_mode()
+
+
+@pytest.mark.asyncio
+async def test_auto_thresholds_success() -> None:
+    """Auto thresholds command sends correct key."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    await dev.cmd_auto_thresholds(5)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_START_AUTO_THRESH + "0500",
+        CMD_END_CFG,
+    ]
+
+
+@pytest.mark.asyncio
+async def test_auto_thresholds_fail() -> None:
+    """Auto thresholds command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+            b"\x00\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_auto_thresholds(5)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_START_AUTO_THRESH + "0500",
+        CMD_END_CFG,
+    ]
+
+
+@pytest.mark.asyncio
+async def test_query_auto_thresholds_success() -> None:
+    """Query auto thresholds command parses response."""
+    dev = _TestDevice(password=None, response=b"\x00\x00\x02\x00")
+    status = await dev.cmd_query_auto_thresholds()
+    assert status == 2
+    assert dev.last_key == CMD_QUERY_AUTO_THRESH
+
+
+@pytest.mark.asyncio
+async def test_query_auto_thresholds_fail() -> None:
+    """Query auto thresholds command raises on failure."""
+    dev = _TestDevice(password=None, response=b"\x00\x00\x01")
+    with pytest.raises(OperationError):
+        await dev.cmd_query_auto_thresholds()
 
 
 def test_unwrap_response():
