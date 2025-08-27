@@ -468,6 +468,15 @@ class BaseDevice:
         if self._disconnect_timer:  # If the timer was reset, don't disconnect
             _LOGGER.debug("%s: Skipping disconnect as timer reset", self.name)
             return
+        if self._operation_lock.locked() or getattr(
+            self._operation_lock, "_waiters", []
+        ):
+            _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
+            waiters = list(getattr(self._operation_lock, "_waiters", []))
+            for waiter in waiters:
+                if not waiter.done():
+                    waiter.set_exception(OperationError("Device disconnecting"))
+            self._operation_lock = asyncio.Lock()
         client = self._client
         self._expected_disconnect = True
         self._client = None
