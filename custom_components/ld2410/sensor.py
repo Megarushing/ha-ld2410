@@ -117,8 +117,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         key="photo_sensor",
         name="Photo sensor",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=True,
-        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
 }
 
