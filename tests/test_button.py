@@ -1,6 +1,6 @@
 """Test the configuration button."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
@@ -66,7 +66,9 @@ async def test_auto_threshold_button(hass: HomeAssistant) -> None:
                 }
             ),
         ) as read_mock,
-        patch("custom_components.ld2410.button.asyncio.sleep", AsyncMock()),
+        patch(
+            "custom_components.ld2410.button.asyncio.sleep", AsyncMock()
+        ) as sleep_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -83,5 +85,6 @@ async def test_auto_threshold_button(hass: HomeAssistant) -> None:
         )
 
         auto_mock.assert_awaited_once_with(10)
-        query_mock.assert_awaited()
+        sleep_mock.assert_has_awaits([call(10)], any_order=True)
+        query_mock.assert_awaited_once()
         read_mock.assert_awaited_once()

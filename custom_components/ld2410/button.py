@@ -50,10 +50,9 @@ class AutoThresholdButton(Entity, ButtonEntity):
     async def async_press(self) -> None:
         """Handle the button press."""
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
-        while True:
+        await asyncio.sleep(AUTO_THRESH_DURATION)
+        while await self._device.cmd_query_auto_thresholds() != 0:
             await asyncio.sleep(1)
-            if await self._device.cmd_query_auto_thresholds() == 0:
-                break
         params = await self._device.cmd_read_params()
         if self._device._update_parsed_data(
             {
