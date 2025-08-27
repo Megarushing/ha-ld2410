@@ -205,6 +205,8 @@ class BaseDevice:
         for attempt in range(max_attempts):
             try:
                 return await self._send_command_locked(key, command)
+            except asyncio.CancelledError:
+                raise
             except BleakNotFoundError:
                 _LOGGER.error(
                     "%s: device not found, no longer in range, or poor RSSI: %s",
@@ -412,7 +414,7 @@ class BaseDevice:
         if self._operation_task and not self._operation_task.done():
             self._operation_task.cancel()
         if self._notify_future and not self._notify_future.done():
-            self._notify_future.set_exception(asyncio.TimeoutError)
+            self._notify_future.cancel()
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""

@@ -90,7 +90,11 @@ async def test_disconnected_cancels_operation() -> None:
         await asyncio.sleep(100)
 
     with (
-        patch.object(device, "_send_command_locked_with_retry", new=long_running),
+        patch(
+            "custom_components.ld2410.api.devices.device.BLEAK_RETRY_EXCEPTIONS",
+            (asyncio.CancelledError,),
+        ),
+        patch.object(device, "_send_command_locked", new=long_running),
         patch.object(device, "_restart_connection", AsyncMock()),
     ):
         task = asyncio.create_task(device._send_command("0000"))
