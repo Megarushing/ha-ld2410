@@ -15,6 +15,8 @@ from ..const import (
     CMD_ENABLE_ENGINEERING,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    UPLINK_TYPE_BASIC,
+    UPLINK_TYPE_ENGINEERING,
 )
 from .device import Device, OperationError
 
@@ -131,13 +133,13 @@ class LD2410(Device):
             # Not an intra frame
             return None
 
-        frame_type = data[0]
-        if frame_type == 0x01:
+        frame_type = data[:1].hex()
+        if frame_type == UPLINK_TYPE_ENGINEERING:
             ftype = "engineering"
-        elif frame_type == 0x02:
+        elif frame_type == UPLINK_TYPE_BASIC:
             ftype = "basic"
         else:
-            raise ValueError(f"unknown frame type {frame_type:#x}")
+            raise ValueError(f"unknown frame type {frame_type}")
 
         if not data.endswith(b"\x55\x00"):
             raise ValueError("missing frame footer")
