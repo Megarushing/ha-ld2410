@@ -29,8 +29,8 @@ except ImportError:  # pragma: no cover - testing fallback
 
 
 @pytest.mark.asyncio
-async def test_entities_stay_available_with_intra_frames(hass: HomeAssistant) -> None:
-    """Entities stay available when intra frames are received without advertisements."""
+async def test_entities_stay_available_with_uplink_frames(hass: HomeAssistant) -> None:
+    """Entities stay available when uplink frames are received without advertisements."""
     await async_setup_component(hass, DOMAIN, {})
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 

@@ -144,6 +144,8 @@ async def test_entities_created_without_initial_data(hass: HomeAssistant) -> Non
 
     registry = er.async_get(hass)
     assert registry.async_get("binary_sensor.test_name_motion") is not None
+    assert registry.async_get("binary_sensor.test_name_out_pin") is not None
+    assert registry.async_get("sensor.test_name_photo_sensor") is not None
     assert registry.async_get("sensor.test_name_firmware_version") is not None
     for gate in range(9):
         assert (
@@ -211,6 +213,60 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
             coordinator.device.parsed_data["still_gate_energy"][gate]
             == mock_parsed["still_gate_energy"][gate]
         )
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
+    """Ensure photo sensor and OUT pin report values."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    mock_parsed = {
+        "firmware_version": "2.44.24073110",
+        "firmware_build_date": datetime(2024, 7, 31, 10, 0, tzinfo=timezone.utc),
+        "photo_sensor": 123,
+        "out_pin": True,
+    }
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value=mock_parsed),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+    coordinator.device._update_parsed_data(mock_parsed)
+    coordinator.device._fire_callbacks()
+    assert hass.states.get("sensor.test_name_photo_sensor").state == str(
+        mock_parsed["photo_sensor"]
+    )
+    assert hass.states.get("binary_sensor.test_name_out_pin").state == "on"
 
 
 async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> None:

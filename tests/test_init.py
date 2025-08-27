@@ -149,6 +149,20 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_end_config",
             AsyncMock(),
         ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "nobody_duration": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
+        ),
     ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -193,6 +207,20 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
         patch(
             "custom_components.ld2410.api.LD2410.cmd_end_config",
             AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "nobody_duration": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
         ),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)

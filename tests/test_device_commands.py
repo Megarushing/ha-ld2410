@@ -1,5 +1,6 @@
 from bleak.backends.device import BLEDevice
 import pytest
+from unittest.mock import AsyncMock
 
 from custom_components.ld2410.api.devices.device import (
     _password_to_words,
@@ -17,6 +18,7 @@ from custom_components.ld2410.api.const import (
     CMD_ENABLE_ENGINEERING,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    CMD_READ_PARAMS,
 )
 
 
@@ -104,17 +106,40 @@ async def test_end_config_fail() -> None:
 @pytest.mark.asyncio
 async def test_enable_engineering_success() -> None:
     """Enable engineering command sends correct key."""
-    dev = _TestDevice(password=None, response=b"\x00\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
     await dev.cmd_enable_engineering_mode()
-    assert dev.last_key == CMD_ENABLE_ENGINEERING
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_ENABLE_ENGINEERING,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
 async def test_enable_engineering_fail() -> None:
     """Enable engineering command raises on failure."""
-    dev = _TestDevice(password=None, response=b"\x01\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+            b"\x00\x00",
+        ],
+    )
     with pytest.raises(OperationError):
         await dev.cmd_enable_engineering_mode()
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_ENABLE_ENGINEERING,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
@@ -171,6 +196,76 @@ async def test_query_auto_thresholds_fail() -> None:
     dev = _TestDevice(password=None, response=b"\x00\x00\x01")
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
+
+
+@pytest.mark.asyncio
+async def test_read_params_success() -> None:
+    """Read parameters command parses response."""
+    resp = [
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00"
+        + bytes.fromhex("aa080507")
+        + b"\x01" * 9
+        + b"\x02" * 9
+        + b"\x1e\x00",
+        b"\x00\x00",
+    ]
+    dev = _TestDevice(password=None, response=resp)
+    params = await dev.cmd_read_params()
+    assert params == {
+        "max_gate": 8,
+        "max_move_gate": 5,
+        "max_still_gate": 7,
+        "move_gate_sensitivity": [1] * 9,
+        "still_gate_sensitivity": [2] * 9,
+        "nobody_duration": 30,
+    }
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
+
+
+@pytest.mark.asyncio
+async def test_read_params_fail() -> None:
+    """Read parameters command raises on failure."""
+    resp = [
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00\xaa\x08\x05",
+        b"\x00\x00",
+    ]
+    dev = _TestDevice(password=None, response=resp)
+    with pytest.raises(OperationError):
+        await dev.cmd_read_params()
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
+
+
+@pytest.mark.asyncio
+async def test_connect_and_subscribe_reads_params() -> None:
+    """connect_and_subscribe reads parameters and stores them."""
+    resp = [
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00",
+        b"\x00\x00",
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00"
+        + bytes.fromhex("aa080507")
+        + b"\x01" * 9
+        + b"\x02" * 9
+        + b"\x1e\x00",
+        b"\x00\x00",
+    ]
+    dev = _TestDevice(password=None, response=resp)
+    dev._ensure_connected = AsyncMock()
+    await dev.connect_and_subscribe()
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_ENABLE_ENGINEERING,
+        CMD_END_CFG,
+        CMD_ENABLE_CFG + "0001",
+        CMD_READ_PARAMS,
+        CMD_END_CFG,
+    ]
+    assert dev.parsed_data["move_gate_sensitivity"] == [1] * 9
+    assert dev.parsed_data["still_gate_sensitivity"] == [2] * 9
+    assert dev.parsed_data["nobody_duration"] == 30
 
 
 def test_unwrap_response():

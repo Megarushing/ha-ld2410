@@ -8,6 +8,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.const import EntityCategory
 
 try:
     from homeassistant.helpers.entity_platform import (
@@ -41,6 +42,12 @@ BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
         name="Occupancy",
         device_class=BinarySensorDeviceClass.OCCUPANCY,
         entity_registry_enabled_default=True,
+    ),
+    "out_pin": BinarySensorEntityDescription(
+        key="out_pin",
+        name="OUT pin",
+        entity_registry_enabled_default=True,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
 
