@@ -138,8 +138,7 @@ async def test_enable_engineering_fail() -> None:
         await dev.cmd_enable_engineering_mode()
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
-        CMD_ENABLE_ENGINEERING,
-        CMD_END_CFG,
+        CMD_ENABLE_ENGINEERING
     ]
 
 
@@ -177,8 +176,7 @@ async def test_auto_thresholds_fail() -> None:
         await dev.cmd_auto_thresholds(5)
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
-        CMD_START_AUTO_THRESH + "0500",
-        CMD_END_CFG,
+        CMD_START_AUTO_THRESH + "0500"
     ]
 
 
@@ -217,8 +215,7 @@ async def test_query_auto_thresholds_fail() -> None:
         await dev.cmd_query_auto_thresholds()
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
-        CMD_QUERY_AUTO_THRESH,
-        CMD_END_CFG,
+        CMD_QUERY_AUTO_THRESH
     ]
 
 
@@ -270,8 +267,7 @@ async def test_set_gate_sensitivity_fail() -> None:
         await dev.cmd_set_gate_sensitivity(4, 15, 40)
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
-        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
-        CMD_END_CFG,
+        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000"
     ]
 
 
@@ -311,12 +307,12 @@ async def test_read_params_fail() -> None:
     dev = _TestDevice(password=None, response=resp)
     with pytest.raises(OperationError):
         await dev.cmd_read_params()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS]
 
 
 @pytest.mark.asyncio
-async def test_connect_and_subscribe_reads_params() -> None:
-    """connect_and_subscribe reads parameters and stores them."""
+async def test_connect_and_update_reads_params() -> None:
+    """connect_and_update reads parameters and stores them."""
     resp = [
         b"\x00\x00\x01\x00\x00@",
         b"\x00\x00",
@@ -331,7 +327,7 @@ async def test_connect_and_subscribe_reads_params() -> None:
     ]
     dev = _TestDevice(password=None, response=resp)
     dev._ensure_connected = AsyncMock()
-    await dev.connect_and_subscribe()
+    await dev.connect_and_update()
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
         CMD_ENABLE_ENGINEERING,

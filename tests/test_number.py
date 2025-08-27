@@ -54,7 +54,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            "custom_components.ld2410.api.LD2410.connect_and_update",
             AsyncMock(),
         ),
         patch(

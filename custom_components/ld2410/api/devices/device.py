@@ -260,6 +260,11 @@ class BaseDevice:
                 self.rssi,
             )
         async with self._operation_lock:
+            _LOGGER.debug(
+                "%s: Lock obtained for command: %s",
+                self.name,
+                command,
+            )
             return await self._send_command_locked_with_retry(
                 key, command, retry, max_attempts
             )
@@ -391,6 +396,17 @@ class BaseDevice:
             DISCONNECT_DELAY, self._disconnect_from_timer
         )
 
+    def _clear_locked_commands(self):
+        if self._operation_lock.locked() or getattr(
+                self._operation_lock, "_waiters", []
+        ):
+            _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
+            waiters = list(getattr(self._operation_lock, "_waiters", []))
+            for waiter in waiters:
+                if not waiter.done():
+                    waiter.set_exception(OperationError("Device disconnecting"))
+            self._operation_lock = asyncio.Lock()
+
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
         """Disconnected callback."""
         if self._expected_disconnect:
@@ -468,15 +484,7 @@ class BaseDevice:
         if self._disconnect_timer:  # If the timer was reset, don't disconnect
             _LOGGER.debug("%s: Skipping disconnect as timer reset", self.name)
             return
-        if self._operation_lock.locked() or getattr(
-            self._operation_lock, "_waiters", []
-        ):
-            _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
-            waiters = list(getattr(self._operation_lock, "_waiters", []))
-            for waiter in waiters:
-                if not waiter.done():
-                    waiter.set_exception(OperationError("Device disconnecting"))
-            self._operation_lock = asyncio.Lock()
+        self._clear_locked_commands()
         client = self._client
         self._expected_disconnect = True
         self._client = None

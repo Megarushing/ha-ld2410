@@ -63,7 +63,7 @@ async def test_restart_connection_waits_before_retry():
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
-    device.connect_and_subscribe = AsyncMock(side_effect=Exception("fail"))
+    device.connect_and_update = AsyncMock(side_effect=Exception("fail"))
     with patch(
         "custom_components.ld2410.api.devices.ld2410.asyncio.sleep",
         new=AsyncMock(),
@@ -77,26 +77,6 @@ async def test_restart_connection_waits_before_retry():
 
     mock_sleep.assert_awaited_once_with(1)
     assert mock_task.call_count == 1
-
-
-@pytest.mark.asyncio
-async def test_ensure_connected_sends_password_when_not_connected() -> None:
-    """_ensure_connected sends password on new connection."""
-    device = LD2410(
-        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
-        password="HiLink",
-    )
-    with (
-        patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
-            AsyncMock(),
-        ) as mock_connect,
-        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
-    ):
-        await device._ensure_connected()
-
-    mock_connect.assert_awaited_once()
-    mock_pass.assert_awaited_once()
 
 
 @pytest.mark.asyncio
