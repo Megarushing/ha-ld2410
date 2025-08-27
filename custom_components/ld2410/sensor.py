@@ -100,7 +100,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     ),
     "max_move_gate": SensorEntityDescription(
         key="max_move_gate",
-        name="Max moving gate",
+        name="Max motion gate",
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -172,7 +172,7 @@ class GateEnergySensor(Entity, SensorEntity):
         super().__init__(coordinator)
         self._data_key = data_key
         self._gate = gate
-        prefix = "Moving" if data_key == "move_gate_energy" else "Still"
+        prefix = "Motion" if data_key == "move_gate_energy" else "Still"
         self.entity_description = SensorEntityDescription(
             key=f"{data_key}_{gate}",
             name=f"{prefix} gate {gate} energy",
