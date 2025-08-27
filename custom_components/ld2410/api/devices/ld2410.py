@@ -36,6 +36,13 @@ class LD2410(Device):
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
 
+    async def _ensure_connected(self) -> None:
+        """Ensure connection and reauthorize with the bluetooth password."""
+        already_connected = bool(self._client and self._client.is_connected)
+        await super()._ensure_connected()
+        if not already_connected and self._password_words:
+            await self.cmd_send_bluetooth_password()
+
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
         """Handle disconnection and schedule reconnect."""
         super()._disconnected(client)
@@ -45,8 +52,6 @@ class LD2410(Device):
     async def connect_and_subscribe(self):
         """Begin connection, sends password and enables engineering mode."""
         await self._ensure_connected()
-        if self._password_words:
-            await self.cmd_send_bluetooth_password()
         await self.cmd_enable_engineering_mode()
         params = await self.cmd_read_params()
         self._update_parsed_data(
