@@ -185,18 +185,41 @@ async def test_auto_thresholds_fail() -> None:
 @pytest.mark.asyncio
 async def test_query_auto_thresholds_success() -> None:
     """Query auto thresholds command parses response."""
-    dev = _TestDevice(password=None, response=b"\x00\x00\x02\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00\x02\x00",
+            b"\x00\x00",
+        ],
+    )
     status = await dev.cmd_query_auto_thresholds()
     assert status == 2
-    assert dev.last_key == CMD_QUERY_AUTO_THRESH
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_QUERY_AUTO_THRESH,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
 async def test_query_auto_thresholds_fail() -> None:
     """Query auto thresholds command raises on failure."""
-    dev = _TestDevice(password=None, response=b"\x00\x00\x01")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00\x01",
+            b"\x00\x00",
+        ],
+    )
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_QUERY_AUTO_THRESH,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio

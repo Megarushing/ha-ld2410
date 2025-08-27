@@ -132,10 +132,14 @@ class LD2410(Device):
 
     async def cmd_query_auto_thresholds(self) -> int:
         """Query automatic threshold detection status."""
-        response = await self._send_command(CMD_QUERY_AUTO_THRESH)
-        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
-            raise OperationError("Failed to query automatic threshold status")
-        return int.from_bytes(response[2:4], "little")
+        await self.cmd_enable_config()
+        try:
+            response = await self._send_command(CMD_QUERY_AUTO_THRESH)
+            if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+                raise OperationError("Failed to query automatic threshold status")
+            return int.from_bytes(response[2:4], "little")
+        finally:
+            await self.cmd_end_config()
 
     async def cmd_set_gate_sensitivity(self, gate: int, move: int, still: int) -> None:
         """Set move and still sensitivity for a gate."""
