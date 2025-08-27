@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Dict, Sequence
 
@@ -33,7 +34,7 @@ class LD2410(Device):
             self.loop.create_task(self._restart_connection())
 
     async def connect_and_subscribe(self):
-        """ Begin connection, sends password and enables engineering mode."""
+        """Begin connection, sends password and enables engineering mode."""
         await self._ensure_connected()
         if self._password_words:
             await self.cmd_send_bluetooth_password()
@@ -48,6 +49,7 @@ class LD2410(Device):
             await self.connect_and_subscribe()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
+            await asyncio.sleep(1)
             self.loop.create_task(self._restart_connection())
 
     async def _execute_timed_disconnect(self) -> None:

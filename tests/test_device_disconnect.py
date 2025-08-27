@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
@@ -40,3 +40,26 @@ async def test_reconnect_after_timed_disconnect():
     await asyncio.sleep(0)
 
     device._restart_connection.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_restart_connection_waits_before_retry():
+    """Reconnect waits a second before scheduling a retry."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    device.connect_and_subscribe = AsyncMock(side_effect=Exception("fail"))
+    with patch(
+        "custom_components.ld2410.api.devices.ld2410.asyncio.sleep",
+        new=AsyncMock(),
+    ) as mock_sleep:
+
+        def _close(coro):
+            coro.close()
+
+        with patch.object(device.loop, "create_task", side_effect=_close) as mock_task:
+            await device._restart_connection()
+
+    mock_sleep.assert_awaited_once_with(1)
+    assert mock_task.call_count == 1
