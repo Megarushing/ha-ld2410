@@ -108,6 +108,31 @@ async def test_disconnected_cancels_operation() -> None:
 
 
 @pytest.mark.asyncio
+async def test_forced_disconnect_cancels_operation() -> None:
+    """Forced disconnect during command cancels the operation."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+
+    async def raise_timeout(*_args, **_kwargs):
+        await asyncio.sleep(0)
+        raise TimeoutError
+
+    with (
+        patch.object(device, "_execute_command_locked", new=raise_timeout),
+        patch.object(device, "_execute_forced_disconnect", AsyncMock()),
+        patch.object(device, "_ensure_connected", AsyncMock()),
+    ):
+        task = asyncio.create_task(device._send_command("0000"))
+        await asyncio.sleep(0)
+        assert device._operation_lock.locked()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert not device._operation_lock.locked()
+
+
+@pytest.mark.asyncio
 async def test_ensure_connected_sends_password_when_not_connected() -> None:
     """_ensure_connected sends password on new connection."""
     device = LD2410(

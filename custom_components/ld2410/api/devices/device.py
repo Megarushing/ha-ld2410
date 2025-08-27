@@ -451,10 +451,9 @@ class BaseDevice:
     async def _execute_forced_disconnect(self) -> None:
         """Execute forced disconnection."""
         self._cancel_disconnect_timer()
-        _LOGGER.debug(
-            "%s: Executing forced disconnect",
-            self.name,
-        )
+        if self._notify_future and not self._notify_future.done():
+            self._notify_future.cancel()
+        _LOGGER.debug("%s: Executing forced disconnect", self.name)
         await self._execute_disconnect()
 
     async def _execute_timed_disconnect(self) -> None:
@@ -516,14 +515,14 @@ class BaseDevice:
                 ex,
             )
             await self._execute_forced_disconnect()
-            raise
+            raise asyncio.CancelledError from ex
         except BLEAK_RETRY_EXCEPTIONS as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
                 "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
             )
             await self._execute_forced_disconnect()
-            raise
+            raise asyncio.CancelledError from ex
 
     def _parse_uplink_frame(self, data: bytes) -> dict[str, Any] | None:
         """Parse an uplink frame.
