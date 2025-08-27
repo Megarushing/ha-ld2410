@@ -98,6 +98,65 @@ async def test_sensors(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
 
+async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
+    """RSSI sensor should poll the device for current signal strength."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.connect_and_subscribe",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+        sensor_id = "sensor.test_name_signal_strength"
+        registry = er.async_get(hass)
+        registry.async_update_entity(sensor_id, disabled_by=None)
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+        await hass.helpers.entity_component.async_update_entity(sensor_id)
+
+        assert hass.states.get(sensor_id) is not None
+
+        device = entry.runtime_data.device
+
+        async def mock_read_rssi() -> int:
+            device._rssi = -70
+            return -70
+
+        with patch.object(device, "read_rssi", mock_read_rssi):
+            await hass.helpers.entity_component.async_update_entity(sensor_id)
+
+        assert hass.states.get(sensor_id).state == "-70"
+
+
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_entities_created_without_initial_data(hass: HomeAssistant) -> None:
     """Test entities are added even when no initial data is available."""

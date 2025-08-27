@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -194,15 +193,13 @@ class GateEnergySensor(Entity, SensorEntity):
 class RSSISensor(Sensor):
     """Representation of a RSSI sensor."""
 
+    _attr_should_poll = True
+
+    async def async_update(self) -> None:  # noqa: D102
+        await self._device.read_rssi()
+
     @property
     def native_value(self) -> str | int | None:
         """Return the state of the sensor."""
-        # The device supports both connectable and non-connectable devices
-        # so we need to request the rssi value based on the connectable instead
-        # of the nearest scanner since that is the RSSI that matters for controlling
-        # the device.
-        if service_info := async_last_service_info(
-            self.hass, self._address, self.coordinator.connectable
-        ):
-            return service_info.rssi
-        return None
+        rssi = self._device.rssi
+        return None if rssi == -127 else rssi
