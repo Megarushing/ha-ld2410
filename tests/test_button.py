@@ -53,6 +53,20 @@ async def test_auto_threshold_button(hass: HomeAssistant) -> None:
         patch(
             "custom_components.ld2410.api.LD2410.cmd_auto_thresholds", AsyncMock()
         ) as auto_mock,
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_query_auto_thresholds",
+            AsyncMock(return_value=0),
+        ) as query_mock,
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                }
+            ),
+        ) as read_mock,
+        patch("custom_components.ld2410.button.asyncio.sleep", AsyncMock()),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -69,3 +83,5 @@ async def test_auto_threshold_button(hass: HomeAssistant) -> None:
         )
 
         auto_mock.assert_awaited_once_with(10)
+        query_mock.assert_awaited()
+        read_mock.assert_awaited_once()

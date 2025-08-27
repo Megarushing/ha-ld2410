@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 
 try:
     from homeassistant.helpers.entity_platform import (
@@ -41,6 +42,7 @@ async def async_setup_entry(
 class GateSensitivityNumber(Entity, NumberEntity):
     """Representation of a gate sensitivity slider."""
 
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_native_min_value = 0
     _attr_native_max_value = 100
     _attr_native_step = 1
@@ -50,8 +52,8 @@ class GateSensitivityNumber(Entity, NumberEntity):
         super().__init__(coordinator)
         self._data_key = data_key
         self._gate = gate
-        prefix = "Motion" if data_key == "move_gate_sensitivity" else "Static"
-        self._attr_name = f"{prefix} gate {gate} sensitivity"
+        prefix = "motion" if data_key == "move_gate_sensitivity" else "static"
+        self._attr_name = f"Gate {gate} {prefix}"
         self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-{gate}"
 
     @property

@@ -72,19 +72,46 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
         for gate in range(9):
-            move_id = f"number.test_name_motion_gate_{gate}_sensitivity"
-            still_id = f"number.test_name_static_gate_{gate}_sensitivity"
+            move_id = f"number.test_name_gate_{gate}_motion"
+            still_id = f"number.test_name_gate_{gate}_static"
             assert hass.states.get(move_id).state == str(10 + gate)
             assert hass.states.get(still_id).state == str(20 + gate)
 
         await hass.services.async_call(
             "number",
             "set_value",
-            {
-                "entity_id": "number.test_name_motion_gate_0_sensitivity",
-                "value": 55,
-            },
+            {"entity_id": "number.test_name_gate_0_motion", "value": 55},
             blocking=True,
         )
 
         set_mock.assert_awaited_once_with(0, 55, 20)
+
+        new_params = {
+            "move_gate_sensitivity": [90] * 9,
+            "still_gate_sensitivity": [80] * 9,
+        }
+        with (
+            patch(
+                "custom_components.ld2410.api.LD2410.cmd_auto_thresholds",
+                AsyncMock(),
+            ),
+            patch(
+                "custom_components.ld2410.api.LD2410.cmd_query_auto_thresholds",
+                AsyncMock(side_effect=[1, 0]),
+            ),
+            patch(
+                "custom_components.ld2410.api.LD2410.cmd_read_params",
+                AsyncMock(return_value=new_params),
+            ),
+            patch("custom_components.ld2410.button.asyncio.sleep", AsyncMock()),
+        ):
+            await hass.services.async_call(
+                "button",
+                "press",
+                {"entity_id": "button.test_name_auto_threshold"},
+                blocking=True,
+            )
+            await hass.async_block_till_done()
+
+        assert hass.states.get("number.test_name_gate_0_motion").state == "90"
+        assert hass.states.get("number.test_name_gate_0_static").state == "80"
