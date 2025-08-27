@@ -1,30 +1,41 @@
 # LD2410 for Home Assistant
-Integration for HiLink LD2410 BLE mmWave radar devices.
+
+Integration for HiLink **LD2410** Bluetooth Low Energy (BLE) mmWave radar sensors.
+This integration allows Home Assistant to interface directly with LD2410 devices over Bluetooth.
+
+## Recommended Setup
+
+For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components/bluetooth_proxy.html) to connect your LD2410 to Home Assistant.
 
 ## Features
 - Real-time motion and occupancy detection using the LD2410 radar.
 - Distance and energy measurements for moving and stationary targets.
 - Per-gate energy sensors for detailed zone analysis.
-- Diagnostic sensors reporting firmware information and Bluetooth signal strength.
 
 ## Sensors
 ### Binary sensors
+- **Occupancy** – overall presence state combining motion and static data.
+  - We recommend using this sensor for automations as it aggregates both motion and static presence.
 - **Motion** – active when movement is detected.
 - **Static** – indicates a stationary presence.
-- **Occupancy** – overall presence state combining motion and static data.
+
+### Numeric sensors
+- **Detect distance** – distance at which a target is detected (cm).
+- **Photo Sensor** – photo sensor value (0-255).
+- **Moving Gates** – Energy level of individual motion gates (0-100%)
+- **Static Gates** – Energy level of individual static gates (0-100%)
 
 ### Diagnostic sensors
+
 - **Moving distance** – distance to the closest moving target (cm).
-- **Moving energy** – signal strength of moving targets.
 - **Still distance** – distance to the closest stationary target (cm).
-- **Still energy** – signal strength of stationary targets.
-- **Detect distance** – distance at which a target is detected (cm).
-- **Max moving gate** – gate index with strongest moving target.
-- **Max still gate** – gate index with strongest stationary target.
-- **Moving/Still gate energy 0‑8** – energy value for each radar gate.
+- **Moving energy** – strongest gate energy of moving target.
+- **Still energy** – strongest gate energy of stationary targets.
+- **Max moving gate** – index of latest moving gate.
+- **Max still gate** – index of latest still gate.
 - **Firmware version** – device firmware version.
 - **Firmware build date** – build date of the installed firmware.
-- **Frame type** – last reported frame type.
+- **Frame type** – type of uplink frames (basic or engineering).
 - **Bluetooth signal** – RSSI of the device.
 
 ## Installation instructions
@@ -57,7 +68,7 @@ Contributions are welcome! To set up the development environment:
    pip install -r requirements.dev.txt
    ```
 
-3. Before committing, run the linters and tests:
+3. Before making your Pull Request, run the linters and tests:
 
    ```bash
    ruff check . --fix
@@ -66,6 +77,8 @@ Contributions are welcome! To set up the development environment:
    ```
 
 ## Known Issues
+- The integration may not work with some LD2410 devices due to firmware differences. If you encounter issues, please open an issue on GitHub with details about your device and firmware version.
+
 ### Enabling debug logging
 Add the following to your `configuration.yaml` file then restart Home Assistant:
 
