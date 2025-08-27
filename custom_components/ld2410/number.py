@@ -52,8 +52,8 @@ class GateSensitivityNumber(Entity, NumberEntity):
         super().__init__(coordinator)
         self._data_key = data_key
         self._gate = gate
-        prefix = "motion" if data_key == "move_gate_sensitivity" else "static"
-        self._attr_name = f"Gate {gate} {prefix}"
+        prefix = "M" if data_key == "move_gate_sensitivity" else "S"
+        self._attr_name = f"{prefix}G{gate} Sensitivity"
         self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-{gate}"
 
     @property
