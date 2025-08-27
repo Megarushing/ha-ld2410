@@ -72,15 +72,15 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
         for gate in range(9):
-            move_id = f"number.test_name_gate_{gate}_motion"
-            still_id = f"number.test_name_gate_{gate}_static"
+            move_id = f"number.test_name_mg{gate}_sensitivity"
+            still_id = f"number.test_name_sg{gate}_sensitivity"
             assert hass.states.get(move_id).state == str(10 + gate)
             assert hass.states.get(still_id).state == str(20 + gate)
 
         await hass.services.async_call(
             "number",
             "set_value",
-            {"entity_id": "number.test_name_gate_0_motion", "value": 55},
+            {"entity_id": "number.test_name_mg0_sensitivity", "value": 55},
             blocking=True,
         )
 
@@ -113,5 +113,5 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             )
             await hass.async_block_till_done()
 
-        assert hass.states.get("number.test_name_gate_0_motion").state == "90"
-        assert hass.states.get("number.test_name_gate_0_static").state == "80"
+        assert hass.states.get("number.test_name_mg0_sensitivity").state == "90"
+        assert hass.states.get("number.test_name_sg0_sensitivity").state == "80"
