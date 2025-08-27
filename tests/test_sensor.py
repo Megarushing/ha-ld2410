@@ -215,7 +215,6 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
         )
 
 
-@pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
     """Ensure photo sensor and OUT pin report values."""
     await async_setup_component(hass, DOMAIN, {})
@@ -260,17 +259,22 @@ async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
         inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
         await hass.async_block_till_done()
-    coordinator = entry.runtime_data
-    coordinator.device._update_parsed_data(mock_parsed)
-    coordinator.device._fire_callbacks()
-    assert hass.states.get("sensor.test_name_photo_sensor").state == str(
-        mock_parsed["photo_sensor"]
-    )
+        registry = er.async_get(hass)
+        entity_id = "sensor.test_name_photo_sensor"
+        registry.async_update_entity(entity_id, disabled_by=None)
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data
+        coordinator.device._update_parsed_data(mock_parsed)
+        coordinator.device._fire_callbacks()
+        assert hass.states.get(entity_id).state == str(mock_parsed["photo_sensor"])
     assert hass.states.get("binary_sensor.test_name_out_pin").state == "on"
 
 
-async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> None:
-    """Ensure the frame type sensor is disabled by default."""
+async def test_frame_type_and_photo_sensors_disabled_by_default(
+    hass: HomeAssistant,
+) -> None:
+    """Ensure the frame type and photo sensors are disabled by default."""
     await async_setup_component(hass, DOMAIN, {})
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
@@ -313,9 +317,10 @@ async def test_frame_type_sensor_disabled_by_default(hass: HomeAssistant) -> Non
         await hass.async_block_till_done()
 
     registry = er.async_get(hass)
-    entity_id = "sensor.test_name_frame_type"
-    entity = registry.async_get(entity_id)
-    assert entity
-    assert entity.disabled
-    assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert hass.states.get(entity_id) is None
+    for sensor in ("frame_type", "photo_sensor"):
+        entity_id = f"sensor.test_name_{sensor}"
+        entity = registry.async_get(entity_id)
+        assert entity
+        assert entity.disabled
+        assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert hass.states.get(entity_id) is None
