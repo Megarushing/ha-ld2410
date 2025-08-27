@@ -79,6 +79,31 @@ async def test_restart_connection_waits_before_retry():
 
 
 @pytest.mark.asyncio
+async def test_disconnected_cancels_operation() -> None:
+    """Unexpected disconnect cancels any in-progress command."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+
+    async def long_running(*_args, **_kwargs):
+        await asyncio.sleep(100)
+
+    with (
+        patch.object(device, "_send_command_locked_with_retry", new=long_running),
+        patch.object(device, "_restart_connection", AsyncMock()),
+    ):
+        task = asyncio.create_task(device._send_command("0000"))
+        await asyncio.sleep(0)
+        assert device._operation_lock.locked()
+        device._disconnected(None)
+        await asyncio.sleep(0)
+        assert not device._operation_lock.locked()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+
+@pytest.mark.asyncio
 async def test_ensure_connected_sends_password_when_not_connected() -> None:
     """_ensure_connected sends password on new connection."""
     device = LD2410(

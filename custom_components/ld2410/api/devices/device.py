@@ -166,6 +166,7 @@ class BaseDevice:
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
+        self._operation_task: asyncio.Task[Any] | None = None
         if password is None or password == "":
             self._password_encoded = None
             self._password_words: tuple[str, ...] = ()
@@ -260,9 +261,13 @@ class BaseDevice:
                 self.rssi,
             )
         async with self._operation_lock:
-            return await self._send_command_locked_with_retry(
-                key, command, retry, max_attempts
-            )
+            self._operation_task = asyncio.current_task()
+            try:
+                return await self._send_command_locked_with_retry(
+                    key, command, retry, max_attempts
+                )
+            finally:
+                self._operation_task = None
 
     @property
     def name(self) -> str:
@@ -404,6 +409,10 @@ class BaseDevice:
             self.rssi,
         )
         self._cancel_disconnect_timer()
+        if self._operation_task and not self._operation_task.done():
+            self._operation_task.cancel()
+        if self._notify_future and not self._notify_future.done():
+            self._notify_future.set_exception(asyncio.TimeoutError)
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
