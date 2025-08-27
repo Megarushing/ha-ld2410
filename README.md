@@ -22,7 +22,7 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 ### Numeric sensors
 - **Detect distance** – distance at which a target is detected (cm).
 - **Photo Sensor** – photo sensor value (0-255).
-- **Moving Gates** – Energy level of individual motion gates (0-100%)
+- **Motion Gates** – Energy level of individual motion gates (0-100%)
 - **Static Gates** – Energy level of individual static gates (0-100%)
 
 ### Diagnostic sensors
@@ -31,7 +31,7 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 - **Still distance** – distance to the closest stationary target (cm).
 - **Moving energy** – strongest gate energy of moving target.
 - **Still energy** – strongest gate energy of stationary targets.
-- **Max moving gate** – index of latest moving gate.
+- **Max motion gate** – index of latest motion gate.
 - **Max still gate** – index of latest still gate.
 - **Firmware version** – device firmware version.
 - **Firmware build date** – build date of the installed firmware.

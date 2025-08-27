@@ -208,7 +208,7 @@ async def test_entities_created_without_initial_data(hass: HomeAssistant) -> Non
     assert registry.async_get("sensor.test_name_firmware_version") is not None
     for gate in range(9):
         assert (
-            registry.async_get(f"sensor.test_name_moving_gate_{gate}_energy")
+            registry.async_get(f"sensor.test_name_motion_gate_{gate}_energy")
             is not None
         )
         assert (
