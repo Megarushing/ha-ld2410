@@ -108,6 +108,44 @@ async def test_disconnected_cancels_operation() -> None:
 
 
 @pytest.mark.asyncio
+async def test_disconnected_allows_following_command() -> None:
+    """Unexpected disconnect releases lock for subsequent commands."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+
+    async def long_running(*_args, **_kwargs):
+        await asyncio.sleep(100)
+
+    with (
+        patch(
+            "custom_components.ld2410.api.devices.device.BLEAK_RETRY_EXCEPTIONS",
+            (asyncio.CancelledError,),
+        ),
+        patch.object(device, "_send_command_locked", new=long_running),
+        patch.object(device, "_restart_connection", AsyncMock()),
+    ):
+        task = asyncio.create_task(device._send_command("0000"))
+        await asyncio.sleep(0)
+        device._disconnected(None)
+        await asyncio.sleep(0)
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    with (
+        patch.object(
+            device, "_send_command_locked", AsyncMock(return_value=b"ok")
+        ) as mock_send,
+        patch.object(device, "_ensure_connected", AsyncMock()),
+    ):
+        result = await device._send_command("0001")
+
+    assert result == b"ok"
+    mock_send.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_forced_disconnect_cancels_operation() -> None:
     """Forced disconnect during command cancels the operation."""
     device = LD2410(

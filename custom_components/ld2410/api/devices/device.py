@@ -398,6 +398,16 @@ class BaseDevice:
             DISCONNECT_DELAY, self._disconnect_from_timer
         )
 
+    def _reset_operation_state(self, cancel_task: bool = True) -> None:
+        """Reset operation task, lock, and notify future."""
+        if cancel_task and self._operation_task and not self._operation_task.done():
+            self._operation_task.cancel()
+        self._operation_task = None
+        self._operation_lock = asyncio.Lock()
+        if self._notify_future and not self._notify_future.done():
+            self._notify_future.cancel()
+            self._notify_future = None
+
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
         """Disconnected callback."""
         if self._expected_disconnect:
@@ -411,10 +421,7 @@ class BaseDevice:
             self.rssi,
         )
         self._cancel_disconnect_timer()
-        if self._operation_task and not self._operation_task.done():
-            self._operation_task.cancel()
-        if self._notify_future and not self._notify_future.done():
-            self._notify_future.cancel()
+        self._reset_operation_state()
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -451,8 +458,7 @@ class BaseDevice:
     async def _execute_forced_disconnect(self) -> None:
         """Execute forced disconnection."""
         self._cancel_disconnect_timer()
-        if self._notify_future and not self._notify_future.done():
-            self._notify_future.cancel()
+        self._reset_operation_state(cancel_task=False)
         _LOGGER.debug("%s: Executing forced disconnect", self.name)
         await self._execute_disconnect()
 
