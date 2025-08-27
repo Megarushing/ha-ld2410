@@ -20,7 +20,6 @@ RX_FOOTER = "F8F7F6F5"  # Uplink data frame footer.
 # NOTE on ACKs: ACK intra-frame data begins with (sent_cmd | 0x0100) then the return payload.
 # Example: send "FE00" → ACK contains "FE01" then status(2). :contentReference[oaicite:3]{index=3}
 
-
 # ---------- Command words (hex strings, little-endian) ----------
 
 # Enable configuration session (must precede other config commands). Returns status + protocol version + buffer size.
@@ -98,6 +97,23 @@ CMD_SET_RES = "AA00"  # value: RES_* index(2)
 CMD_GET_RES = "AB00"  # value: (none)
 # return: status(2) + RES_* index(2). Example ACK shows "... 0001 00" → 0.2 m per gate. :contentReference[oaicite:20]{index=20}
 
+# Set auxiliary control (ambient light sensor & output config).
+CMD_SET_AUX = "AD00"  # value: 4B config = [mode(1B) + threshold(1B) + out_level(1B) + reserved(1B)]
+# return: status(2). Modes: 0x00=disable light sensor control (OUT always triggered by presence),
+#        0x01=enable (OUT active only if ambient light < threshold), 0x02=enable (OUT active only if ambient light > threshold).
+#        Out_level: 0x00=OUT default low (active high on detect), 0x01=OUT default high (active low on detect). :contentReference[oaicite:26]{index=26}
+
+# Read auxiliary control configuration.
+CMD_GET_AUX = "AE00"  # value: (none)
+# return: status(2) + 4B config (same format as CMD_SET_AUX). :contentReference[oaicite:27]{index=27}
+
+# Start automatic threshold detection (background noise calibration).
+CMD_START_AUTO_THRESH = "0B00"  # value: <u16 duration_sec> (detection time in seconds)
+# return: status(2). Sensor performs background noise detection for the given duration, then auto-adjusts sensitivities. :contentReference[oaicite:28]{index=28}
+
+# Query status of automatic threshold detection.
+CMD_QUERY_AUTO_THRESH = "1B00"  # value: (none)
+# return: status(2) + status_code(2). 0x0000 = not in progress, 0x0001 = in progress, 0x0002 = completed (calibration done). :contentReference[oaicite:29]{index=29}
 
 # ---------- Parameter words (for 0x0060 “max gates & nobody”) ----------
 PAR_MAX_MOVE_GATE = "0000"  # u32 move gate: 2..8
@@ -124,18 +140,22 @@ BAUD_460800 = "0008"  # per Table 6. :contentReference[oaicite:23]{index=23}
 RES_PER_GATE_0_75M = "0000"  # each distance gate = 0.75 m
 RES_PER_GATE_0_2M = "0001"  # each distance gate = 0.20 m  (query example returns "0001"). :contentReference[oaicite:24]{index=24}
 
+# ---------- Auxiliary control function values (for CMD_SET_AUX / CMD_GET_AUX) ----------
+LIGHT_CONTROL_OFF = "00"    # 0x00 = Disable light-sensing control (ambient light ignored):contentReference[oaicite:7]{index=7}
+LIGHT_CONTROL_ENABLE_UNDER = "01"  # 0x01 = Enable aux control (OUT active if ambient < threshold):contentReference[oaicite:8]{index=8}
+LIGHT_CONTROL_ENABLE_OVER = "02"   # 0x02 = Enable aux control (OUT active if ambient > threshold):contentReference[oaicite:9]{index=9}
+LIGHT_THRESHOLD_DEFAULT = "80"     # Default light threshold = 0x80 (128):contentReference[oaicite:10]{index=10}
+OUT_LEVEL_LOW = "00"    # 0x00 = OUT default low (outputs low when idle, high when target detected):contentReference[oaicite:11]{index=11}
+OUT_LEVEL_HIGH = "01"   # 0x01 = OUT default high (outputs high when idle, low when target detected):contentReference[oaicite:12]{index=12}
+
 # ---------- Uplink data types (for RX payload interpretation) ----------
 UPLINK_TYPE_ENGINEERING = "01"  # per-gate energies appended to basic target info
-UPLINK_TYPE_BASIC = (
-    "02"  # basic target info only (default). :contentReference[oaicite:25]{index=25}
-)
-
+UPLINK_TYPE_BASIC = "02"  # basic target info only (default). :contentReference[oaicite:25]{index=25}
 
 class Model(StrEnum):
     """Device models."""
-
     LD2410 = "HLK-LD2410"
-
+    # Additional models (e.g., LD2410B, LD2410C) can be represented by the same commands
 
 __all__ = [
     # exports
@@ -168,6 +188,10 @@ __all__ = [
     "CMD_BT_SET_PWD",
     "CMD_SET_RES",
     "CMD_GET_RES",
+    "CMD_SET_AUX",
+    "CMD_GET_AUX",
+    "CMD_START_AUTO_THRESH",
+    "CMD_QUERY_AUTO_THRESH",
     # parameter words
     "PAR_MAX_MOVE_GATE",
     "PAR_MAX_STILL_GATE",
@@ -188,65 +212,14 @@ __all__ = [
     # distance resolution indices
     "RES_PER_GATE_0_75M",
     "RES_PER_GATE_0_2M",
+    # auxiliary control function values
+    "LIGHT_CONTROL_OFF",
+    "LIGHT_CONTROL_ENABLE_UNDER",
+    "LIGHT_CONTROL_ENABLE_OVER",
+    "LIGHT_THRESHOLD_DEFAULT",
+    "OUT_LEVEL_LOW",
+    "OUT_LEVEL_HIGH",
     # uplink data types
     "UPLINK_TYPE_ENGINEERING",
     "UPLINK_TYPE_BASIC",
 ]
-
-
-# OLD commands for reference
-# CMD_BT_PASS_PRE = b"\xfd\xfc\xfb\xfa\x08\x00\xa8\x00"
-# CMD_BT_PASS_DEFAULT = b"HiLink"
-# CMD_BT_PASS_POST = b"\x04\x03\x02\x01"
-# CMD_ENABLE_CONFIG = b"\xfd\xfc\xfb\xfa\x04\x00\xff\x00\x01\x00\x04\x03\x02\x01"
-# CMD_ENABLE_ENGINEERING_MODE = b"\xfd\xfc\xfb\xfa\x02\x00b\x00\x04\x03\x02\x01"
-# CMD_DISABLE_CONFIG = b"\xfd\xfc\xfb\xfa\x02\x00\xfe\x00\x04\x03\x02\x01"
-#
-# MOVING_TARGET = 1
-# STATIC_TARGET = 2
-#
-# frame_start = b"\xf4\xf3\xf2\xf1"
-# frame_length = b"(?P<length>..)"
-# frame_engineering_mode = b"(?P<engineering>\x01|\x02)"
-# frame_head = b"\xaa"
-# frame_target_state = b"(?P<target_state>\x00|\x01|\x02|\x03)"
-# frame_moving_target_distance = b"(?P<moving_target_distance>..)"
-# frame_moving_target_energy = b"(?P<moving_target_energy>.)"
-# frame_static_target_distance = b"(?P<static_target_distance>..)"
-# frame_static_target_energy = b"(?P<static_target_energy>.)"
-# frame_detection_distance = b"(?P<detection_distance>..)"
-# frame_engineering_data = b"(?P<engineering_data>.+?)?"
-# frame_tail = b"\x55"
-# frame_check = b"\x00"
-# frame_end = b"\xf8\xf7\xf6\xf5"
-#
-# frame_maximum_motion_gates = b"(?P<maximum_motion_gates>.)"
-# frame_maximum_static_gates = b"(?P<maximum_static_gates>.)"
-# frame_motion_energy_gates = b"(?P<motion_energy_gates>.{9})"
-# frame_static_energy_gates = b"(?P<static_energy_gates>.{9})"
-# frame_additional_information = b"(?P<additional_information>.*)"
-#
-# frame_regex = (
-#         frame_start
-#         + frame_length
-#         + frame_engineering_mode
-#         + frame_head
-#         + frame_target_state
-#         + frame_moving_target_distance
-#         + frame_moving_target_energy
-#         + frame_static_target_distance
-#         + frame_static_target_energy
-#         + frame_detection_distance
-#         + frame_engineering_data
-#         + frame_tail
-#         + frame_check
-#         + frame_end
-# )
-#
-# engineering_frame_regex = (
-#         frame_maximum_motion_gates
-#         + frame_maximum_static_gates
-#         + frame_motion_energy_gates
-#         + frame_static_energy_gates
-#         + frame_additional_information
-# )
