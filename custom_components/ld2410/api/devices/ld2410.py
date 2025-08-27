@@ -149,11 +149,11 @@ class LD2410(Device):
         try:
             payload = (
                 PAR_DISTANCE_GATE
-                + gate.to_bytes(2, "little").hex()
+                + gate.to_bytes(4, "little").hex()
                 + PAR_MOVE_SENS
-                + move.to_bytes(2, "little").hex()
+                + move.to_bytes(4, "little").hex()
                 + PAR_STILL_SENS
-                + still.to_bytes(2, "little").hex()
+                + still.to_bytes(4, "little").hex()
             )
             response = await self._send_command(CMD_SET_SENSITIVITY + payload)
             if response != b"\x00\x00":
