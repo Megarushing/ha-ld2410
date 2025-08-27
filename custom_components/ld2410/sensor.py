@@ -118,9 +118,10 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         name="Photo sensor",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ILLUMINANCE,
-        entity_registry_enabled_default=False,
+        entity_registry_enabled_default=True,
     ),
 }
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
