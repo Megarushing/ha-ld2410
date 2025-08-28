@@ -51,9 +51,8 @@ class LD2410(Device):
             self.loop.create_task(self._restart_connection())
 
     async def connect_and_update(self):
-        """Begin connection, sends password and enables engineering mode."""
+        """Ensure connection and refresh configuration parameters."""
         await self._ensure_connected()
-        await self.cmd_enable_engineering_mode()
         params = await self.cmd_read_params()
         self._update_parsed_data(
             {
