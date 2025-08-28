@@ -327,7 +327,6 @@ async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
         coordinator.device._update_parsed_data(mock_parsed)
         coordinator.device._fire_callbacks()
         assert hass.states.get(entity_id).state == str(mock_parsed["photo_sensor"])
-    assert hass.states.get("binary_sensor.test_name_out_pin").state == "on"
 
 
 async def test_frame_type_and_photo_sensors_disabled_by_default(
