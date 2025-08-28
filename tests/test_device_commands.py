@@ -136,10 +136,7 @@ async def test_enable_engineering_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_enable_engineering_mode()
-    assert dev.keys == [
-        CMD_ENABLE_CFG + "0001",
-        CMD_ENABLE_ENGINEERING
-    ]
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_ENABLE_ENGINEERING]
 
 
 @pytest.mark.asyncio
@@ -174,10 +171,7 @@ async def test_auto_thresholds_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_auto_thresholds(5)
-    assert dev.keys == [
-        CMD_ENABLE_CFG + "0001",
-        CMD_START_AUTO_THRESH + "0500"
-    ]
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_START_AUTO_THRESH + "0500"]
 
 
 @pytest.mark.asyncio
@@ -213,10 +207,7 @@ async def test_query_auto_thresholds_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
-    assert dev.keys == [
-        CMD_ENABLE_CFG + "0001",
-        CMD_QUERY_AUTO_THRESH
-    ]
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_QUERY_AUTO_THRESH]
 
 
 @pytest.mark.asyncio
@@ -267,7 +258,7 @@ async def test_set_gate_sensitivity_fail() -> None:
         await dev.cmd_set_gate_sensitivity(4, 15, 40)
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
-        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000"
+        CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
     ]
 
 
@@ -326,7 +317,7 @@ async def test_connect_and_update_reads_params() -> None:
         b"\x00\x00",
     ]
     dev = _TestDevice(password=None, response=resp)
-    dev._ensure_connected = AsyncMock()
+    dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
     await dev.connect_and_update()
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
