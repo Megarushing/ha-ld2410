@@ -16,10 +16,14 @@ from ..const import (
     CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
     PAR_DISTANCE_GATE,
     PAR_MOVE_SENS,
     PAR_STILL_SENS,
+    PAR_MAX_MOVE_GATE,
+    PAR_MAX_STILL_GATE,
+    PAR_NOBODY_DURATION,
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
 )
@@ -58,7 +62,9 @@ class LD2410(Device):
             {
                 "move_gate_sensitivity": params.get("move_gate_sensitivity"),
                 "still_gate_sensitivity": params.get("still_gate_sensitivity"),
-                "nobody_duration": params.get("nobody_duration"),
+                "absence_delay": params.get("absence_delay"),
+                "max_move_gate": params.get("max_move_gate"),
+                "max_still_gate": params.get("max_still_gate"),
             }
         )
 
@@ -199,17 +205,38 @@ class LD2410(Device):
         idx += move_len
         still_gate_sensitivity = list(payload[idx : idx + move_len])
         idx += move_len
-        nobody_duration = int.from_bytes(payload[idx : idx + 2], "little")
+        absence_delay = int.from_bytes(payload[idx : idx + 2], "little")
         r = {
             "max_gate": max_gate,
             "max_move_gate": max_move_gate,
             "max_still_gate": max_still_gate,
             "move_gate_sensitivity": move_gate_sensitivity,
             "still_gate_sensitivity": still_gate_sensitivity,
-            "nobody_duration": nobody_duration,
+            "absence_delay": absence_delay,
         }
         await self.cmd_end_config()
         return r
+
+    async def cmd_set_absence_delay(self, delay: int) -> None:
+        """Set the absence delay (no-one duration)."""
+        if not 0 <= delay <= 65535:
+            raise ValueError("delay must be 0..65535")
+        move_gate = self.parsed_data.get("max_move_gate", 8)
+        still_gate = self.parsed_data.get("max_still_gate", 8)
+        await self.cmd_enable_config()
+        payload = (
+            PAR_MAX_MOVE_GATE
+            + move_gate.to_bytes(4, "little").hex()
+            + PAR_MAX_STILL_GATE
+            + still_gate.to_bytes(4, "little").hex()
+            + PAR_NOBODY_DURATION
+            + delay.to_bytes(4, "little").hex()
+        )
+        response = await self._send_command(CMD_SET_MAX_GATES_AND_NOBODY + payload)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set absence delay")
+        self._update_parsed_data({"absence_delay": delay})
+        await self.cmd_end_config()
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink frame.

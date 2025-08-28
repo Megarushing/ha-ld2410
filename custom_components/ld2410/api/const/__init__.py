@@ -32,7 +32,7 @@ CMD_ENABLE_CFG = "FF00"  # value: "0001"
 CMD_END_CFG = "FE00"  # value: (none)
 # return: status(2). Send again CMD_ENABLE_CFG to re-enter config mode.
 
-# Set max detection gates (move & still) and "no-one" duration (unoccupied delay).
+# Set max detection gates (move & still) and "no-one" duration (absence delay).
 CMD_SET_MAX_GATES_AND_NOBODY = "6000"
 # value (all words little-endian, values are u32 LE):
 #   "0000"+<u32 move_gate 2..8>  +  "0100"+<u32 still_gate 2..8>  +  "0200"+<u32 nobody_sec 0..65535>
@@ -41,7 +41,7 @@ CMD_SET_MAX_GATES_AND_NOBODY = "6000"
 # Read current configuration (gates, per-gate sensitivities, unoccupied duration).
 CMD_READ_PARAMS = "6100"  # value: (none)
 # return: status(2) + "AA"(1B) + N_max(1B) + cfg_max_move(1B) + cfg_max_still(1B)
-#       + move_sens[0..N](1B each) + still_sens[0..N](1B each) + nobody_duration(2).
+#       + move_sens[0..N](1B each) + still_sens[0..N](1B each) + absence_delay(2).
 
 # Enable engineering mode (uplink adds per-gate energy arrays, data type "01").
 CMD_ENABLE_ENGINEERING = "6200"  # value: (none)
