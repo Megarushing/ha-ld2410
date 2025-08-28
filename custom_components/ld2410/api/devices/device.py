@@ -260,11 +260,7 @@ class BaseDevice:
                 self.rssi,
             )
         async with self._operation_lock:
-            _LOGGER.debug(
-                "%s: Lock obtained for command: %s",
-                self.name,
-                command,
-            )
+            #_LOGGER.debug("%s: Lock obtained for command: %s",self.name,key)
             return await self._send_command_locked_with_retry(
                 key, command, retry, max_attempts
             )
