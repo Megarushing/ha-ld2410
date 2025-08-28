@@ -13,6 +13,7 @@ from ..const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_REBOOT,
     CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
@@ -264,6 +265,13 @@ class LD2410(Device):
             raise OperationError("Failed to set resolution")
         self._update_parsed_data({"resolution": index})
         await self.cmd_end_config()
+        await self.cmd_reboot()
+
+    async def cmd_reboot(self) -> None:
+        """Reboot the module."""
+        response = await self._send_command(CMD_REBOOT)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to reboot")
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink frame.

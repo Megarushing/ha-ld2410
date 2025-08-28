@@ -21,6 +21,7 @@ from custom_components.ld2410.api.const import (
     CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
     CMD_READ_PARAMS,
+    CMD_REBOOT,
     CMD_SET_RES,
     CMD_GET_RES,
     PAR_MAX_MOVE_GATE,
@@ -435,10 +436,16 @@ async def test_set_resolution_success() -> None:
             b"\x00\x00\x01\x00\x00@",
             b"\x00\x00",
             b"\x00\x00",
+            b"\x00\x00",
         ],
     )
     await dev.cmd_set_resolution(1)
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100", CMD_END_CFG]
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_RES + "0100",
+        CMD_END_CFG,
+        CMD_REBOOT,
+    ]
     assert dev.parsed_data["resolution"] == 1
 
 
@@ -456,6 +463,22 @@ async def test_set_resolution_fail() -> None:
     with pytest.raises(OperationError):
         await dev.cmd_set_resolution(1)
     assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100"]
+
+
+@pytest.mark.asyncio
+async def test_reboot_success() -> None:
+    """Reboot command sends correct key."""
+    dev = _TestDevice(password=None, response=b"\x00\x00")
+    await dev.cmd_reboot()
+    assert dev.last_key == CMD_REBOOT
+
+
+@pytest.mark.asyncio
+async def test_reboot_fail() -> None:
+    """Reboot command raises on failure."""
+    dev = _TestDevice(password=None, response=b"\x01\x00")
+    with pytest.raises(OperationError):
+        await dev.cmd_reboot()
 
 
 def test_unwrap_response():
