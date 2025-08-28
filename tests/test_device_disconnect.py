@@ -22,7 +22,7 @@ async def test_reconnect_after_unexpected_disconnect():
         return_value={
             "move_gate_sensitivity": [],
             "still_gate_sensitivity": [],
-            "nobody_duration": 0,
+            "absence_delay": 0,
         }
     )
     device._update_parsed_data = MagicMock()

@@ -18,8 +18,12 @@ from custom_components.ld2410.api.const import (
     CMD_ENABLE_ENGINEERING,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
+    CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
     CMD_READ_PARAMS,
+    PAR_MAX_MOVE_GATE,
+    PAR_MAX_STILL_GATE,
+    PAR_NOBODY_DURATION,
 )
 
 
@@ -282,7 +286,7 @@ async def test_read_params_success() -> None:
         "max_still_gate": 7,
         "move_gate_sensitivity": [1] * 9,
         "still_gate_sensitivity": [2] * 9,
-        "nobody_duration": 30,
+        "absence_delay": 30,
     }
     assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
 
@@ -329,7 +333,57 @@ async def test_connect_and_update_reads_params() -> None:
     ]
     assert dev.parsed_data["move_gate_sensitivity"] == [1] * 9
     assert dev.parsed_data["still_gate_sensitivity"] == [2] * 9
-    assert dev.parsed_data["nobody_duration"] == 30
+    assert dev.parsed_data["absence_delay"] == 30
+
+
+@pytest.mark.asyncio
+async def test_set_absence_delay_success() -> None:
+    """Set absence delay command sends correct key."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    await dev.cmd_set_absence_delay(30)
+    expected_payload = (
+        CMD_SET_MAX_GATES_AND_NOBODY
+        + PAR_MAX_MOVE_GATE
+        + "08000000"
+        + PAR_MAX_STILL_GATE
+        + "08000000"
+        + PAR_NOBODY_DURATION
+        + "1e000000"
+    )
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload, CMD_END_CFG]
+    assert dev.parsed_data["absence_delay"] == 30
+
+
+@pytest.mark.asyncio
+async def test_set_absence_delay_fail() -> None:
+    """Set absence delay command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+            b"\x00\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_set_absence_delay(30)
+    expected_payload = (
+        CMD_SET_MAX_GATES_AND_NOBODY
+        + PAR_MAX_MOVE_GATE
+        + "08000000"
+        + PAR_MAX_STILL_GATE
+        + "08000000"
+        + PAR_NOBODY_DURATION
+        + "1e000000"
+    )
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload]
 
 
 def test_unwrap_response():

@@ -155,7 +155,7 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
                 return_value={
                     "move_gate_sensitivity": [],
                     "still_gate_sensitivity": [],
-                    "nobody_duration": 0,
+                    "absence_delay": 0,
                 }
             ),
         ),
@@ -214,7 +214,7 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
                 return_value={
                     "move_gate_sensitivity": [],
                     "still_gate_sensitivity": [],
-                    "nobody_duration": 0,
+                    "absence_delay": 0,
                 }
             ),
         ),
