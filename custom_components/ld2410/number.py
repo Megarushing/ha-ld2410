@@ -42,6 +42,7 @@ async def async_setup_entry(
             GateSensitivityNumber(coordinator, "still_gate_sensitivity", gate)
         )
     entities.append(AbsenceDelayNumber(coordinator))
+    entities.append(LightSensitivityNumber(coordinator))
     async_add_entities(entities)
 
 
@@ -106,3 +107,27 @@ class AbsenceDelayNumber(Entity, NumberEntity):
     @exception_handler
     async def async_set_native_value(self, value: float) -> None:
         await self._device.cmd_set_absence_delay(int(value))
+
+
+class LightSensitivityNumber(Entity, NumberEntity):
+    """Representation of light sensitivity slider."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_native_min_value = 0
+    _attr_native_max_value = 255
+    _attr_native_step = 1
+    _attr_mode = NumberMode.SLIDER
+    _attr_icon = "mdi:brightness-6"
+    _attr_translation_key = "light_sensitivity"
+
+    def __init__(self, coordinator: DataCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.base_unique_id}-light_sensitivity"
+
+    @property
+    def native_value(self) -> int | None:
+        return self.parsed_data.get("light_threshold")
+
+    @exception_handler
+    async def async_set_native_value(self, value: float) -> None:
+        await self._device.cmd_set_light_config(threshold=int(value))

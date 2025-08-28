@@ -164,6 +164,10 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
             AsyncMock(return_value=0),
         ),
         patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_light_config",
+            AsyncMock(),
+        ),
+        patch(
             "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
             autospec=True,
         ),
@@ -225,6 +229,10 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
         patch(
             "custom_components.ld2410.api.LD2410.cmd_get_resolution",
             AsyncMock(return_value=0),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_light_config",
+            AsyncMock(),
         ),
         patch(
             "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
