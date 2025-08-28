@@ -436,6 +436,8 @@ async def test_set_resolution_success() -> None:
             b"\x00\x00\x01\x00\x00@",
             b"\x00\x00",
             b"\x00\x00",
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
             b"\x00\x00",
         ],
     )
@@ -444,7 +446,9 @@ async def test_set_resolution_success() -> None:
         CMD_ENABLE_CFG + "0001",
         CMD_SET_RES + "0100",
         CMD_END_CFG,
+        CMD_ENABLE_CFG + "0001",
         CMD_REBOOT,
+        CMD_END_CFG,
     ]
     assert dev.parsed_data["resolution"] == 1
 
@@ -457,7 +461,6 @@ async def test_set_resolution_fail() -> None:
         response=[
             b"\x00\x00\x01\x00\x00@",
             b"\x01\x00",
-            b"\x00\x00",
         ],
     )
     with pytest.raises(OperationError):
@@ -468,17 +471,31 @@ async def test_set_resolution_fail() -> None:
 @pytest.mark.asyncio
 async def test_reboot_success() -> None:
     """Reboot command sends correct key."""
-    dev = _TestDevice(password=None, response=b"\x00\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
     await dev.cmd_reboot()
-    assert dev.last_key == CMD_REBOOT
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
 async def test_reboot_fail() -> None:
     """Reboot command raises on failure."""
-    dev = _TestDevice(password=None, response=b"\x01\x00")
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+        ],
+    )
     with pytest.raises(OperationError):
         await dev.cmd_reboot()
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT]
 
 
 def test_unwrap_response():
