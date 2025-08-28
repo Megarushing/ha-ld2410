@@ -31,6 +31,7 @@
     "entity": {
         "binary_sensor": {"door_timeout": {"name": "Timeout"}},
         "button": {"auto_threshold": {"name": "Auto threshold"}},
+        "select": {"distance_resolution": {"name": "Distance resolution"}},
         "sensor": {
             "bluetooth_signal": {"name": "Bluetooth signal"},
             "wifi_signal": {"name": "Wi-Fi signal"},
