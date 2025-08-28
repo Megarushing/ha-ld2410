@@ -2,6 +2,9 @@ import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+from homeassistant.components.number import NumberDeviceClass
+from homeassistant.const import UnitOfTime
+
 from custom_components.ld2410.number import AbsenceDelayNumber
 
 
@@ -21,6 +24,8 @@ async def test_absence_delay_number_sets_value():
     )
     coordinator = FakeCoordinator(device)
     number = AbsenceDelayNumber(coordinator)
+    assert number.device_class == NumberDeviceClass.DURATION
+    assert number.native_unit_of_measurement == UnitOfTime.SECONDS
     assert number.native_value == 5
     await number.async_set_native_value(10)
     device.cmd_set_absence_delay.assert_awaited_once_with(10)

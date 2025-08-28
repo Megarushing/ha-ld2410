@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberMode,
+)
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
@@ -85,6 +90,8 @@ class AbsenceDelayNumber(Entity, NumberEntity):
     _attr_native_max_value = 65535
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.SECONDS
     _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator: DataCoordinator) -> None:
