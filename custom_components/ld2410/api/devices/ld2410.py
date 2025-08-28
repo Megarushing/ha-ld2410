@@ -21,6 +21,8 @@ from ..const import (
     CMD_SET_SENSITIVITY,
     CMD_SET_RES,
     CMD_GET_RES,
+    CMD_SET_AUX,
+    CMD_GET_AUX,
     PAR_DISTANCE_GATE,
     PAR_MOVE_SENS,
     PAR_STILL_SENS,
@@ -62,6 +64,7 @@ class LD2410(Device):
         await self._ensure_connected()
         params = await self.cmd_read_params()
         res = await self.cmd_get_resolution()
+        await self.cmd_get_light_config()
         self._update_parsed_data(
             {
                 "move_gate_sensitivity": params.get("move_gate_sensitivity"),
@@ -242,6 +245,58 @@ class LD2410(Device):
             raise OperationError("Failed to set absence delay")
         self._update_parsed_data({"absence_delay": delay})
         await self.cmd_end_config()
+
+    async def cmd_get_light_config(self) -> Dict[str, int]:
+        """Get light control configuration."""
+        await self.cmd_enable_config()
+        response = await self._send_command(CMD_GET_AUX)
+        if not response or len(response) < 6 or response[:2] != b"\x00\x00":
+            raise OperationError("Failed to get light config")
+        mode = response[2]
+        threshold = response[3]
+        out_level = response[4]
+        self._update_parsed_data(
+            {
+                "light_function": mode != 0,
+                "light_threshold": threshold,
+                "light_out_level": out_level,
+            }
+        )
+        await self.cmd_end_config()
+        return {"mode": mode, "threshold": threshold, "out_level": out_level}
+
+    async def cmd_set_light_config(
+        self, *, mode: bool | None = None, threshold: int | None = None
+    ) -> None:
+        """Set light control configuration."""
+        if threshold is not None and not 0 <= threshold <= 255:
+            raise ValueError("threshold must be 0..255")
+        current_mode = self.parsed_data.get("light_function", False)
+        current_threshold = self.parsed_data.get("light_threshold", 0x80)
+        out_level = self.parsed_data.get("light_out_level", 0)
+        mode_byte = 1 if (mode if mode is not None else current_mode) else 0
+        threshold_byte = threshold if threshold is not None else current_threshold
+        payload = bytes([mode_byte, threshold_byte, out_level, 0]).hex()
+        await self.cmd_enable_config()
+        response = await self._send_command(CMD_SET_AUX + payload)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set light config")
+        self._update_parsed_data(
+            {
+                "light_function": bool(mode_byte),
+                "light_threshold": threshold_byte,
+                "light_out_level": out_level,
+            }
+        )
+        await self.cmd_end_config()
+
+    async def cmd_set_light_function(self, enabled: bool) -> None:
+        """Enable or disable light control."""
+        await self.cmd_set_light_config(mode=enabled)
+
+    async def cmd_set_light_threshold(self, threshold: int) -> None:
+        """Set light sensitivity threshold."""
+        await self.cmd_set_light_config(threshold=threshold)
 
     async def cmd_get_resolution(self) -> int:
         """Query the distance resolution."""

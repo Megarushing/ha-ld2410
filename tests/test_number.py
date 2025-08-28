@@ -115,3 +115,55 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
 
         assert hass.states.get("number.test_name_mg0_sensitivity").state == "90"
         assert hass.states.get("number.test_name_sg0_sensitivity").state == "80"
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_light_sensitivity_number(hass: HomeAssistant) -> None:
+    """Test light sensitivity slider."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            "address": "AA:BB:CC:DD:EE:FF",
+            "name": "test-name",
+            "password": "test-password",
+            "sensor_type": "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410.connect_and_update", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={"light_threshold": 128, "light_function": True}),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_set_light_threshold",
+            AsyncMock(),
+        ) as set_mock,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+
+        entity_id = "number.test_name_light_sensitivity"
+        state = hass.states.get(entity_id)
+        assert state and state.state == "128"
+
+        await hass.services.async_call(
+            "number",
+            "set_value",
+            {"entity_id": entity_id, "value": 200},
+            blocking=True,
+        )
+        set_mock.assert_awaited_once_with(200)

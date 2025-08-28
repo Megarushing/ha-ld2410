@@ -24,6 +24,7 @@ from custom_components.ld2410.api.const import (
     CMD_REBOOT,
     CMD_SET_RES,
     CMD_GET_RES,
+    CMD_GET_AUX,
     PAR_MAX_MOVE_GATE,
     PAR_MAX_STILL_GATE,
     PAR_NOBODY_DURATION,
@@ -325,6 +326,9 @@ async def test_connect_and_update_reads_params() -> None:
         b"\x00\x00\x01\x00\x00@",
         b"\x00\x00\x00\x00",
         b"\x00\x00",
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00\x01\x64\x00\x00",
+        b"\x00\x00",
     ]
     dev = _TestDevice(password=None, response=resp)
     dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
@@ -339,11 +343,16 @@ async def test_connect_and_update_reads_params() -> None:
         CMD_ENABLE_CFG + "0001",
         CMD_GET_RES,
         CMD_END_CFG,
+        CMD_ENABLE_CFG + "0001",
+        CMD_GET_AUX,
+        CMD_END_CFG,
     ]
     assert dev.parsed_data["move_gate_sensitivity"] == [1] * 9
     assert dev.parsed_data["still_gate_sensitivity"] == [2] * 9
     assert dev.parsed_data["absence_delay"] == 30
     assert dev.parsed_data["resolution"] == 0
+    assert dev.parsed_data["light_threshold"] == 100
+    assert dev.parsed_data["light_function"] is True
 
 
 @pytest.mark.asyncio
