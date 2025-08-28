@@ -130,4 +130,4 @@ class LightSensitivityNumber(Entity, NumberEntity):
 
     @exception_handler
     async def async_set_native_value(self, value: float) -> None:
-        await self._device.cmd_set_light_threshold(int(value))
+        await self._device.cmd_set_light_config(threshold=int(value))

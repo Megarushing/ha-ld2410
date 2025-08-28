@@ -266,19 +266,26 @@ class LD2410(Device):
         return {"mode": mode, "threshold": threshold, "out_level": out_level}
 
     async def cmd_set_light_config(
-        self, *, mode: int | None = None, threshold: int | None = None
+        self,
+        *,
+        mode: int | None = None,
+        threshold: int | None = None,
+        out_level: int | None = None,
     ) -> None:
         """Set light control configuration."""
         if mode is not None and mode not in (0, 1, 2):
             raise ValueError("mode must be 0, 1, or 2")
         if threshold is not None and not 0 <= threshold <= 255:
             raise ValueError("threshold must be 0..255")
+        if out_level is not None and out_level not in (0, 1):
+            raise ValueError("out_level must be 0 or 1")
         current_mode = self.parsed_data.get("light_function", 0)
         current_threshold = self.parsed_data.get("light_threshold", 0x80)
-        out_level = self.parsed_data.get("light_out_level", 0)
+        current_out_level = self.parsed_data.get("light_out_level", 0)
         mode_byte = mode if mode is not None else current_mode
         threshold_byte = threshold if threshold is not None else current_threshold
-        payload = bytes([mode_byte, threshold_byte, out_level, 0]).hex()
+        out_level_byte = out_level if out_level is not None else current_out_level
+        payload = bytes([mode_byte, threshold_byte, out_level_byte, 0]).hex()
         await self.cmd_enable_config()
         response = await self._send_command(CMD_SET_AUX + payload)
         if response != b"\x00\x00":
@@ -287,18 +294,10 @@ class LD2410(Device):
             {
                 "light_function": mode_byte,
                 "light_threshold": threshold_byte,
-                "light_out_level": out_level,
+                "light_out_level": out_level_byte,
             }
         )
         await self.cmd_end_config()
-
-    async def cmd_set_light_function(self, mode: int) -> None:
-        """Set light control mode."""
-        await self.cmd_set_light_config(mode=mode)
-
-    async def cmd_set_light_threshold(self, threshold: int) -> None:
-        """Set light sensitivity threshold."""
-        await self.cmd_set_light_config(threshold=threshold)
 
     async def cmd_get_resolution(self) -> int:
         """Query the distance resolution."""

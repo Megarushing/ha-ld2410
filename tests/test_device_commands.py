@@ -353,6 +353,7 @@ async def test_connect_and_update_reads_params() -> None:
     assert dev.parsed_data["resolution"] == 0
     assert dev.parsed_data["light_threshold"] == 100
     assert dev.parsed_data["light_function"] == 1
+    assert dev.parsed_data["light_out_level"] == 0
 
 
 @pytest.mark.asyncio

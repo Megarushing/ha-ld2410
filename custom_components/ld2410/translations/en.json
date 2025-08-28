@@ -3,7 +3,8 @@
         "button": {"auto_threshold": {"name": "Auto threshold"}},
         "select": {
             "distance_resolution": {"name": "Distance resolution"},
-            "light_function": {"name": "Light function"}
+            "light_function": {"name": "Light function"},
+            "out_level": {"name": "OUT level"}
         },
         "number": {"light_sensitivity": {"name": "Light sensitivity"}}
     },
