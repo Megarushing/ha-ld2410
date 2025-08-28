@@ -108,13 +108,15 @@ async def test_disconnect_clears_command_queue() -> None:
         password="HiLink",
     )
     await device._operation_lock.acquire()
-    task = asyncio.create_task(device._send_command("FF000100"))
+    task1 = asyncio.create_task(device._send_command("FF000100"))
+    task2 = asyncio.create_task(device._send_command("FF000100"))
     await asyncio.sleep(0)
     device._client = AsyncMock()
     device._client.disconnect = AsyncMock()
     async with device._connect_lock:
         await device._execute_disconnect_with_lock()
     await asyncio.sleep(0)
-    with pytest.raises(OperationError):
-        await task
+    for task in (task1, task2):
+        with pytest.raises(OperationError):
+            await task
     assert not device._operation_lock.locked()
