@@ -13,11 +13,20 @@ from ..const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_SET_BAUD,
     CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
     CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
+    BAUD_115200,
+    BAUD_19200,
+    BAUD_230400,
+    BAUD_256000,
+    BAUD_38400,
+    BAUD_460800,
+    BAUD_57600,
+    BAUD_9600,
     PAR_DISTANCE_GATE,
     PAR_MOVE_SENS,
     PAR_STILL_SENS,
@@ -30,6 +39,18 @@ from ..const import (
 from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
+
+
+BAUD_RATES: dict[int, str] = {
+    9600: BAUD_9600,
+    19200: BAUD_19200,
+    38400: BAUD_38400,
+    57600: BAUD_57600,
+    115200: BAUD_115200,
+    230400: BAUD_230400,
+    256000: BAUD_256000,
+    460800: BAUD_460800,
+}
 
 
 class LD2410(Device):
@@ -216,6 +237,17 @@ class LD2410(Device):
         }
         await self.cmd_end_config()
         return r
+
+    async def cmd_set_baud_rate(self, baud: int) -> None:
+        """Set the UART baud rate."""
+        if baud not in BAUD_RATES:
+            raise ValueError("invalid baud rate")
+        await self.cmd_enable_config()
+        response = await self._send_command(CMD_SET_BAUD + BAUD_RATES[baud])
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set baud rate")
+        self._update_parsed_data({"baud_rate": baud})
+        await self.cmd_end_config()
 
     async def cmd_set_absence_delay(self, delay: int) -> None:
         """Set the absence delay (no-one duration)."""

@@ -16,11 +16,13 @@ from custom_components.ld2410.api.const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_SET_BAUD,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
     CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
     CMD_READ_PARAMS,
+    BAUD_115200,
     PAR_MAX_MOVE_GATE,
     PAR_MAX_STILL_GATE,
     PAR_NOBODY_DURATION,
@@ -384,6 +386,45 @@ async def test_set_absence_delay_fail() -> None:
         + "1e000000"
     )
     assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload]
+
+
+@pytest.mark.asyncio
+async def test_set_baud_rate_success() -> None:
+    """Set baud rate command sends correct key."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    await dev.cmd_set_baud_rate(115200)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_BAUD + BAUD_115200,
+        CMD_END_CFG,
+    ]
+    assert dev.parsed_data["baud_rate"] == 115200
+
+
+@pytest.mark.asyncio
+async def test_set_baud_rate_fail() -> None:
+    """Set baud rate command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+            b"\x00\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_set_baud_rate(115200)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_BAUD + BAUD_115200,
+    ]
 
 
 def test_unwrap_response():
