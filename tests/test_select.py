@@ -100,7 +100,7 @@ async def test_light_function_select(hass: HomeAssistant) -> None:
         patch("custom_components.ld2410.api.LD2410.connect_and_update", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
-            AsyncMock(return_value={"light_function": True, "light_threshold": 100}),
+            AsyncMock(return_value={"light_function": 1, "light_threshold": 100}),
         ),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_set_light_function",
@@ -114,12 +114,12 @@ async def test_light_function_select(hass: HomeAssistant) -> None:
 
         entity_id = "select.test_name_light_function"
         state = hass.states.get(entity_id)
-        assert state and state.state == "on"
+        assert state and state.state == "dimmer than"
 
         await hass.services.async_call(
             "select",
             "select_option",
-            {"entity_id": entity_id, "option": "off"},
+            {"entity_id": entity_id, "option": "brighter than"},
             blocking=True,
         )
-        set_mock.assert_awaited_once_with(False)
+        set_mock.assert_awaited_once_with(2)

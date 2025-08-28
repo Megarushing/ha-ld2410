@@ -21,7 +21,7 @@ from .entity import Entity, exception_handler
 PARALLEL_UPDATES = 0
 
 OPTIONS = ["0.75 m", "0.20 m"]
-LIGHT_OPTIONS = ["off", "on"]
+LIGHT_OPTIONS = ["off", "dimmer than", "brighter than"]
 
 
 async def async_setup_entry(
@@ -63,7 +63,7 @@ class ResolutionSelect(Entity, SelectEntity):
 
 
 class LightFunctionSelect(Entity, SelectEntity):
-    """Representation of light function on/off."""
+    """Representation of light control mode."""
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_options = LIGHT_OPTIONS
@@ -77,11 +77,12 @@ class LightFunctionSelect(Entity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
-        enabled = self.parsed_data.get("light_function")
-        if enabled is None:
+        mode = self.parsed_data.get("light_function")
+        if mode is None or mode >= len(self.options):
             return None
-        return "on" if enabled else "off"
+        return self.options[mode]
 
     @exception_handler
     async def async_select_option(self, option: str) -> None:
-        await self._device.cmd_set_light_function(option == "on")
+        index = self.options.index(option)
+        await self._device.cmd_set_light_function(index)

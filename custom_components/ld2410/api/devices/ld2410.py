@@ -257,7 +257,7 @@ class LD2410(Device):
         out_level = response[4]
         self._update_parsed_data(
             {
-                "light_function": mode != 0,
+                "light_function": mode,
                 "light_threshold": threshold,
                 "light_out_level": out_level,
             }
@@ -266,15 +266,17 @@ class LD2410(Device):
         return {"mode": mode, "threshold": threshold, "out_level": out_level}
 
     async def cmd_set_light_config(
-        self, *, mode: bool | None = None, threshold: int | None = None
+        self, *, mode: int | None = None, threshold: int | None = None
     ) -> None:
         """Set light control configuration."""
+        if mode is not None and mode not in (0, 1, 2):
+            raise ValueError("mode must be 0, 1, or 2")
         if threshold is not None and not 0 <= threshold <= 255:
             raise ValueError("threshold must be 0..255")
-        current_mode = self.parsed_data.get("light_function", False)
+        current_mode = self.parsed_data.get("light_function", 0)
         current_threshold = self.parsed_data.get("light_threshold", 0x80)
         out_level = self.parsed_data.get("light_out_level", 0)
-        mode_byte = 1 if (mode if mode is not None else current_mode) else 0
+        mode_byte = mode if mode is not None else current_mode
         threshold_byte = threshold if threshold is not None else current_threshold
         payload = bytes([mode_byte, threshold_byte, out_level, 0]).hex()
         await self.cmd_enable_config()
@@ -283,16 +285,16 @@ class LD2410(Device):
             raise OperationError("Failed to set light config")
         self._update_parsed_data(
             {
-                "light_function": bool(mode_byte),
+                "light_function": mode_byte,
                 "light_threshold": threshold_byte,
                 "light_out_level": out_level,
             }
         )
         await self.cmd_end_config()
 
-    async def cmd_set_light_function(self, enabled: bool) -> None:
-        """Enable or disable light control."""
-        await self.cmd_set_light_config(mode=enabled)
+    async def cmd_set_light_function(self, mode: int) -> None:
+        """Set light control mode."""
+        await self.cmd_set_light_config(mode=mode)
 
     async def cmd_set_light_threshold(self, threshold: int) -> None:
         """Set light sensitivity threshold."""

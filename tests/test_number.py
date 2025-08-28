@@ -144,7 +144,7 @@ async def test_light_sensitivity_number(hass: HomeAssistant) -> None:
         patch("custom_components.ld2410.api.LD2410.connect_and_update", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
-            AsyncMock(return_value={"light_threshold": 128, "light_function": True}),
+            AsyncMock(return_value={"light_threshold": 128, "light_function": 1}),
         ),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_set_light_threshold",
