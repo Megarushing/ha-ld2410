@@ -34,6 +34,7 @@ PLATFORMS_BY_TYPE = {
         Platform.SENSOR,
         Platform.BUTTON,
         Platform.NUMBER,
+        Platform.SELECT,
     ],
 }
 CLASS_BY_DEVICE = {SupportedModels.LD2410.value: api.LD2410}

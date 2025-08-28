@@ -13,11 +13,14 @@ from ..const import (
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
+    CMD_REBOOT,
     CMD_READ_PARAMS,
     CMD_START_AUTO_THRESH,
     CMD_QUERY_AUTO_THRESH,
     CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
+    CMD_SET_RES,
+    CMD_GET_RES,
     PAR_DISTANCE_GATE,
     PAR_MOVE_SENS,
     PAR_STILL_SENS,
@@ -58,6 +61,7 @@ class LD2410(Device):
         """Ensure connection and refresh configuration parameters."""
         await self._ensure_connected()
         params = await self.cmd_read_params()
+        res = await self.cmd_get_resolution()
         self._update_parsed_data(
             {
                 "move_gate_sensitivity": params.get("move_gate_sensitivity"),
@@ -65,6 +69,7 @@ class LD2410(Device):
                 "absence_delay": params.get("absence_delay"),
                 "max_move_gate": params.get("max_move_gate"),
                 "max_still_gate": params.get("max_still_gate"),
+                "resolution": res,
             }
         )
 
@@ -236,6 +241,38 @@ class LD2410(Device):
         if response != b"\x00\x00":
             raise OperationError("Failed to set absence delay")
         self._update_parsed_data({"absence_delay": delay})
+        await self.cmd_end_config()
+
+    async def cmd_get_resolution(self) -> int:
+        """Query the distance resolution."""
+        await self.cmd_enable_config()
+        response = await self._send_command(CMD_GET_RES)
+        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+            raise OperationError("Failed to get resolution")
+        idx = int.from_bytes(response[2:4], "little")
+        await self.cmd_end_config()
+        self._update_parsed_data({"resolution": idx})
+        return idx
+
+    async def cmd_set_resolution(self, index: int) -> None:
+        """Set the distance resolution."""
+        if index not in (0, 1):
+            raise ValueError("index must be 0 or 1")
+        await self.cmd_enable_config()
+        payload = index.to_bytes(2, "little").hex()
+        response = await self._send_command(CMD_SET_RES + payload)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set resolution")
+        self._update_parsed_data({"resolution": index})
+        await self.cmd_end_config()
+        await self.cmd_reboot()
+
+    async def cmd_reboot(self) -> None:
+        """Reboot the module."""
+        await self.cmd_enable_config()
+        response = await self._send_command(CMD_REBOOT)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to reboot")
         await self.cmd_end_config()
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:

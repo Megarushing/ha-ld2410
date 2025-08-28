@@ -21,6 +21,9 @@ from custom_components.ld2410.api.const import (
     CMD_SET_MAX_GATES_AND_NOBODY,
     CMD_SET_SENSITIVITY,
     CMD_READ_PARAMS,
+    CMD_REBOOT,
+    CMD_SET_RES,
+    CMD_GET_RES,
     PAR_MAX_MOVE_GATE,
     PAR_MAX_STILL_GATE,
     PAR_NOBODY_DURATION,
@@ -319,6 +322,9 @@ async def test_connect_and_update_reads_params() -> None:
         + b"\x02" * 9
         + b"\x1e\x00",
         b"\x00\x00",
+        b"\x00\x00\x01\x00\x00@",
+        b"\x00\x00\x00\x00",
+        b"\x00\x00",
     ]
     dev = _TestDevice(password=None, response=resp)
     dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
@@ -330,10 +336,14 @@ async def test_connect_and_update_reads_params() -> None:
         CMD_ENABLE_CFG + "0001",
         CMD_READ_PARAMS,
         CMD_END_CFG,
+        CMD_ENABLE_CFG + "0001",
+        CMD_GET_RES,
+        CMD_END_CFG,
     ]
     assert dev.parsed_data["move_gate_sensitivity"] == [1] * 9
     assert dev.parsed_data["still_gate_sensitivity"] == [2] * 9
     assert dev.parsed_data["absence_delay"] == 30
+    assert dev.parsed_data["resolution"] == 0
 
 
 @pytest.mark.asyncio
@@ -384,6 +394,108 @@ async def test_set_absence_delay_fail() -> None:
         + "1e000000"
     )
     assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload]
+
+
+@pytest.mark.asyncio
+async def test_get_resolution_success() -> None:
+    """Get resolution command parses response."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00\x01\x00",
+            b"\x00\x00",
+        ],
+    )
+    res = await dev.cmd_get_resolution()
+    assert res == 1
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_GET_RES, CMD_END_CFG]
+
+
+@pytest.mark.asyncio
+async def test_get_resolution_fail() -> None:
+    """Get resolution command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00\x01\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_get_resolution()
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_GET_RES]
+
+
+@pytest.mark.asyncio
+async def test_set_resolution_success() -> None:
+    """Set resolution command sends correct key."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    await dev.cmd_set_resolution(1)
+    assert dev.keys == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_RES + "0100",
+        CMD_END_CFG,
+        CMD_ENABLE_CFG + "0001",
+        CMD_REBOOT,
+        CMD_END_CFG,
+    ]
+    assert dev.parsed_data["resolution"] == 1
+
+
+@pytest.mark.asyncio
+async def test_set_resolution_fail() -> None:
+    """Set resolution command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_set_resolution(1)
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100"]
+
+
+@pytest.mark.asyncio
+async def test_reboot_success() -> None:
+    """Reboot command sends correct key."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x00\x00",
+            b"\x00\x00",
+        ],
+    )
+    await dev.cmd_reboot()
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT, CMD_END_CFG]
+
+
+@pytest.mark.asyncio
+async def test_reboot_fail() -> None:
+    """Reboot command raises on failure."""
+    dev = _TestDevice(
+        password=None,
+        response=[
+            b"\x00\x00\x01\x00\x00@",
+            b"\x01\x00",
+        ],
+    )
+    with pytest.raises(OperationError):
+        await dev.cmd_reboot()
+    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT]
 
 
 def test_unwrap_response():

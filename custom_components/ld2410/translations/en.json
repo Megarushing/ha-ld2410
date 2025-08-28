@@ -1,5 +1,8 @@
 {
-    "entity": {"button": {"auto_threshold": {"name": "Auto threshold"}}},
+    "entity": {
+        "button": {"auto_threshold": {"name": "Auto threshold"}},
+        "select": {"distance_resolution": {"name": "Distance resolution"}}
+    },
     "exceptions": {
         "operation_error": {
             "message": "An error occurred while performing the action: {error}"

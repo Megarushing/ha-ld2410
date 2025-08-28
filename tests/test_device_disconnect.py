@@ -25,6 +25,7 @@ async def test_reconnect_after_unexpected_disconnect():
             "absence_delay": 0,
         }
     )
+    device.cmd_get_resolution = AsyncMock(return_value=0)
     device._update_parsed_data = MagicMock()
 
     with (
