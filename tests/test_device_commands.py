@@ -31,18 +31,18 @@ from custom_components.ld2410.api.const import (
 )
 
 
-def test_wrap_command_ack():
-    """Ensure ACK command is wrapped correctly."""
+def test_modify_command_ack():
+    """Ensure ACK command is modified correctly."""
     dev = _TestDevice(password=None)
-    wrapped = dev._wrap_command("FF000100").hex()
+    wrapped = dev._modify_command("FF000100").hex()
     assert wrapped == "fdfcfbfa0400ff00010004030201"
 
 
-def test_wrap_command_bt_password():
-    """Ensure bluetooth password command is wrapped correctly."""
+def test_modify_command_bt_password():
+    """Ensure bluetooth password command is modified correctly."""
     key = CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
     dev = _TestDevice(password=None)
-    wrapped = dev._wrap_command(key).hex()
+    wrapped = dev._modify_command(key).hex()
     assert wrapped == "fdfcfbfa0800a80048694c696e6b04030201"
 
 

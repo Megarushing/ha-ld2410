@@ -100,7 +100,7 @@ class LD2410(Device):
             }
         )
 
-    def _wrap_command(self, key: str) -> bytes:
+    def _modify_command(self, key: str) -> bytes:
         command_word = key[:4]
         value = key[4:]
         contents = bytearray.fromhex(command_word + value)

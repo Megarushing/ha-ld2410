@@ -114,13 +114,9 @@ class BaseDevice:
             or advertisement.data != self._sb_adv_data.data
         )
 
-    def _commandkey(self, key: str) -> str:
-        """Perform any necessary modifications to key."""
-        return key
-
-    def _wrap_command(self, key: str) -> bytes:
-        """Wrap a command into bytes."""
-        raise NotImplementedError
+    def _modify_command(self, key: str) -> bytes:
+        """Return command bytes, optionally modified by subclasses."""
+        return bytearray.fromhex(key)
 
     def _parse_response(self, key: str, data: bytes) -> bytes:
         """Parse a response to a command."""
@@ -189,7 +185,7 @@ class BaseDevice:
         """Send command to device and optionally read response."""
         if retry is None:
             retry = self._retry_count
-        command = self._wrap_command(self._commandkey(key))
+        command = self._modify_command(key)
         max_attempts = retry + 1
         if self._operation_lock.locked():
             _LOGGER.debug(
