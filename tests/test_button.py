@@ -2,6 +2,8 @@
 
 from unittest.mock import AsyncMock, Mock, call, patch
 
+import inspect
+
 import pytest
 
 from homeassistant.core import HomeAssistant
@@ -155,6 +157,7 @@ async def test_save_thresholds_button(hass: HomeAssistant) -> None:
         inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
         await hass.async_block_till_done()
 
+        sig = inspect.signature(hass.config_entries.async_update_entry)
         with patch.object(hass.config_entries, "async_update_entry") as update_mock:
             await hass.services.async_call(
                 "button",
@@ -164,9 +167,14 @@ async def test_save_thresholds_button(hass: HomeAssistant) -> None:
             )
 
         update_mock.assert_called_once()
-        opts = update_mock.call_args[1]["options"]
+        kwargs = update_mock.call_args.kwargs
+        opts = kwargs["options"]
         assert opts[CONF_MOVE_THRESHOLDS] == move
         assert opts[CONF_STILL_THRESHOLDS] == still
+        if "update_listeners" in sig.parameters:
+            assert kwargs["update_listeners"] is False
+        elif "reload" in sig.parameters:
+            assert kwargs["reload"] is False
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
@@ -85,14 +86,20 @@ class SaveThresholdsButton(Entity, ButtonEntity):
         """Handle the button press."""
         move = list(self.parsed_data.get("move_gate_sensitivity", []))
         still = list(self.parsed_data.get("still_gate_sensitivity", []))
-        self.hass.config_entries.async_update_entry(
-            self._entry,
-            options={
+        update_entry = self.hass.config_entries.async_update_entry
+        kwargs = {
+            "options": {
                 **self._entry.options,
                 CONF_MOVE_THRESHOLDS: move,
                 CONF_STILL_THRESHOLDS: still,
-            },
-        )
+            }
+        }
+        params = inspect.signature(update_entry).parameters
+        if "update_listeners" in params:
+            kwargs["update_listeners"] = False
+        elif "reload" in params:
+            kwargs["reload"] = False
+        update_entry(self._entry, **kwargs)
 
 
 class LoadThresholdsButton(Entity, ButtonEntity):
