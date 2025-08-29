@@ -85,7 +85,6 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered_adv = parsed
         self.context["title_placeholders"] = {"name": name_from_discovery(parsed)}
         return await self.async_step_password()
-        return await self.async_step_confirm()
 
     async def async_step_password(
         self, user_input: dict[str, Any] | None = None
@@ -199,16 +198,8 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
             device_adv = self._discovered_advs[user_input[CONF_ADDRESS]]
             await self._async_set_device(device_adv)
             return await self.async_step_password()
-            return await self._async_create_entry_from_discovery(user_input)
 
         self._async_discover_devices()
-        if len(self._discovered_advs) == 1:
-            # If there is only one device we can simply confirm it
-            device_adv = list(self._discovered_advs.values())[0]
-            await self._async_set_device(device_adv)
-            return await self.async_step_password()
-            return await self.async_step_confirm()
-
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
