@@ -10,34 +10,10 @@ from custom_components.ld2410.api.devices.device import (
     OperationError,
     _handle_timeout,
     _merge_data,
-    _parse_response,
-    _unwrap_frame,
-    update_after_operation,
 )
+from custom_components.ld2410.api.devices.ld2410 import _parse_response, _unwrap_frame
 from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
 from custom_components.ld2410.api.models import Advertisement
-
-
-class _Dummy:
-    """Simple class to exercise update_after_operation."""
-
-    def __init__(self) -> None:
-        self.updated = False
-
-    async def update(self) -> None:  # pragma: no cover - exercised via wrapper
-        self.updated = True
-
-    @update_after_operation
-    async def do(self) -> None:
-        return None
-
-
-@pytest.mark.asyncio
-async def test_update_after_operation_calls_update() -> None:
-    """Wrapper ensures update() is called after operation."""
-    dummy = _Dummy()
-    await dummy.do()
-    assert dummy.updated
 
 
 def test_merge_data_recurses() -> None:

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
+import time
 from typing import Any, Dict, Sequence
 
-from bleak_retry_connector import BleakClientWithServiceCache
+from bleak.backends.device import BLEDevice
 
 from ..const import (
     CMD_BT_GET_PERMISSION,
@@ -31,35 +31,92 @@ from ..const import (
     PAR_NOBODY_DURATION,
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
+    TX_HEADER,
+    TX_FOOTER,
+    RX_HEADER,
+    RX_FOOTER,
 )
 from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
 
 
+def _password_to_words(password: str) -> tuple[str, ...]:
+    """Encode an ASCII password into 16-bit word hex strings."""
+    data = password.encode("ascii")
+    if len(data) % 2:
+        data += b"\x00"
+    return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
+
+
+def _wrap_command(key: str) -> bytes:
+    """Wrap a command with header, length and footer."""
+    command_word = key[:4]
+    value = key[4:]
+    contents = bytearray.fromhex(command_word + value)
+    length = len(contents).to_bytes(2, "little")
+    return (
+        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
+    )
+
+
+def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
+    """Remove header and footer from a framed message."""
+    hdr = bytearray.fromhex(header)
+    ftr = bytearray.fromhex(footer)
+    if data.startswith(hdr) and data.endswith(ftr):
+        length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
+        return data[len(hdr) + 2 : len(hdr) + 2 + length]
+    return data
+
+
+def _unwrap_response(data: bytes) -> bytes:
+    """Remove header and footer from a response."""
+    return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
+
+
+def _unwrap_uplink_frame(data: bytes) -> bytes:
+    """Remove header and footer from an uplink frame."""
+    return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
+
+
+def _parse_response(key: str, data: bytes) -> bytes:
+    """Parse a notification response and verify the ACK."""
+    payload = _unwrap_response(data)
+    if len(payload) < 2:
+        raise OperationError("Response too short")
+    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+    command = payload[:2]
+    if command != expected_ack:
+        raise OperationError(
+            f"Unexpected response command {command.hex()} for {key[:4]}"
+        )
+    return payload[2:]
+
+
 class LD2410(Device):
     """Representation of a device."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        device: BLEDevice,
+        password: str | None = None,
+        interface: int = 0,
+        **kwargs: Any,
+    ) -> None:
         """Initialize the device control class."""
-        super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
+        super().__init__(device, interface=interface, auto_reconnect=True, **kwargs)
+        self._password_words = _password_to_words(password) if password else ()
 
-    async def _ensure_connected(self) -> None:
-        """Ensure connection and reauthorize with the bluetooth password."""
-        already_connected = bool(self._client and self._client.is_connected)
-        await super()._ensure_connected()
-        if not already_connected and self._password_words:
+    async def on_connect(self) -> None:
+        """Reauthorize and refresh configuration after connecting."""
+        if self._password_words:
             await self.cmd_send_bluetooth_password()
             await self.cmd_enable_engineering_mode()
+        await self.initial_setup()
 
-    def _disconnected(self, client: BleakClientWithServiceCache) -> None:
-        """Handle disconnection and schedule reconnect."""
-        super()._disconnected(client)
-        if not self._expected_disconnect:
-            self.loop.create_task(self._restart_connection())
-
-    async def connect_and_update(self):
+    async def initial_setup(self):
         """Ensure connection and refresh configuration parameters."""
         await self._ensure_connected()
         params = await self.cmd_read_params()
@@ -76,20 +133,35 @@ class LD2410(Device):
             }
         )
 
-    async def _restart_connection(self) -> None:
-        """Reconnect and reauthorize after an unexpected disconnect."""
-        try:
-            _LOGGER.debug("%s: Reconnecting...", self.name)
-            await self.connect_and_update()
-        except Exception as ex:  # pragma: no cover - best effort
-            _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
-            await asyncio.sleep(1)
-            self.loop.create_task(self._restart_connection())
+    def _wrap_command(self, key: str) -> bytes:
+        return _wrap_command(key)
 
-    async def _execute_timed_disconnect(self) -> None:
-        """Execute timed disconnection and schedule reconnect."""
-        await super()._execute_timed_disconnect()
-        self.loop.create_task(self._restart_connection())
+    def _parse_response(self, key: str, data: bytes) -> bytes:
+        return _parse_response(key, data)
+
+    def _handle_notification(self, data: bytearray) -> bool:
+        if data.startswith(bytearray.fromhex(TX_HEADER)):
+            if self._notify_future and not self._notify_future.done():
+                self._notify_future.set_result(data)
+            else:
+                _LOGGER.debug(
+                    "%s: Received unexpected command response: %s",
+                    self.name,
+                    data.hex(),
+                )
+            return True
+        if data.startswith(bytearray.fromhex(RX_HEADER)):
+            payload = _unwrap_uplink_frame(data)
+            try:
+                parsed = self._parse_uplink_frame(payload)
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.error("%s: Failed to parse uplink frame: %s", self.name, err)
+            else:
+                if parsed and self._update_parsed_data(parsed):
+                    self._last_full_update = time.monotonic()
+                    self._fire_callbacks()
+            return True
+        return False
 
     async def cmd_send_bluetooth_password(
         self, words: Sequence[str] | None = None

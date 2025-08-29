@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-import binascii
 import contextlib
 import logging
 import time
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, TypeVar, cast
+from typing import Any
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
@@ -27,10 +26,6 @@ from ..const import (
     CHARACTERISTIC_WRITE,
     DEFAULT_RETRY_COUNT,
     DEFAULT_SCAN_TIMEOUT,
-    TX_HEADER,
-    TX_FOOTER,
-    RX_HEADER,
-    RX_FOOTER,
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
@@ -61,22 +56,6 @@ class OperationError(Exception):
     """Raised when an operation fails."""
 
 
-WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
-
-
-def update_after_operation(func: WrapFuncType) -> WrapFuncType:
-    """Define a wrapper to update after an operation."""
-
-    async def _async_update_after_operation_wrap(
-        self: BaseDevice, *args: Any, **kwargs: Any
-    ) -> None:
-        ret = await func(self, *args, **kwargs)
-        await self.update()
-        return ret
-
-    return cast(WrapFuncType, _async_update_after_operation_wrap)
-
-
 def _merge_data(old_data: dict[str, Any], new_data: dict[str, Any]) -> dict[str, Any]:
     """Merge data but only add None keys if they are missing."""
     merged = old_data.copy()
@@ -94,67 +73,15 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
         fut.set_exception(asyncio.TimeoutError)
 
 
-def _password_to_words(password: str) -> tuple[str, ...]:
-    """Encode an ASCII password into 16-bit word hex strings."""
-    data = password.encode("ascii")
-    if len(data) % 2:
-        data += b"\x00"
-    return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
-
-
-def _wrap_command(key: str) -> bytes:
-    """Wrap a command with header, length and footer."""
-    command_word = key[:4]
-    value = key[4:]
-    contents = bytearray.fromhex(command_word + value)
-    length = len(contents).to_bytes(2, "little")
-    return (
-        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
-    )
-
-
-def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
-    """Remove header and footer from a framed message."""
-    hdr = bytearray.fromhex(header)
-    ftr = bytearray.fromhex(footer)
-    if data.startswith(hdr) and data.endswith(ftr):
-        length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
-        return data[len(hdr) + 2 : len(hdr) + 2 + length]
-    return data
-
-
-def _unwrap_response(data: bytes) -> bytes:
-    """Remove header and footer from a response."""
-    return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
-
-
-def _unwrap_uplink_frame(data: bytes) -> bytes:
-    """Remove header and footer from an uplink frame."""
-    return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
-
-
-def _parse_response(key: str, data: bytes) -> bytes:
-    """Parse a notification response and verify the ACK."""
-    payload = _unwrap_response(data)
-    if len(payload) < 2:
-        raise OperationError("Response too short")
-    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
-    command = payload[:2]
-    if command != expected_ack:
-        raise OperationError(
-            f"Unexpected response command {command.hex()} for {key[:4]}"
-        )
-    return payload[2:]
-
-
 class BaseDevice:
     """Base representation of a device."""
 
     def __init__(
         self,
         device: BLEDevice,
-        password: str | None = None,
         interface: int = 0,
+        *,
+        auto_reconnect: bool = False,
         **kwargs: Any,
     ) -> None:
         """Base class constructor."""
@@ -166,14 +93,7 @@ class BaseDevice:
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
-        if password is None or password == "":
-            self._password_encoded = None
-            self._password_words: tuple[str, ...] = ()
-        else:
-            self._password_encoded = "%08x" % (
-                binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
-            )
-            self._password_words = _password_to_words(password)
+        self._auto_reconnect = auto_reconnect
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -198,12 +118,25 @@ class BaseDevice:
         """Perform any necessary modifications to key."""
         return key
 
+    def _wrap_command(self, key: str) -> bytes:
+        """Wrap a command into bytes."""
+        raise NotImplementedError
+
+    def _parse_response(self, key: str, data: bytes) -> bytes:
+        """Parse a response to a command."""
+        raise NotImplementedError
+
     async def _send_command_locked_with_retry(
-        self, key: str, command: bytes, retry: int, max_attempts: int
+        self,
+        key: str,
+        command: bytes,
+        retry: int,
+        max_attempts: int,
+        wait_for_response: bool,
     ) -> bytes | None:
         for attempt in range(max_attempts):
             try:
-                return await self._send_command_locked(key, command)
+                return await self._send_command_locked(key, command, wait_for_response)
             except BleakNotFoundError:
                 _LOGGER.error(
                     "%s: device not found, no longer in range, or poor RSSI: %s",
@@ -246,12 +179,17 @@ class BaseDevice:
 
         raise RuntimeError("Unreachable")
 
-    async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
-        """Send command to device and read response."""
+    async def _send_command(
+        self,
+        key: str,
+        retry: int | None = None,
+        *,
+        wait_for_response: bool = True,
+    ) -> bytes | None:
+        """Send command to device and optionally read response."""
         if retry is None:
             retry = self._retry_count
-        command = _wrap_command(self._commandkey(key))
-        # _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
+        command = self._wrap_command(self._commandkey(key))
         max_attempts = retry + 1
         if self._operation_lock.locked():
             _LOGGER.debug(
@@ -260,9 +198,8 @@ class BaseDevice:
                 self.rssi,
             )
         async with self._operation_lock:
-            #_LOGGER.debug("%s: Lock obtained for command: %s",self.name,key)
             return await self._send_command_locked_with_retry(
-                key, command, retry, max_attempts
+                key, command, retry, max_attempts, wait_for_response
             )
 
     @property
@@ -314,8 +251,11 @@ class BaseDevice:
         """Return if the BLE client is connected."""
         return bool(self._client and self._client.is_connected)
 
-    async def _ensure_connected(self):
-        """Ensure connection to device is established."""
+    async def _ensure_connected(self) -> bool:
+        """Ensure connection to device is established.
+
+        Returns True if a new connection was made.
+        """
         if self._connect_lock.locked():
             _LOGGER.debug(
                 "%s: Connection already in progress, waiting for it to complete; RSSI: %s",
@@ -329,7 +269,7 @@ class BaseDevice:
                 self.rssi,
             )
             self._reset_disconnect_timer()
-            return
+            return False
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
@@ -339,7 +279,7 @@ class BaseDevice:
                     self.rssi,
                 )
                 self._reset_disconnect_timer()
-                return
+                return False
             _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
             client: BleakClientWithServiceCache = await establish_connection(
                 BleakClientWithServiceCache,
@@ -374,6 +314,7 @@ class BaseDevice:
             )
             self._reset_disconnect_timer()
             await self._start_notify()
+            return True
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve characteristics."""
@@ -394,7 +335,7 @@ class BaseDevice:
 
     def _clear_locked_commands(self):
         if self._operation_lock.locked() or getattr(
-                self._operation_lock, "_waiters", []
+            self._operation_lock, "_waiters", []
         ):
             _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
             waiters = list(getattr(self._operation_lock, "_waiters", []))
@@ -416,6 +357,8 @@ class BaseDevice:
             self.rssi,
         )
         self._cancel_disconnect_timer()
+        if self._auto_reconnect:
+            self.loop.create_task(self._restart_connection())
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -466,6 +409,24 @@ class BaseDevice:
             DISCONNECT_DELAY,
         )
         await self._execute_disconnect()
+        if self._auto_reconnect:
+            self.loop.create_task(self._restart_connection())
+
+    async def on_connect(self) -> None:
+        """Run after a new connection is made."""
+        return
+
+    async def _restart_connection(self) -> None:
+        """Reconnect after an unexpected disconnect."""
+        try:
+            _LOGGER.debug("%s: Reconnecting...", self.name)
+            connected = await self._ensure_connected()
+            if connected:
+                await self.on_connect()
+        except Exception as ex:  # pragma: no cover - best effort
+            _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
+            await asyncio.sleep(1)
+            self.loop.create_task(self._restart_connection())
 
     async def _execute_disconnect(self) -> None:
         """Execute disconnection."""
@@ -502,11 +463,13 @@ class BaseDevice:
         else:
             _LOGGER.debug("%s: Disconnect completed successfully", self.name)
 
-    async def _send_command_locked(self, key: str, command: bytes) -> bytes:
-        """Send command to device and read response."""
+    async def _send_command_locked(
+        self, key: str, command: bytes, wait_for_response: bool
+    ) -> bytes | None:
+        """Send command to device and optionally read response."""
         await self._ensure_connected()
         try:
-            return await self._execute_command_locked(key, command)
+            return await self._execute_command_locked(key, command, wait_for_response)
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
             await asyncio.sleep(DBUS_ERROR_BACKOFF_TIME)
@@ -527,60 +490,41 @@ class BaseDevice:
             await self._execute_forced_disconnect()
             raise
 
-    def _parse_uplink_frame(self, data: bytes) -> dict[str, Any] | None:
-        """Parse an uplink frame.
-
-        Subclasses should override this to handle device specific frames.
-        """
-        return None
-
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
         self._reset_disconnect_timer()
-        # Notification is a response to a command
-        if data.startswith(bytearray.fromhex(TX_HEADER)):
-            if self._notify_future and not self._notify_future.done():
-                self._notify_future.set_result(data)
-            else:
-                _LOGGER.debug(
-                    "%s: Received unexpected command response: %s",
-                    self.name,
-                    data.hex(),
-                )
-            return
-        # Notification is an uplink frame from the device
-        elif data.startswith(bytearray.fromhex(RX_HEADER)):
-            payload = _unwrap_uplink_frame(data)
-            try:
-                # _LOGGER.debug("%s: Received uplink frame: %s", self.name, payload.hex())
-                parsed = self._parse_uplink_frame(payload)
-            except Exception as err:  # pragma: no cover - defensive
-                _LOGGER.error("%s: Failed to parse uplink frame: %s", self.name, err)
-            else:
-                if parsed and self._update_parsed_data(parsed):
-                    self._last_full_update = time.monotonic()
-                    self._fire_callbacks()
-        else:
+        if not self._handle_notification(data):
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()
             )
+
+    def _handle_notification(self, data: bytearray) -> bool:
+        """Handle notification, return True if handled."""
+        if self._notify_future and not self._notify_future.done():
+            self._notify_future.set_result(data)
+            return True
+        return False
 
     async def _start_notify(self) -> None:
         """Start notification."""
         _LOGGER.debug("%s: Subscribe to notifications; RSSI: %s", self.name, self.rssi)
         await self._client.start_notify(self._read_char, self._notification_handler)
 
-    async def _execute_command_locked(self, key: str, command: bytes) -> bytes:
-        """Execute command and read response."""
+    async def _execute_command_locked(
+        self, key: str, command: bytes, wait_for_response: bool
+    ) -> bytes | None:
+        """Execute command and optionally read response."""
         assert self._client is not None
         assert self._read_char is not None
         assert self._write_char is not None
-        self._notify_future = self.loop.create_future()
         client = self._client
 
         _LOGGER.debug("%s: Sending command: %s", self.name, key)
+        if wait_for_response:
+            self._notify_future = self.loop.create_future()
         await client.write_gatt_char(self._write_char, command, False)
-
+        if not wait_for_response:
+            return None
         timeout = 5
         timeout_handle = self.loop.call_at(
             self.loop.time() + timeout, _handle_timeout, self._notify_future
@@ -596,7 +540,7 @@ class BaseDevice:
                 timeout_handle.cancel()
             self._notify_future = None
 
-        notify_msg = _parse_response(key, notify_msg_raw)
+        notify_msg = self._parse_response(key, notify_msg_raw)
         _LOGGER.debug("%s: Command reponse: %s", self.name, notify_msg.hex())
         return notify_msg
 

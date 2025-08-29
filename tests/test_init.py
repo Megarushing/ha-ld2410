@@ -134,7 +134,7 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
             AsyncMock(),
         ) as mock_send,
         patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
             AsyncMock(),
         ),
         patch(
@@ -201,7 +201,7 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
             AsyncMock(),
         ),
         patch(

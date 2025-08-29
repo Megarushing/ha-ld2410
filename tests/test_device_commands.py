@@ -2,14 +2,14 @@ from bleak.backends.device import BLEDevice
 import pytest
 from unittest.mock import AsyncMock
 
-from custom_components.ld2410.api.devices.device import (
+from custom_components.ld2410.api.devices.device import OperationError
+from custom_components.ld2410.api.devices.ld2410 import (
+    LD2410,
     _password_to_words,
     _unwrap_response,
     _wrap_command,
     _parse_response,
-    OperationError,
 )
-from custom_components.ld2410.api.devices.ld2410 import LD2410
 
 from custom_components.ld2410.api.const import (
     CMD_BT_GET_PERMISSION,
@@ -55,7 +55,9 @@ class _TestDevice(LD2410):
         self._response = response
         self.keys: list[str] = []
 
-    async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
+    async def _send_command(
+        self, key: str, retry: int | None = None, *, wait_for_response: bool = True
+    ) -> bytes | None:
         self.last_key = key
         self.keys.append(key)
         if isinstance(self._response, list):
@@ -310,8 +312,8 @@ async def test_read_params_fail() -> None:
 
 
 @pytest.mark.asyncio
-async def test_connect_and_update_reads_params() -> None:
-    """connect_and_update reads parameters and stores them."""
+async def test_initial_setup_reads_params() -> None:
+    """initial_setup reads parameters and stores them."""
     resp = [
         b"\x00\x00\x01\x00\x00@",
         b"\x00\x00",
@@ -332,7 +334,7 @@ async def test_connect_and_update_reads_params() -> None:
     ]
     dev = _TestDevice(password=None, response=resp)
     dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
-    await dev.connect_and_update()
+    await dev.initial_setup()
     assert dev.keys == [
         CMD_ENABLE_CFG + "0001",
         CMD_ENABLE_ENGINEERING,
