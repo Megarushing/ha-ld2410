@@ -7,11 +7,7 @@ import logging
 import time
 from typing import Any, Dict, Sequence
 
-from bleak_retry_connector import (
-    BLEAK_RETRY_EXCEPTIONS,
-    BleakClientWithServiceCache,
-    BleakNotFoundError,
-)
+from bleak_retry_connector import BleakClientWithServiceCache
 
 from ..const import (
     CMD_BT_GET_PERMISSION,
@@ -41,11 +37,7 @@ from ..const import (
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
 )
-from .device import (
-    CharacteristicMissingError,
-    Device,
-    OperationError,
-)
+from .device import Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -161,56 +153,7 @@ class LD2410(Device):
         await super()._execute_timed_disconnect()
         self.loop.create_task(self._restart_connection())
 
-    async def _send_command_locked_with_retry(
-        self, key: str, command: bytes, retry: int, max_attempts: int
-    ) -> bytes | None:
-        for attempt in range(max_attempts):
-            try:
-                raw = await super()._send_command_locked(command)
-                return _parse_response(key, raw)
-            except BleakNotFoundError:
-                _LOGGER.error(
-                    "%s: device not found, no longer in range, or poor RSSI: %s",
-                    self.name,
-                    self.rssi,
-                    exc_info=True,
-                )
-                raise
-            except CharacteristicMissingError as ex:
-                if attempt == retry:
-                    _LOGGER.error(
-                        "%s: characteristic missing: %s; Stopping trying; RSSI: %s",
-                        self.name,
-                        ex,
-                        self.rssi,
-                        exc_info=True,
-                    )
-                    raise
-
-                _LOGGER.debug(
-                    "%s: characteristic missing: %s; RSSI: %s",
-                    self.name,
-                    ex,
-                    self.rssi,
-                    exc_info=True,
-                )
-            except BLEAK_RETRY_EXCEPTIONS:
-                if attempt == retry:
-                    _LOGGER.error(
-                        "%s: communication failed; Stopping trying; RSSI: %s",
-                        self.name,
-                        self.rssi,
-                        exc_info=True,
-                    )
-                    raise
-
-                _LOGGER.debug(
-                    "%s: communication failed with:", self.name, exc_info=True
-                )
-
-        raise RuntimeError("Unreachable")
-
-    async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
+    async def _send_command(self, key: str, retry: int | None = None) -> bytes:
         """Send command to device and read response."""
         if retry is None:
             retry = self._retry_count
@@ -223,9 +166,10 @@ class LD2410(Device):
                 self.rssi,
             )
         async with self._operation_lock:
-            return await self._send_command_locked_with_retry(
-                key, command, retry, max_attempts
+            raw = await super()._send_command_locked_with_retry(
+                command, retry, max_attempts
             )
+        return _parse_response(key, raw)
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""

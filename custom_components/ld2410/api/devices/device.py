@@ -16,6 +16,7 @@ from bleak.exc import BleakDBusError
 from bleak_retry_connector import (
     BLEAK_RETRY_EXCEPTIONS,
     BleakClientWithServiceCache,
+    BleakNotFoundError,
     ble_device_has_changed,
     establish_connection,
 )
@@ -393,6 +394,55 @@ class BaseDevice:
             )
             await self._execute_forced_disconnect()
             raise
+
+    async def _send_command_locked_with_retry(
+        self, command: bytes, retry: int, max_attempts: int
+    ) -> bytes:
+        """Send command with retries and return raw response."""
+        for attempt in range(max_attempts):
+            try:
+                return await self._send_command_locked(command)
+            except BleakNotFoundError:
+                _LOGGER.error(
+                    "%s: device not found, no longer in range, or poor RSSI: %s",
+                    self.name,
+                    self.rssi,
+                    exc_info=True,
+                )
+                raise
+            except CharacteristicMissingError as ex:
+                if attempt == retry:
+                    _LOGGER.error(
+                        "%s: characteristic missing: %s; Stopping trying; RSSI: %s",
+                        self.name,
+                        ex,
+                        self.rssi,
+                        exc_info=True,
+                    )
+                    raise
+
+                _LOGGER.debug(
+                    "%s: characteristic missing: %s; RSSI: %s",
+                    self.name,
+                    ex,
+                    self.rssi,
+                    exc_info=True,
+                )
+            except BLEAK_RETRY_EXCEPTIONS:
+                if attempt == retry:
+                    _LOGGER.error(
+                        "%s: communication failed; Stopping trying; RSSI: %s",
+                        self.name,
+                        self.rssi,
+                        exc_info=True,
+                    )
+                    raise
+
+                _LOGGER.debug(
+                    "%s: communication failed with:", self.name, exc_info=True
+                )
+
+        raise RuntimeError("Unreachable")
 
     async def _execute_command_locked(self, command: bytes) -> bytes:
         """Execute command and read raw response."""
