@@ -162,7 +162,13 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
             DOMAIN, context={"source": SOURCE_USER}
         )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "password"
+    assert result["step_id"] == "user"
+
+    result2 = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ADDRESS: "AA:BB:CC:DD:EE:FF"}
+    )
+    assert result2["type"] is FlowResultType.FORM
+    assert result2["step_id"] == "password"
 
     with (
         patch_async_setup_entry() as mock_setup_entry,
@@ -171,14 +177,14 @@ async def test_user_setup_ld2410_replaces_ignored(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
     ):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PASSWORD: "abc123"}
+        result3 = await hass.config_entries.flow.async_configure(
+            result2["flow_id"], {CONF_PASSWORD: "abc123"}
         )
     await hass.async_block_till_done()
 
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "HLK-LD2410_EEFF"
-    assert result["data"] == {
+    assert result3["type"] is FlowResultType.CREATE_ENTRY
+    assert result3["title"] == "HLK-LD2410_EEFF"
+    assert result3["data"] == {
         CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
         CONF_PASSWORD: "abc123",
@@ -245,6 +251,13 @@ async def test_async_step_user_takes_precedence_over_discovery(
             context={"source": SOURCE_USER},
         )
         assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "user"
+
+    result2 = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ADDRESS: "AA:BB:CC:DD:EE:FF"}
+    )
+    assert result2["type"] is FlowResultType.FORM
+    assert result2["step_id"] == "password"
 
     with (
         patch_async_setup_entry() as mock_setup_entry,
@@ -253,14 +266,14 @@ async def test_async_step_user_takes_precedence_over_discovery(
             AsyncMock(),
         ),
     ):
-        result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
+        result3 = await hass.config_entries.flow.async_configure(
+            result2["flow_id"],
             user_input={CONF_PASSWORD: "abc123"},
         )
 
-    assert result2["type"] is FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "HLK-LD2410_EEFF"
-    assert result2["data"] == {
+    assert result3["type"] is FlowResultType.CREATE_ENTRY
+    assert result3["title"] == "HLK-LD2410_EEFF"
+    assert result3["data"] == {
         CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
         CONF_SENSOR_TYPE: "ld2410",
         CONF_PASSWORD: "abc123",
