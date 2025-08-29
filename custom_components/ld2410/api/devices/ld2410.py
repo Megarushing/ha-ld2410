@@ -49,17 +49,6 @@ def _password_to_words(password: str) -> tuple[str, ...]:
     return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
 
 
-def _wrap_command(key: str) -> bytes:
-    """Wrap a command with header, length and footer."""
-    command_word = key[:4]
-    value = key[4:]
-    contents = bytearray.fromhex(command_word + value)
-    length = len(contents).to_bytes(2, "little")
-    return (
-        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
-    )
-
-
 def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
     """Remove header and footer from a framed message."""
     hdr = bytearray.fromhex(header)
@@ -68,30 +57,6 @@ def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
         length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
         return data[len(hdr) + 2 : len(hdr) + 2 + length]
     return data
-
-
-def _unwrap_response(data: bytes) -> bytes:
-    """Remove header and footer from a response."""
-    return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
-
-
-def _unwrap_uplink_frame(data: bytes) -> bytes:
-    """Remove header and footer from an uplink frame."""
-    return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
-
-
-def _parse_response(key: str, data: bytes) -> bytes:
-    """Parse a notification response and verify the ACK."""
-    payload = _unwrap_response(data)
-    if len(payload) < 2:
-        raise OperationError("Response too short")
-    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
-    command = payload[:2]
-    if command != expected_ack:
-        raise OperationError(
-            f"Unexpected response command {command.hex()} for {key[:4]}"
-        )
-    return payload[2:]
 
 
 class LD2410(Device):
@@ -115,7 +80,7 @@ class LD2410(Device):
         """Reauthorize and refresh configuration after connecting."""
         if self._password_words:
             await self.cmd_send_bluetooth_password()
-            await self.cmd_enable_engineering_mode()
+        await self.cmd_enable_engineering_mode()
         await self.initial_setup()
 
     async def initial_setup(self):
@@ -136,10 +101,28 @@ class LD2410(Device):
         )
 
     def _wrap_command(self, key: str) -> bytes:
-        return _wrap_command(key)
+        command_word = key[:4]
+        value = key[4:]
+        contents = bytearray.fromhex(command_word + value)
+        length = len(contents).to_bytes(2, "little")
+        return (
+            bytearray.fromhex(TX_HEADER)
+            + length
+            + contents
+            + bytearray.fromhex(TX_FOOTER)
+        )
 
     def _parse_response(self, key: str, data: bytes) -> bytes:
-        return _parse_response(key, data)
+        payload = _unwrap_frame(data, TX_HEADER, TX_FOOTER)
+        if len(payload) < 2:
+            raise OperationError("Response too short")
+        expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+        command = payload[:2]
+        if command != expected_ack:
+            raise OperationError(
+                f"Unexpected response command {command.hex()} for {key[:4]}"
+            )
+        return payload[2:]
 
     def _handle_notification(self, data: bytearray) -> bool:
         if data.startswith(bytearray.fromhex(TX_HEADER)):
@@ -153,7 +136,7 @@ class LD2410(Device):
                 )
             return True
         if data.startswith(bytearray.fromhex(RX_HEADER)):
-            payload = _unwrap_uplink_frame(data)
+            payload = _unwrap_frame(data, RX_HEADER, RX_FOOTER)
             try:
                 parsed = self._parse_uplink_frame(payload)
             except Exception as err:  # pragma: no cover - defensive

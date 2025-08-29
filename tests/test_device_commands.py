@@ -6,9 +6,7 @@ from custom_components.ld2410.api.devices.device import OperationError
 from custom_components.ld2410.api.devices.ld2410 import (
     LD2410,
     _password_to_words,
-    _unwrap_response,
-    _wrap_command,
-    _parse_response,
+    _unwrap_frame,
 )
 
 from custom_components.ld2410.api.const import (
@@ -28,19 +26,23 @@ from custom_components.ld2410.api.const import (
     PAR_MAX_MOVE_GATE,
     PAR_MAX_STILL_GATE,
     PAR_NOBODY_DURATION,
+    TX_HEADER,
+    TX_FOOTER,
 )
 
 
 def test_wrap_command_ack():
     """Ensure ACK command is wrapped correctly."""
-    wrapped = _wrap_command("FF000100").hex()
+    dev = _TestDevice(password=None)
+    wrapped = dev._wrap_command("FF000100").hex()
     assert wrapped == "fdfcfbfa0400ff00010004030201"
 
 
 def test_wrap_command_bt_password():
     """Ensure bluetooth password command is wrapped correctly."""
     key = CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
-    wrapped = _wrap_command(key).hex()
+    dev = _TestDevice(password=None)
+    wrapped = dev._wrap_command(key).hex()
     assert wrapped == "fdfcfbfa0800a80048694c696e6b04030201"
 
 
@@ -513,18 +515,20 @@ async def test_reboot_fail() -> None:
 def test_unwrap_response():
     """Ensure responses are unwrapped correctly."""
     raw = bytes.fromhex("fdfcfbfa0400ff00010004030201")
-    assert _unwrap_response(raw) == bytes.fromhex("ff000100")
+    assert _unwrap_frame(raw, TX_HEADER, TX_FOOTER) == bytes.fromhex("ff000100")
 
 
 def test_parse_response():
     """Ensure responses are parsed and ACK verified."""
     raw = bytes.fromhex("fdfcfbfa0400a801000004030201")
-    assert _parse_response(CMD_BT_GET_PERMISSION, raw) == bytes.fromhex("0000")
+    dev = _TestDevice(password=None)
+    assert dev._parse_response(CMD_BT_GET_PERMISSION, raw) == bytes.fromhex("0000")
 
 
 @pytest.mark.parametrize("payload_hex", ["07", "09"])
 def test_parse_response_rejects_short_payload(payload_hex: str) -> None:
     """Ensure single-byte payloads are rejected."""
     raw = bytes.fromhex(f"fdfcfbfa0100{payload_hex}04030201")
+    dev = _TestDevice(password=None)
     with pytest.raises(OperationError):
-        _parse_response(CMD_BT_GET_PERMISSION, raw)
+        dev._parse_response(CMD_BT_GET_PERMISSION, raw)

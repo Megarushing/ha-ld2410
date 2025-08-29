@@ -11,7 +11,7 @@ from custom_components.ld2410.api.devices.device import (
     _handle_timeout,
     _merge_data,
 )
-from custom_components.ld2410.api.devices.ld2410 import _parse_response, _unwrap_frame
+from custom_components.ld2410.api.devices.ld2410 import LD2410, _unwrap_frame
 from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
 from custom_components.ld2410.api.models import Advertisement
 
@@ -41,8 +41,12 @@ def test_unwrap_frame_returns_input_if_no_markers() -> None:
 def test_parse_response_unexpected_ack() -> None:
     """Unexpected ACK raises OperationError."""
     raw = bytes.fromhex("fdfcfbfa0400a802000004030201")
+    dev = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password=None,
+    )
     with pytest.raises(OperationError):
-        _parse_response(CMD_BT_GET_PERMISSION, raw)
+        dev._parse_response(CMD_BT_GET_PERMISSION, raw)
 
 
 @pytest.mark.asyncio
