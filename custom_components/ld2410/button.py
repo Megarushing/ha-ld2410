@@ -17,6 +17,7 @@ except ImportError:  # Home Assistant <2024.6
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
+from .const import CONF_MOVE_THRESHOLDS, CONF_STILL_THRESHOLDS
 from .coordinator import ConfigEntryType, DataCoordinator
 from .entity import Entity, exception_handler
 
@@ -32,7 +33,13 @@ async def async_setup_entry(
 ) -> None:
     """Set up button entities based on a config entry."""
     coordinator = entry.runtime_data
-    async_add_entities([AutoThresholdButton(coordinator)])
+    async_add_entities(
+        [
+            AutoThresholdButton(coordinator),
+            SaveThresholdsButton(coordinator, entry),
+            LoadThresholdsButton(coordinator, entry),
+        ]
+    )
 
 
 class AutoThresholdButton(Entity, ButtonEntity):
@@ -61,3 +68,51 @@ class AutoThresholdButton(Entity, ButtonEntity):
             }
         ):
             self._device._fire_callbacks()
+
+
+class SaveThresholdsButton(Entity, ButtonEntity):
+    """Button to save thresholds to config entry options."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "save_thresholds"
+
+    def __init__(self, coordinator: DataCoordinator, entry: ConfigEntryType) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{coordinator.base_unique_id}-save_thresholds"
+
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        move = list(self.parsed_data.get("move_gate_sensitivity", []))
+        still = list(self.parsed_data.get("still_gate_sensitivity", []))
+        self.hass.config_entries.async_update_entry(
+            self._entry,
+            options={
+                **self._entry.options,
+                CONF_MOVE_THRESHOLDS: move,
+                CONF_STILL_THRESHOLDS: still,
+            },
+        )
+
+
+class LoadThresholdsButton(Entity, ButtonEntity):
+    """Button to load thresholds from options to the device."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "load_thresholds"
+
+    def __init__(self, coordinator: DataCoordinator, entry: ConfigEntryType) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{coordinator.base_unique_id}-load_thresholds"
+
+    @exception_handler
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        move = self._entry.options.get(CONF_MOVE_THRESHOLDS)
+        still = self._entry.options.get(CONF_STILL_THRESHOLDS)
+        if not move or not still:
+            return
+        for gate in range(min(len(move), len(still))):
+            await self._device.cmd_set_gate_sensitivity(gate, move[gate], still[gate])
+        self._device._fire_callbacks()

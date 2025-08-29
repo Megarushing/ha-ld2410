@@ -1,6 +1,10 @@
 {
     "entity": {
-        "button": {"auto_threshold": {"name": "Auto threshold"}},
+        "button": {
+            "auto_threshold": {"name": "Auto threshold"},
+            "save_thresholds": {"name": "Save thresholds"},
+            "load_thresholds": {"name": "Load thresholds"}
+        },
         "select": {
             "distance_resolution": {"name": "Distance resolution"},
             "light_function": {"name": "Light function"},

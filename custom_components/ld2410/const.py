@@ -31,3 +31,5 @@ DEFAULT_RETRY_COUNT = 3
 
 # Config Options
 CONF_RETRY_COUNT = "retry_count"
+CONF_MOVE_THRESHOLDS = "move_gate_sensitivity"
+CONF_STILL_THRESHOLDS = "still_gate_sensitivity"
