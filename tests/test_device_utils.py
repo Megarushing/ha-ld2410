@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import asyncio
 
 import pytest
@@ -7,37 +6,10 @@ from bleak.backends.device import BLEDevice
 
 from custom_components.ld2410.api.devices.device import (
     BaseDevice,
-    OperationError,
     _handle_timeout,
     _merge_data,
-    _parse_response,
-    _unwrap_frame,
-    update_after_operation,
 )
-from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
 from custom_components.ld2410.api.models import Advertisement
-
-
-class _Dummy:
-    """Simple class to exercise update_after_operation."""
-
-    def __init__(self) -> None:
-        self.updated = False
-
-    async def update(self) -> None:  # pragma: no cover - exercised via wrapper
-        self.updated = True
-
-    @update_after_operation
-    async def do(self) -> None:
-        return None
-
-
-@pytest.mark.asyncio
-async def test_update_after_operation_calls_update() -> None:
-    """Wrapper ensures update() is called after operation."""
-    dummy = _Dummy()
-    await dummy.do()
-    assert dummy.updated
 
 
 def test_merge_data_recurses() -> None:
@@ -54,19 +26,6 @@ async def test_handle_timeout_sets_exception() -> None:
     _handle_timeout(fut)
     with pytest.raises(asyncio.TimeoutError):
         await fut
-
-
-def test_unwrap_frame_returns_input_if_no_markers() -> None:
-    """_unwrap_frame returns data when header/footer missing."""
-    data = bytes.fromhex("00112233")
-    assert _unwrap_frame(data, "fdfc", "0403") == data
-
-
-def test_parse_response_unexpected_ack() -> None:
-    """Unexpected ACK raises OperationError."""
-    raw = bytes.fromhex("fdfcfbfa0400a802000004030201")
-    with pytest.raises(OperationError):
-        _parse_response(CMD_BT_GET_PERMISSION, raw)
 
 
 @pytest.mark.asyncio

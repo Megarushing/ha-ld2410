@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Dict, Sequence
 
-from bleak_retry_connector import BleakClientWithServiceCache
+from bleak_retry_connector import (
+    BLEAK_RETRY_EXCEPTIONS,
+    BleakClientWithServiceCache,
+    BleakNotFoundError,
+)
 
 from ..const import (
     CMD_BT_GET_PERMISSION,
@@ -29,21 +34,86 @@ from ..const import (
     PAR_MAX_MOVE_GATE,
     PAR_MAX_STILL_GATE,
     PAR_NOBODY_DURATION,
+    TX_HEADER,
+    TX_FOOTER,
+    RX_HEADER,
+    RX_FOOTER,
     UPLINK_TYPE_BASIC,
     UPLINK_TYPE_ENGINEERING,
 )
-from .device import Device, OperationError
+from .device import (
+    CharacteristicMissingError,
+    Device,
+    OperationError,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _password_to_words(password: str) -> tuple[str, ...]:
+    """Encode an ASCII password into 16-bit word hex strings."""
+    data = password.encode("ascii")
+    if len(data) % 2:
+        data += b"\x00"
+    return tuple(data[i : i + 2].hex() for i in range(0, len(data), 2))
+
+
+def _wrap_command(key: str) -> bytes:
+    """Wrap a command with header, length and footer."""
+    command_word = key[:4]
+    value = key[4:]
+    contents = bytearray.fromhex(command_word + value)
+    length = len(contents).to_bytes(2, "little")
+    return (
+        bytearray.fromhex(TX_HEADER) + length + contents + bytearray.fromhex(TX_FOOTER)
+    )
+
+
+def _unwrap_frame(data: bytes, header: str, footer: str) -> bytes:
+    """Remove header and footer from a framed message."""
+    hdr = bytearray.fromhex(header)
+    ftr = bytearray.fromhex(footer)
+    if data.startswith(hdr) and data.endswith(ftr):
+        length = int.from_bytes(data[len(hdr) : len(hdr) + 2], "little")
+        return data[len(hdr) + 2 : len(hdr) + 2 + length]
+    return data
+
+
+def _unwrap_response(data: bytes) -> bytes:
+    """Remove header and footer from a response."""
+    return _unwrap_frame(data, TX_HEADER, TX_FOOTER)
+
+
+def _unwrap_uplink_frame(data: bytes) -> bytes:
+    """Remove header and footer from an uplink frame."""
+    return _unwrap_frame(data, RX_HEADER, RX_FOOTER)
+
+
+def _parse_response(key: str, data: bytes) -> bytes:
+    """Parse a notification response and verify the ACK."""
+    payload = _unwrap_response(data)
+    if len(payload) < 2:
+        raise OperationError("Response too short")
+    expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+    command = payload[:2]
+    if command != expected_ack:
+        raise OperationError(
+            f"Unexpected response command {command.hex()} for {key[:4]}"
+        )
+    return payload[2:]
 
 
 class LD2410(Device):
     """Representation of a device."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, password: str | None = None, **kwargs: Any) -> None:
         """Initialize the device control class."""
-        super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
+        super().__init__(*args, **kwargs)
+        if password:
+            self._password_words = _password_to_words(password)
+        else:
+            self._password_words = ()
 
     async def _ensure_connected(self) -> None:
         """Ensure connection and reauthorize with the bluetooth password."""
@@ -90,6 +160,100 @@ class LD2410(Device):
         """Execute timed disconnection and schedule reconnect."""
         await super()._execute_timed_disconnect()
         self.loop.create_task(self._restart_connection())
+
+    async def _send_command_locked_with_retry(
+        self, key: str, command: bytes, retry: int, max_attempts: int
+    ) -> bytes | None:
+        for attempt in range(max_attempts):
+            try:
+                raw = await super()._send_command_locked(command)
+                return _parse_response(key, raw)
+            except BleakNotFoundError:
+                _LOGGER.error(
+                    "%s: device not found, no longer in range, or poor RSSI: %s",
+                    self.name,
+                    self.rssi,
+                    exc_info=True,
+                )
+                raise
+            except CharacteristicMissingError as ex:
+                if attempt == retry:
+                    _LOGGER.error(
+                        "%s: characteristic missing: %s; Stopping trying; RSSI: %s",
+                        self.name,
+                        ex,
+                        self.rssi,
+                        exc_info=True,
+                    )
+                    raise
+
+                _LOGGER.debug(
+                    "%s: characteristic missing: %s; RSSI: %s",
+                    self.name,
+                    ex,
+                    self.rssi,
+                    exc_info=True,
+                )
+            except BLEAK_RETRY_EXCEPTIONS:
+                if attempt == retry:
+                    _LOGGER.error(
+                        "%s: communication failed; Stopping trying; RSSI: %s",
+                        self.name,
+                        self.rssi,
+                        exc_info=True,
+                    )
+                    raise
+
+                _LOGGER.debug(
+                    "%s: communication failed with:", self.name, exc_info=True
+                )
+
+        raise RuntimeError("Unreachable")
+
+    async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
+        """Send command to device and read response."""
+        if retry is None:
+            retry = self._retry_count
+        command = _wrap_command(self._commandkey(key))
+        max_attempts = retry + 1
+        if self._operation_lock.locked():
+            _LOGGER.debug(
+                "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
+        async with self._operation_lock:
+            return await self._send_command_locked_with_retry(
+                key, command, retry, max_attempts
+            )
+
+    def _notification_handler(self, _sender: int, data: bytearray) -> None:
+        """Handle notification responses."""
+        self._reset_disconnect_timer()
+        if data.startswith(bytearray.fromhex(TX_HEADER)):
+            if self._notify_future and not self._notify_future.done():
+                self._notify_future.set_result(data)
+            else:
+                _LOGGER.debug(
+                    "%s: Received unexpected command response: %s",
+                    self.name,
+                    data.hex(),
+                )
+            return
+        elif data.startswith(bytearray.fromhex(RX_HEADER)):
+            payload = _unwrap_uplink_frame(data)
+            try:
+                parsed = self._parse_uplink_frame(payload)
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.error("%s: Failed to parse uplink frame: %s", self.name, err)
+            else:
+                if parsed and self._update_parsed_data(parsed):
+                    self._last_full_update = time.monotonic()
+                    self._fire_callbacks()
+        else:
+            _LOGGER.debug(
+                "%s: Received unknown notification: %s", self.name, data.hex()
+            )
 
     async def cmd_send_bluetooth_password(
         self, words: Sequence[str] | None = None

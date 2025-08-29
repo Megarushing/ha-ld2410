@@ -2,14 +2,14 @@ from bleak.backends.device import BLEDevice
 import pytest
 from unittest.mock import AsyncMock
 
-from custom_components.ld2410.api.devices.device import (
+from custom_components.ld2410.api.devices.device import OperationError
+from custom_components.ld2410.api.devices.ld2410 import (
+    LD2410,
     _password_to_words,
     _unwrap_response,
     _wrap_command,
     _parse_response,
-    OperationError,
 )
-from custom_components.ld2410.api.devices.ld2410 import LD2410
 
 from custom_components.ld2410.api.const import (
     CMD_BT_GET_PERMISSION,
