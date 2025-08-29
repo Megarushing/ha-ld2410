@@ -114,11 +114,11 @@ class BaseDevice:
             or advertisement.data != self._sb_adv_data.data
         )
 
-    def _modify_command(self, key: str) -> bytes:
+    def _modify_command(self, raw_command: str) -> bytes:
         """Return command bytes, optionally modified by subclasses."""
-        return bytearray.fromhex(key)
+        return bytearray.fromhex(raw_command)
 
-    def _parse_response(self, key: str, data: bytes) -> bytes:
+    def _parse_response(self, raw_command: str, data: bytes) -> bytes:
         """Return raw response data.
 
         Subclasses may override to parse protocol-specific responses.
@@ -127,7 +127,7 @@ class BaseDevice:
 
     async def _send_command_locked_with_retry(
         self,
-        key: str,
+        raw_command: str,
         command: bytes,
         retry: int,
         max_attempts: int,
@@ -135,7 +135,9 @@ class BaseDevice:
     ) -> bytes | None:
         for attempt in range(max_attempts):
             try:
-                return await self._send_command_locked(key, command, wait_for_response)
+                return await self._send_command_locked(
+                    raw_command, command, wait_for_response
+                )
             except BleakNotFoundError:
                 _LOGGER.error(
                     "%s: device not found, no longer in range, or poor RSSI: %s",
@@ -180,7 +182,7 @@ class BaseDevice:
 
     async def _send_command(
         self,
-        key: str,
+        raw_command: str,
         retry: int | None = None,
         *,
         wait_for_response: bool = True,
@@ -188,7 +190,7 @@ class BaseDevice:
         """Send command to device and optionally read response."""
         if retry is None:
             retry = self._retry_count
-        command = self._modify_command(key)
+        command = self._modify_command(raw_command)
         max_attempts = retry + 1
         if self._operation_lock.locked():
             _LOGGER.debug(
@@ -198,7 +200,7 @@ class BaseDevice:
             )
         async with self._operation_lock:
             return await self._send_command_locked_with_retry(
-                key, command, retry, max_attempts, wait_for_response
+                raw_command, command, retry, max_attempts, wait_for_response
             )
 
     @property
@@ -463,12 +465,14 @@ class BaseDevice:
             _LOGGER.debug("%s: Disconnect completed successfully", self.name)
 
     async def _send_command_locked(
-        self, key: str, command: bytes, wait_for_response: bool
+        self, raw_command: str, command: bytes, wait_for_response: bool
     ) -> bytes | None:
         """Send command to device and optionally read response."""
         await self._ensure_connected()
         try:
-            return await self._execute_command_locked(key, command, wait_for_response)
+            return await self._execute_command_locked(
+                raw_command, command, wait_for_response
+            )
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
             await asyncio.sleep(DBUS_ERROR_BACKOFF_TIME)
@@ -510,7 +514,7 @@ class BaseDevice:
         await self._client.start_notify(self._read_char, self._notification_handler)
 
     async def _execute_command_locked(
-        self, key: str, command: bytes, wait_for_response: bool
+        self, raw_command: str, command: bytes, wait_for_response: bool
     ) -> bytes | None:
         """Execute command and optionally read response."""
         assert self._client is not None
@@ -518,7 +522,7 @@ class BaseDevice:
         assert self._write_char is not None
         client = self._client
 
-        _LOGGER.debug("%s: Sending command: %s", self.name, key)
+        _LOGGER.debug("%s: Sending command: %s", self.name, raw_command)
         if wait_for_response:
             self._notify_future = self.loop.create_future()
         await client.write_gatt_char(self._write_char, command, False)
@@ -539,7 +543,7 @@ class BaseDevice:
                 timeout_handle.cancel()
             self._notify_future = None
 
-        notify_msg = self._parse_response(key, notify_msg_raw)
+        notify_msg = self._parse_response(raw_command, notify_msg_raw)
         _LOGGER.debug("%s: Command reponse: %s", self.name, notify_msg.hex())
         return notify_msg
 

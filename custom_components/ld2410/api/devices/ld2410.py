@@ -100,9 +100,9 @@ class LD2410(Device):
             }
         )
 
-    def _modify_command(self, key: str) -> bytes:
-        command_word = key[:4]
-        value = key[4:]
+    def _modify_command(self, raw_command: str) -> bytes:
+        command_word = raw_command[:4]
+        value = raw_command[4:]
         contents = bytearray.fromhex(command_word + value)
         length = len(contents).to_bytes(2, "little")
         return (
@@ -112,15 +112,15 @@ class LD2410(Device):
             + bytearray.fromhex(TX_FOOTER)
         )
 
-    def _parse_response(self, key: str, data: bytes) -> bytes:
+    def _parse_response(self, raw_command: str, data: bytes) -> bytes:
         payload = _unwrap_frame(data, TX_HEADER, TX_FOOTER)
         if len(payload) < 2:
             raise OperationError("Response too short")
-        expected_ack = (int(key[:4], 16) ^ 0x0001).to_bytes(2, "big")
+        expected_ack = (int(raw_command[:4], 16) ^ 0x0001).to_bytes(2, "big")
         command = payload[:2]
         if command != expected_ack:
             raise OperationError(
-                f"Unexpected response command {command.hex()} for {key[:4]}"
+                f"Unexpected response command {command.hex()} for {raw_command[:4]}"
             )
         return payload[2:]
 
@@ -159,8 +159,8 @@ class LD2410(Device):
         if not payload_words:
             raise OperationError("Password required")
         payload = "".join(payload_words)
-        key = CMD_BT_GET_PERMISSION + payload
-        response = await self._send_command(key)
+        raw_command = CMD_BT_GET_PERMISSION + payload
+        response = await self._send_command(raw_command)
         if response == b"\x01\x00":
             raise OperationError("Wrong password")
         return response == b"\x00\x00"
@@ -196,8 +196,8 @@ class LD2410(Device):
         if not 0 <= duration_sec <= 0xFFFF:
             raise ValueError("duration_sec must be 0..65535")
         await self.cmd_enable_config()
-        key = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
-        response = await self._send_command(key)
+        raw_command = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
+        response = await self._send_command(raw_command)
         if response != b"\x00\x00":
             raise OperationError("Failed to start automatic threshold detection")
         await self.cmd_end_config()

@@ -40,9 +40,9 @@ def test_modify_command_ack():
 
 def test_modify_command_bt_password():
     """Ensure bluetooth password command is modified correctly."""
-    key = CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
+    raw_command = CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
     dev = _TestDevice(password=None)
-    wrapped = dev._modify_command(key).hex()
+    wrapped = dev._modify_command(raw_command).hex()
     assert wrapped == "fdfcfbfa0800a80048694c696e6b04030201"
 
 
@@ -55,13 +55,17 @@ class _TestDevice(LD2410):
             password=password,
         )
         self._response = response
-        self.keys: list[str] = []
+        self.raw_commands: list[str] = []
 
     async def _send_command(
-        self, key: str, retry: int | None = None, *, wait_for_response: bool = True
+        self,
+        raw_command: str,
+        retry: int | None = None,
+        *,
+        wait_for_response: bool = True,
     ) -> bytes | None:
-        self.last_key = key
-        self.keys.append(key)
+        self.last_raw_command = raw_command
+        self.raw_commands.append(raw_command)
         if isinstance(self._response, list):
             return self._response.pop(0)
         return self._response
@@ -72,7 +76,9 @@ async def test_send_bluetooth_password_uses_config_password() -> None:
     """Ensure the device uses the configured password when none provided."""
     dev = _TestDevice(password="HiLink")
     assert await dev.cmd_send_bluetooth_password()
-    assert dev.last_key == CMD_BT_GET_PERMISSION + "".join(_password_to_words("HiLink"))
+    assert dev.last_raw_command == CMD_BT_GET_PERMISSION + "".join(
+        _password_to_words("HiLink")
+    )
 
 
 @pytest.mark.asyncio
@@ -89,7 +95,7 @@ async def test_enable_config_success() -> None:
     dev = _TestDevice(password=None, response=b"\x00\x00\x01\x00\x00@")
     proto, buf = await dev.cmd_enable_config()
     assert (proto, buf) == (1, 16384)
-    assert dev.last_key == CMD_ENABLE_CFG + "0001"
+    assert dev.last_raw_command == CMD_ENABLE_CFG + "0001"
 
 
 @pytest.mark.asyncio
@@ -105,7 +111,7 @@ async def test_end_config_success() -> None:
     """End config command sends correct key."""
     dev = _TestDevice(password=None, response=b"\x00\x00")
     await dev.cmd_end_config()
-    assert dev.last_key == CMD_END_CFG
+    assert dev.last_raw_command == CMD_END_CFG
 
 
 @pytest.mark.asyncio
@@ -128,7 +134,7 @@ async def test_enable_engineering_success() -> None:
         ],
     )
     await dev.cmd_enable_engineering_mode()
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_ENABLE_ENGINEERING,
         CMD_END_CFG,
@@ -148,7 +154,7 @@ async def test_enable_engineering_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_enable_engineering_mode()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_ENABLE_ENGINEERING]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_ENABLE_ENGINEERING]
 
 
 @pytest.mark.asyncio
@@ -163,7 +169,7 @@ async def test_auto_thresholds_success() -> None:
         ],
     )
     await dev.cmd_auto_thresholds(5)
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_START_AUTO_THRESH + "0500",
         CMD_END_CFG,
@@ -183,7 +189,10 @@ async def test_auto_thresholds_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_auto_thresholds(5)
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_START_AUTO_THRESH + "0500"]
+    assert dev.raw_commands == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_START_AUTO_THRESH + "0500",
+    ]
 
 
 @pytest.mark.asyncio
@@ -199,7 +208,7 @@ async def test_query_auto_thresholds_success() -> None:
     )
     status = await dev.cmd_query_auto_thresholds()
     assert status == 2
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_QUERY_AUTO_THRESH,
         CMD_END_CFG,
@@ -219,7 +228,7 @@ async def test_query_auto_thresholds_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_QUERY_AUTO_THRESH]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_QUERY_AUTO_THRESH]
 
 
 @pytest.mark.asyncio
@@ -240,7 +249,7 @@ async def test_set_gate_sensitivity_success() -> None:
         }
     )
     await dev.cmd_set_gate_sensitivity(4, 15, 40)
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
         CMD_END_CFG,
@@ -268,7 +277,7 @@ async def test_set_gate_sensitivity_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_set_gate_sensitivity(4, 15, 40)
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
     ]
@@ -296,7 +305,11 @@ async def test_read_params_success() -> None:
         "still_gate_sensitivity": [2] * 9,
         "absence_delay": 30,
     }
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
+    assert dev.raw_commands == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_READ_PARAMS,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
@@ -310,7 +323,7 @@ async def test_read_params_fail() -> None:
     dev = _TestDevice(password=None, response=resp)
     with pytest.raises(OperationError):
         await dev.cmd_read_params()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS]
 
 
 @pytest.mark.asyncio
@@ -337,7 +350,7 @@ async def test_initial_setup_reads_params() -> None:
     dev = _TestDevice(password=None, response=resp)
     dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
     await dev.initial_setup()
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_ENABLE_ENGINEERING,
         CMD_END_CFG,
@@ -381,7 +394,7 @@ async def test_set_absence_delay_success() -> None:
         + PAR_NOBODY_DURATION
         + "1e000000"
     )
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload, CMD_END_CFG]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", expected_payload, CMD_END_CFG]
     assert dev.parsed_data["absence_delay"] == 30
 
 
@@ -407,7 +420,7 @@ async def test_set_absence_delay_fail() -> None:
         + PAR_NOBODY_DURATION
         + "1e000000"
     )
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", expected_payload]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", expected_payload]
 
 
 @pytest.mark.asyncio
@@ -423,7 +436,7 @@ async def test_get_resolution_success() -> None:
     )
     res = await dev.cmd_get_resolution()
     assert res == 1
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_GET_RES, CMD_END_CFG]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_GET_RES, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
@@ -438,7 +451,7 @@ async def test_get_resolution_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_get_resolution()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_GET_RES]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_GET_RES]
 
 
 @pytest.mark.asyncio
@@ -456,7 +469,7 @@ async def test_set_resolution_success() -> None:
         ],
     )
     await dev.cmd_set_resolution(1)
-    assert dev.keys == [
+    assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_SET_RES + "0100",
         CMD_END_CFG,
@@ -479,7 +492,7 @@ async def test_set_resolution_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_set_resolution(1)
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100"]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100"]
 
 
 @pytest.mark.asyncio
@@ -494,7 +507,7 @@ async def test_reboot_success() -> None:
         ],
     )
     await dev.cmd_reboot()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT, CMD_END_CFG]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_REBOOT, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
@@ -509,7 +522,7 @@ async def test_reboot_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_reboot()
-    assert dev.keys == [CMD_ENABLE_CFG + "0001", CMD_REBOOT]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_REBOOT]
 
 
 def test_unwrap_response():
