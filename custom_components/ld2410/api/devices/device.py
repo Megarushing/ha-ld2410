@@ -404,15 +404,15 @@ class BaseDevice:
         )
 
     def _clear_locked_commands(self):
-        if self._operation_lock.locked() or getattr(
-            self._operation_lock, "_waiters", []
-        ):
-            _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
-            waiters = list(getattr(self._operation_lock, "_waiters", []))
-            for waiter in waiters:
-                if not waiter.done():
-                    waiter.set_exception(OperationError("Device disconnecting"))
-            self._operation_lock = asyncio.Lock()
+        waiters_attr = getattr(self._operation_lock, "_waiters", None)
+        if not (self._operation_lock.locked() or waiters_attr):
+            return
+        _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
+        waiters = list(waiters_attr or [])
+        for waiter in waiters:
+            if not waiter.done():
+                waiter.set_exception(OperationError("Device disconnecting"))
+        self._operation_lock = asyncio.Lock()
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
