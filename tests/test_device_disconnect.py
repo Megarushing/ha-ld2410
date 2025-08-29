@@ -3,9 +3,29 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
+from homeassistant.const import (
+    CONF_ADDRESS,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_SENSOR_TYPE,
+)
+from homeassistant.core import HomeAssistant
 
 from custom_components.ld2410.api.devices.device import OperationError
 from custom_components.ld2410.api.devices.ld2410 import LD2410
+from custom_components.ld2410.const import DOMAIN
+
+from . import LD2410b_SERVICE_INFO
+
+try:
+    from tests.common import MockConfigEntry
+except ImportError:  # pragma: no cover
+    from .mocks import MockConfigEntry
+
+try:
+    from tests.components.bluetooth import inject_bluetooth_service_info
+except ImportError:  # pragma: no cover
+    from .mocks import inject_bluetooth_service_info
 
 
 @pytest.mark.asyncio
@@ -37,7 +57,7 @@ async def test_reconnect_after_unexpected_disconnect():
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
     ):
         device._on_disconnect(None)
-        await asyncio.sleep(0)
+        await asyncio.sleep(1.1)
 
     mock_connect.assert_awaited_once()
     mock_pass.assert_awaited_once()
@@ -67,8 +87,8 @@ async def test_reconnect_after_timed_disconnect():
         password="HiLink",
     )
     device._restart_connection = AsyncMock()
-
     await device._execute_timed_disconnect()
+    device._on_disconnect(None)
     await asyncio.sleep(0)
 
     device._restart_connection.assert_awaited_once()
@@ -133,6 +153,90 @@ async def test_disconnect_clears_command_queue() -> None:
     device._client.disconnect = AsyncMock()
     async with device._connect_lock:
         await device._execute_disconnect_with_lock()
+    await asyncio.sleep(0)
+    for task in (task1, task2):
+        with pytest.raises(OperationError):
+            await task
+    assert not device._operation_lock.locked()
+
+
+@pytest.mark.asyncio
+async def test_reload_does_not_reconnect_old_device(hass: HomeAssistant) -> None:
+    """Reloading the entry does not trigger reconnect of the old device."""
+
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "abc123",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ) as mock_pass,
+        patch("custom_components.ld2410.api.LD2410.cmd_enable_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410.cmd_end_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "absence_delay": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_resolution",
+            AsyncMock(return_value=0),
+        ),
+        patch("custom_components.ld2410.api.LD2410.cmd_get_light_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
+        ),
+        patch.object(LD2410, "_restart_connection", AsyncMock()) as mock_restart,
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert mock_pass.call_count == 2
+    mock_restart.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_on_disconnect_clears_command_queue() -> None:
+    """Unexpected disconnect clears queued commands and releases the lock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    await device._operation_lock.acquire()
+    task1 = asyncio.create_task(device._send_command("FF000100"))
+    task2 = asyncio.create_task(device._send_command("FF000100"))
+    await asyncio.sleep(0)
+    device._auto_reconnect = False
+    device._on_disconnect(None)
     await asyncio.sleep(0)
     for task in (task1, task2):
         with pytest.raises(OperationError):

@@ -138,16 +138,17 @@ class BaseDevice:
 
         Override to perform any cleanup command that is needed post disconnection,
         but do include the super() in the call."""
+        self._clear_locked_commands()
         if self._expected_disconnect:
             _LOGGER.debug(
                 "%s: Disconnected from device; RSSI: %s", self.name, self.rssi
             )
-            return
-        _LOGGER.warning(
-            "%s: Device unexpectedly disconnected; RSSI: %s",
-            self.name,
-            self.rssi,
-        )
+        else:
+            _LOGGER.warning(
+                "%s: Device unexpectedly disconnected; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
         self._cancel_disconnect_timer()
         if self._auto_reconnect:
             self.loop.create_task(self._restart_connection())
@@ -413,6 +414,10 @@ class BaseDevice:
         for waiter in waiters:
             if not waiter.done():
                 waiter.set_exception(OperationError("Device disconnecting"))
+        if self._notify_future:
+            if not self._notify_future.done():
+                self._notify_future.cancel()
+            self._notify_future = None
         self._operation_lock = asyncio.Lock()
 
     def _disconnect_from_timer(self):
@@ -464,11 +469,11 @@ class BaseDevice:
             DISCONNECT_DELAY,
         )
         await self._execute_disconnect()
-        if self._auto_reconnect:
-            self.loop.create_task(self._restart_connection())
 
     async def _restart_connection(self) -> None:
         """Reconnect after an unexpected disconnect."""
+        if not self._auto_reconnect:
+            return
         try:
             _LOGGER.debug("%s: Reconnecting...", self.name)
             connected = await self._ensure_connected()
