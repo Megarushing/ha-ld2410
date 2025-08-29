@@ -76,12 +76,12 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
 class BaseDevice:
     """Base representation of a device."""
 
+    _auto_reconnect: bool = False
+
     def __init__(
         self,
         device: BLEDevice,
         interface: int = 0,
-        *,
-        auto_reconnect: bool = False,
         **kwargs: Any,
     ) -> None:
         """Base class constructor."""
@@ -93,7 +93,7 @@ class BaseDevice:
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
-        self._auto_reconnect = auto_reconnect
+        self._auto_reconnect = getattr(self, "_auto_reconnect", False)
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None

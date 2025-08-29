@@ -97,6 +97,8 @@ def _parse_response(key: str, data: bytes) -> bytes:
 class LD2410(Device):
     """Representation of a device."""
 
+    _auto_reconnect: bool = True
+
     def __init__(
         self,
         device: BLEDevice,
@@ -106,7 +108,7 @@ class LD2410(Device):
     ) -> None:
         """Initialize the device control class."""
         self._inverse: bool = kwargs.pop("inverse_mode", False)
-        super().__init__(device, interface=interface, auto_reconnect=True, **kwargs)
+        super().__init__(device, interface=interface, **kwargs)
         self._password_words = _password_to_words(password) if password else ()
 
     async def on_connect(self) -> None:
