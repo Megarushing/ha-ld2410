@@ -8,6 +8,7 @@ from homeassistant.components import persistent_notification
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.event import async_call_later
 
 try:
     from homeassistant.helpers.entity_platform import (
@@ -66,9 +67,16 @@ class AutoSensitivityButton(Entity, ButtonEntity):
         """Handle the button press."""
         persistent_notification.async_create(
             self.hass,
-            "Keep the room empty for 10 seconds while the device calibrates.",
+            "Please keep the room empty for 10 seconds while calibration is in progress",
             title="LD2410",
             notification_id="ld2410_auto_sensitivities",
+        )
+        async_call_later(
+            self.hass,
+            10,
+            lambda _: persistent_notification.async_dismiss(
+                self.hass, "ld2410_auto_sensitivities"
+            ),
         )
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
         await asyncio.sleep(AUTO_THRESH_DURATION)
@@ -117,9 +125,16 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
         LOGGER.info("Saved gate sensitivities to config entry %s", self._entry.entry_id)
         persistent_notification.async_create(
             self.hass,
-            "Sensitivities saved to configuration.",
+            "Sensitivities successfully saved to configurations",
             title="LD2410",
             notification_id="ld2410_save_sensitivities",
+        )
+        async_call_later(
+            self.hass,
+            10,
+            lambda _: persistent_notification.async_dismiss(
+                self.hass, "ld2410_save_sensitivities"
+            ),
         )
 
 
@@ -147,7 +162,14 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
             LOGGER.info("Loaded saved gate sensitivities into device")
             persistent_notification.async_create(
                 self.hass,
-                "Sensitivities loaded into device.",
+                "Successfully loaded previously saved gate sensitivities into the device",
                 title="LD2410",
                 notification_id="ld2410_load_sensitivities",
+            )
+            async_call_later(
+                self.hass,
+                10,
+                lambda _: persistent_notification.async_dismiss(
+                    self.hass, "ld2410_load_sensitivities"
+                ),
             )
