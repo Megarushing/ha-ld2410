@@ -30,7 +30,11 @@
     },
     "entity": {
         "binary_sensor": {"door_timeout": {"name": "Timeout"}},
-        "button": {"auto_threshold": {"name": "Auto threshold"}},
+        "button": {
+            "auto_sensitivities": {"name": "Auto sensitivities"},
+            "save_sensitivities": {"name": "Save sensitivities"},
+            "load_sensitivities": {"name": "Load sensitivities"}
+        },
         "select": {
             "distance_resolution": {"name": "Distance resolution"},
             "light_function": {"name": "Light function"},
@@ -42,7 +46,7 @@
             "wifi_signal": {"name": "Wi-Fi signal"},
             "light_level": {"name": "Light level"},
             "firmware_version": {"name": "Firmware version"},
-            "firmware_build_date": {"name": "Firmware build date"},
+            "firmware_build_date": {"name": "Firmware build date"}
         },
     },
     "exceptions": {
@@ -55,6 +59,6 @@
         "advertising_state_error": {"message": "{address} is not advertising state"},
         "device_not_found_error": {
             "message": "Could not find {sensor_type} with address {address}"
-        },
-    },
+        }
+    }
 }

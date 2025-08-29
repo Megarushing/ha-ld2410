@@ -116,7 +116,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             await hass.services.async_call(
                 "button",
                 "press",
-                {"entity_id": "button.test_name_auto_threshold"},
+                {"entity_id": "button.test_name_auto_sensitivities"},
                 blocking=True,
             )
             await hass.async_block_till_done()
