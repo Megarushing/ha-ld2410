@@ -10,34 +10,10 @@ from custom_components.ld2410.api.devices.device import (
     OperationError,
     _handle_timeout,
     _merge_data,
-    _parse_response,
-    _unwrap_frame,
-    update_after_operation,
 )
+from custom_components.ld2410.api.devices.ld2410 import LD2410, _unwrap_frame
 from custom_components.ld2410.api.const import CMD_BT_GET_PERMISSION
 from custom_components.ld2410.api.models import Advertisement
-
-
-class _Dummy:
-    """Simple class to exercise update_after_operation."""
-
-    def __init__(self) -> None:
-        self.updated = False
-
-    async def update(self) -> None:  # pragma: no cover - exercised via wrapper
-        self.updated = True
-
-    @update_after_operation
-    async def do(self) -> None:
-        return None
-
-
-@pytest.mark.asyncio
-async def test_update_after_operation_calls_update() -> None:
-    """Wrapper ensures update() is called after operation."""
-    dummy = _Dummy()
-    await dummy.do()
-    assert dummy.updated
 
 
 def test_merge_data_recurses() -> None:
@@ -62,11 +38,22 @@ def test_unwrap_frame_returns_input_if_no_markers() -> None:
     assert _unwrap_frame(data, "fdfc", "0403") == data
 
 
+def test_base_parse_response_returns_raw() -> None:
+    """Base device returns raw response bytes."""
+    raw = bytes.fromhex("001122")
+    dev = BaseDevice(device=BLEDevice(address="AA:BB", name="d", details=None))
+    assert dev._parse_response("cmd", raw) == raw
+
+
 def test_parse_response_unexpected_ack() -> None:
     """Unexpected ACK raises OperationError."""
     raw = bytes.fromhex("fdfcfbfa0400a802000004030201")
+    dev = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password=None,
+    )
     with pytest.raises(OperationError):
-        _parse_response(CMD_BT_GET_PERMISSION, raw)
+        dev._parse_response(CMD_BT_GET_PERMISSION, raw)
 
 
 @pytest.mark.asyncio

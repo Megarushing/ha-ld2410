@@ -31,10 +31,11 @@ async def test_reconnect_after_unexpected_disconnect():
 
     with (
         patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
             AsyncMock(),
         ) as mock_connect,
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
+        patch.object(device, "initial_setup", AsyncMock()),
     ):
         device._disconnected(None)
         await asyncio.sleep(0)
@@ -65,9 +66,9 @@ async def test_restart_connection_waits_before_retry():
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
-    device.connect_and_update = AsyncMock(side_effect=Exception("fail"))
+    device.on_connect = AsyncMock(side_effect=Exception("fail"))
     with patch(
-        "custom_components.ld2410.api.devices.ld2410.asyncio.sleep",
+        "custom_components.ld2410.api.devices.device.asyncio.sleep",
         new=AsyncMock(),
     ) as mock_sleep:
 
@@ -82,8 +83,8 @@ async def test_restart_connection_waits_before_retry():
 
 
 @pytest.mark.asyncio
-async def test_ensure_connected_skips_password_when_already_connected() -> None:
-    """_ensure_connected does not send password if already connected."""
+async def test_restart_connection_skips_on_connect_if_already_connected() -> None:
+    """on_connect is not called when already connected."""
     device = LD2410(
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
@@ -91,15 +92,15 @@ async def test_ensure_connected_skips_password_when_already_connected() -> None:
     device._client = AsyncMock(is_connected=True)
     with (
         patch(
-            "custom_components.ld2410.api.devices.device.Device._ensure_connected",
-            AsyncMock(),
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=False),
         ) as mock_connect,
-        patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
+        patch.object(device, "on_connect", AsyncMock()) as mock_on_connect,
     ):
-        await device._ensure_connected()
+        await device._restart_connection()
 
     mock_connect.assert_awaited_once()
-    mock_pass.assert_not_called()
+    mock_on_connect.assert_not_called()
 
 
 @pytest.mark.asyncio

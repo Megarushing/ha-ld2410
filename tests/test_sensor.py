@@ -55,11 +55,19 @@ async def test_sensors(hass: HomeAssistant) -> None:
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(
@@ -118,11 +126,19 @@ async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(
@@ -178,11 +194,19 @@ async def test_entities_created_without_initial_data(hass: HomeAssistant) -> Non
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(
@@ -244,11 +268,19 @@ async def test_gate_energy_sensors(hass: HomeAssistant) -> None:
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(
@@ -301,11 +333,19 @@ async def test_photo_and_out_pin_sensors(hass: HomeAssistant) -> None:
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(
@@ -351,11 +391,19 @@ async def test_frame_type_and_photo_sensors_disabled_by_default(
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
         patch(

@@ -49,11 +49,19 @@ async def test_entities_stay_available_with_uplink_frames(hass: HomeAssistant) -
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.connect_and_update",
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.initial_setup",
             AsyncMock(),
         ),
     ):
