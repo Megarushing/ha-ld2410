@@ -67,8 +67,8 @@ async def test_reconnect_after_timed_disconnect():
         password="HiLink",
     )
     device._restart_connection = AsyncMock()
-
     await device._execute_timed_disconnect()
+    device._on_disconnect(None)
     await asyncio.sleep(0)
 
     device._restart_connection.assert_awaited_once()
