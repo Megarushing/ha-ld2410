@@ -44,6 +44,22 @@ async def test_reconnect_after_unexpected_disconnect():
 
 
 @pytest.mark.asyncio
+async def test_no_reconnect_when_disabled() -> None:
+    """Device does not reconnect when _auto_reconnect is False."""
+
+    class NoReconnectLD2410(LD2410):
+        _auto_reconnect = False
+
+    device = NoReconnectLD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    with patch.object(device.loop, "create_task", MagicMock()) as mock_task:
+        device._on_disconnect(None)
+    assert not mock_task.called
+
+
+@pytest.mark.asyncio
 async def test_reconnect_after_timed_disconnect():
     """Ensure device reconnects after a timed disconnect."""
     device = LD2410(

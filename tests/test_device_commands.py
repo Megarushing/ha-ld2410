@@ -1,5 +1,6 @@
 from bleak.backends.device import BLEDevice
 import pytest
+from unittest.mock import AsyncMock, patch
 
 from custom_components.ld2410.api.devices.device import OperationError
 from custom_components.ld2410.api.devices.ld2410 import (
@@ -61,13 +62,47 @@ class _TestDevice(LD2410):
         raw_command: str,
         retry: int | None = None,
         *,
-        wait_for_response: bool = True,
+        wait_for_response: bool | None = None,
     ) -> bytes | None:
         self.last_raw_command = raw_command
         self.raw_commands.append(raw_command)
         if isinstance(self._response, list):
             return self._response.pop(0)
         return self._response
+
+
+@pytest.mark.asyncio
+async def test_wait_for_response_defaults_to_class_setting() -> None:
+    """Ensure class-level default controls waiting for responses."""
+
+    class NoWaitLD2410(LD2410):
+        _should_wait_for_response = False
+
+    dev = NoWaitLD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password=None,
+    )
+    with patch.object(
+        dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+    ) as mock_send:
+        await dev._send_command("FF000100")
+        assert mock_send.await_args.args[4] is False
+
+    with patch.object(
+        dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+    ) as mock_send:
+        await dev._send_command("FF000100", wait_for_response=True)
+        assert mock_send.await_args.args[4] is True
+
+    dev_true = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password=None,
+    )
+    with patch.object(
+        dev_true, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+    ) as mock_send:
+        await dev_true._send_command("FF000100")
+        assert mock_send.await_args.args[4] is True
 
 
 @pytest.mark.asyncio
