@@ -90,14 +90,19 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
         """Handle the button press."""
         move = self.parsed_data.get("move_gate_sensitivity") or []
         still = self.parsed_data.get("still_gate_sensitivity") or []
-        self.coordinator.hass.config_entries.async_update_entry(
-            self._entry,
-            options={
-                **self._entry.options,
-                CONF_SAVED_MOVE_SENSITIVITY: move,
-                CONF_SAVED_STILL_SENSITIVITY: still,
-            },
-        )
+        options = {
+            **self._entry.options,
+            CONF_SAVED_MOVE_SENSITIVITY: move,
+            CONF_SAVED_STILL_SENSITIVITY: still,
+        }
+        try:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry, options=options, reload=False
+            )
+        except TypeError:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry, options=options
+            )
 
 
 class LoadSensitivitiesButton(Entity, ButtonEntity):

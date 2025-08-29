@@ -151,13 +151,16 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     assert hass.states.get("button.test_name_save_sensitivities") is not None
     assert hass.states.get("button.test_name_load_sensitivities") is not None
 
-    with patch.object(hass.config_entries, "async_reload", AsyncMock()):
+    with patch.object(hass.config_entries, "async_reload", AsyncMock()) as reload_mock:
         await hass.services.async_call(
             "button",
             "press",
             {"entity_id": "button.test_name_save_sensitivities"},
             blocking=True,
         )
+        await hass.async_block_till_done()
+
+    reload_mock.assert_not_called()
 
     assert (
         entry.options[CONF_SAVED_MOVE_SENSITIVITY]

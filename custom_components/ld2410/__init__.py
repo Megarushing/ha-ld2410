@@ -22,6 +22,8 @@ from .const import (
     CONF_RETRY_COUNT,
     CONNECTABLE_MODEL_TYPES,
     DEFAULT_RETRY_COUNT,
+    CONF_SAVED_MOVE_SENSITIVITY,
+    CONF_SAVED_STILL_SENSITIVITY,
     DOMAIN,
     HASS_SENSOR_TYPE_TO_MODEL,
     SupportedModels,
@@ -109,6 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         connectable,
         model,
     )
+    data_coordinator.options = dict(entry.options)
     entry.async_on_unload(data_coordinator.async_start())
     if not await data_coordinator.async_wait_ready():
         raise ConfigEntryNotReady(
@@ -127,6 +130,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle options update."""
+    coordinator: DataCoordinator = entry.runtime_data
+    new_options = dict(entry.options)
+    allowed = {CONF_SAVED_MOVE_SENSITIVITY, CONF_SAVED_STILL_SENSITIVITY}
+    previous = getattr(coordinator, "options", {})
+    coordinator.options = new_options
+    if {k: v for k, v in previous.items() if k not in allowed} == {
+        k: v for k, v in new_options.items() if k not in allowed
+    }:
+        return
     await hass.config_entries.async_reload(entry.entry_id)
 
 
