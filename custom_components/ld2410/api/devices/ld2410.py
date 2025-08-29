@@ -63,6 +63,7 @@ class LD2410(Device):
     """Representation of a device."""
 
     _auto_reconnect: bool = True
+    _should_wait_for_response: bool = True
 
     def __init__(
         self,
@@ -76,16 +77,11 @@ class LD2410(Device):
         super().__init__(device, interface=interface, **kwargs)
         self._password_words = _password_to_words(password) if password else ()
 
-    async def on_connect(self) -> None:
+    async def _on_connect(self) -> None:
         """Reauthorize and refresh configuration after connecting."""
         if self._password_words:
             await self.cmd_send_bluetooth_password()
         await self.cmd_enable_engineering_mode()
-        await self.initial_setup()
-
-    async def initial_setup(self):
-        """Ensure connection and refresh configuration parameters."""
-        await self._ensure_connected()
         params = await self.cmd_read_params()
         res = await self.cmd_get_resolution()
         await self.cmd_get_light_config()

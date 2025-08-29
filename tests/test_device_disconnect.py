@@ -37,7 +37,7 @@ async def test_reconnect_after_unexpected_disconnect():
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
         patch.object(device, "initial_setup", AsyncMock()),
     ):
-        device._disconnected(None)
+        device._on_disconnect(None)
         await asyncio.sleep(0)
 
     mock_connect.assert_awaited_once()
@@ -66,7 +66,7 @@ async def test_restart_connection_waits_before_retry():
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
-    device.on_connect = AsyncMock(side_effect=Exception("fail"))
+    device._on_connect = AsyncMock(side_effect=Exception("fail"))
     with patch(
         "custom_components.ld2410.api.devices.device.asyncio.sleep",
         new=AsyncMock(),

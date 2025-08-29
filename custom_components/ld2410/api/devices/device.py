@@ -47,6 +47,10 @@ DISCONNECT_DELAY = 8.5
 # values.
 PASSIVE_POLL_INTERVAL = 60 * 60 * 24
 
+# Time to wait for a command response
+# Before firing a TimeoutError
+COMMAND_TIMEOUT = 5
+
 
 class CharacteristicMissingError(Exception):
     """Raised when a characteristic is missing."""
@@ -76,7 +80,14 @@ def _handle_timeout(fut: asyncio.Future[None]) -> None:
 class BaseDevice:
     """Base representation of a device."""
 
+    # Represents if the device should automatically reconnect
+    # when disconnected, if not it will connect only when its
+    # required to send a command
     _auto_reconnect: bool = False
+
+    # Represents if the device should wait for up to Timeout seconds
+    # by default after sending a command via the write channel
+    _should_wait_for_response: bool = True
 
     # ---------------------------------------------------------------------
     # Subclass hooks
@@ -112,7 +123,7 @@ class BaseDevice:
             return True
         return False
 
-    async def on_connect(self) -> None:
+    async def _on_connect(self) -> None:
         """Run after a new connection is made.
 
         Override to perform initialization commands such as authentication or
@@ -121,6 +132,25 @@ class BaseDevice:
         """
 
         return
+
+    def _on_disconnect(self, client: BleakClientWithServiceCache) -> None:
+        """Disconnected callback. Run after a bluetooth disconnection.
+
+        Override to perform any cleanup command that is needed post disconnection,
+        but do include the super() in the call."""
+        if self._expected_disconnect:
+            _LOGGER.debug(
+                "%s: Disconnected from device; RSSI: %s", self.name, self.rssi
+            )
+            return
+        _LOGGER.warning(
+            "%s: Device unexpectedly disconnected; RSSI: %s",
+            self.name,
+            self.rssi,
+        )
+        self._cancel_disconnect_timer()
+        if self._auto_reconnect:
+            self.loop.create_task(self._restart_connection())
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve GATT characteristics used for I/O.
@@ -233,7 +263,7 @@ class BaseDevice:
         raw_command: str,
         retry: int | None = None,
         *,
-        wait_for_response: bool = True,
+        wait_for_response: bool = _should_wait_for_response,
     ) -> bytes | None:
         """Send command to device and optionally read response."""
         if retry is None:
@@ -334,7 +364,7 @@ class BaseDevice:
                 BleakClientWithServiceCache,
                 self._device,
                 self.name,
-                self._disconnected,
+                self._on_disconnect,
                 use_services_cache=True,
                 ble_device_callback=lambda: self._device,
             )
@@ -383,22 +413,6 @@ class BaseDevice:
                 if not waiter.done():
                     waiter.set_exception(OperationError("Device disconnecting"))
             self._operation_lock = asyncio.Lock()
-
-    def _disconnected(self, client: BleakClientWithServiceCache) -> None:
-        """Disconnected callback."""
-        if self._expected_disconnect:
-            _LOGGER.debug(
-                "%s: Disconnected from device; RSSI: %s", self.name, self.rssi
-            )
-            return
-        _LOGGER.warning(
-            "%s: Device unexpectedly disconnected; RSSI: %s",
-            self.name,
-            self.rssi,
-        )
-        self._cancel_disconnect_timer()
-        if self._auto_reconnect:
-            self.loop.create_task(self._restart_connection())
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -458,7 +472,7 @@ class BaseDevice:
             _LOGGER.debug("%s: Reconnecting...", self.name)
             connected = await self._ensure_connected()
             if connected:
-                await self.on_connect()
+                await self._on_connect()
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             await asyncio.sleep(1)
@@ -556,9 +570,8 @@ class BaseDevice:
         await client.write_gatt_char(self._write_char, command, False)
         if not wait_for_response:
             return None
-        timeout = 5
         timeout_handle = self.loop.call_at(
-            self.loop.time() + timeout, _handle_timeout, self._notify_future
+            self.loop.time() + COMMAND_TIMEOUT, _handle_timeout, self._notify_future
         )
         timeout_expired = False
         try:
