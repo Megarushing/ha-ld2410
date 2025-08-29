@@ -83,6 +83,7 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
         patch(
             "custom_components.ld2410.button.asyncio.sleep", AsyncMock()
         ) as sleep_mock,
+        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -103,8 +104,16 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
         sleep_mock.assert_has_awaits([call(10)], any_order=True)
         query_mock.assert_awaited_once()
         read_mock.assert_awaited_once()
+        call_later_mock.assert_called_once()
+        assert call_later_mock.call_args[0][1] == 10
+        dismiss = call_later_mock.call_args[0][2]
         notifications = persistent_notification._async_get_or_create_notifications(hass)
-        assert "ld2410_auto_sensitivities" in notifications
+        assert notifications["ld2410_auto_sensitivities"]["message"] == (
+            "Please keep the room empty for 10 seconds while calibration is in progress"
+        )
+        dismiss(None)
+        notifications = persistent_notification._async_get_or_create_notifications(hass)
+        assert "ld2410_auto_sensitivities" not in notifications
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
@@ -157,7 +166,10 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     assert hass.states.get("button.test_name_save_sensitivities") is not None
     assert hass.states.get("button.test_name_load_sensitivities") is not None
 
-    with patch.object(hass.config_entries, "async_reload", AsyncMock()) as reload_mock:
+    with (
+        patch.object(hass.config_entries, "async_reload", AsyncMock()) as reload_mock,
+        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+    ):
         await hass.services.async_call(
             "button",
             "press",
@@ -176,8 +188,16 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
         entry.options[CONF_SAVED_STILL_SENSITIVITY]
         == mock_parsed["still_gate_sensitivity"]
     )
+    call_later_mock.assert_called_once()
+    assert call_later_mock.call_args_list[0][0][1] == 10
+    dismiss = call_later_mock.call_args_list[0][0][2]
     notifications = persistent_notification._async_get_or_create_notifications(hass)
-    assert "ld2410_save_sensitivities" in notifications
+    assert notifications["ld2410_save_sensitivities"]["message"] == (
+        "Sensitivities successfully saved to configurations"
+    )
+    dismiss(None)
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert "ld2410_save_sensitivities" not in notifications
 
     new_move = [50] * 9
     new_still = [60] * 9
@@ -191,10 +211,13 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
             },
         )
 
-    with patch(
-        "custom_components.ld2410.api.LD2410.cmd_set_gate_sensitivity",
-        AsyncMock(),
-    ) as set_mock:
+    with (
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_set_gate_sensitivity",
+            AsyncMock(),
+        ) as set_mock,
+        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+    ):
         await hass.services.async_call(
             "button",
             "press",
@@ -204,5 +227,13 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     set_mock.assert_has_awaits([call(g, 50, 60) for g in range(9)], any_order=False)
+    call_later_mock.assert_called_once()
+    assert call_later_mock.call_args_list[0][0][1] == 10
+    dismiss = call_later_mock.call_args_list[0][0][2]
     notifications = persistent_notification._async_get_or_create_notifications(hass)
-    assert "ld2410_load_sensitivities" in notifications
+    assert notifications["ld2410_load_sensitivities"]["message"] == (
+        "Successfully loaded previously saved gate sensitivities into the device"
+    )
+    dismiss(None)
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert "ld2410_load_sensitivities" not in notifications
