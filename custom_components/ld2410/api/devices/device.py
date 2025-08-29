@@ -78,6 +78,65 @@ class BaseDevice:
 
     _auto_reconnect: bool = False
 
+    # ---------------------------------------------------------------------
+    # Subclass hooks
+    # ---------------------------------------------------------------------
+    def _modify_command(self, raw_command: str) -> bytes:
+        """Return command bytes.
+
+        Override to wrap ``raw_command`` (a hex string) in any protocol specific
+        framing. The returned bytes are written to the BLE characteristic.
+        """
+
+        return bytearray.fromhex(raw_command)
+
+    def _parse_response(self, raw_command: str, data: bytes) -> bytes:
+        """Parse command response.
+
+        Child classes may validate and strip protocol framing for the response
+        associated with ``raw_command``. The default implementation returns the
+        raw ``data`` unchanged.
+        """
+
+        return data
+
+    def _handle_notification(self, data: bytearray) -> bool:
+        """Handle unsolicited notifications.
+
+        Subclasses should override to process device specific notification
+        frames. Return ``True`` if ``data`` was handled.
+        """
+
+        if self._notify_future and not self._notify_future.done():
+            self._notify_future.set_result(data)
+            return True
+        return False
+
+    async def on_connect(self) -> None:
+        """Run after a new connection is made.
+
+        Override to perform initialization commands such as authentication or
+        configuration queries. This hook is only called when a new BLE
+        connection is successfully established.
+        """
+
+        return
+
+    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
+        """Resolve GATT characteristics used for I/O.
+
+        Subclasses may override if different characteristic UUIDs are required.
+        Implementations must set ``self._read_char`` and ``self._write_char``
+        to the corresponding notify and write characteristics.
+        """
+
+        self._read_char = services.get_characteristic(CHARACTERISTIC_NOTIFY)
+        if not self._read_char:
+            raise CharacteristicMissingError(CHARACTERISTIC_NOTIFY)
+        self._write_char = services.get_characteristic(CHARACTERISTIC_WRITE)
+        if not self._write_char:
+            raise CharacteristicMissingError(CHARACTERISTIC_WRITE)
+
     def __init__(
         self,
         device: BLEDevice,
@@ -113,17 +172,6 @@ class BaseDevice:
             or ble_device_has_changed(self._sb_adv_data.device, advertisement.device)
             or advertisement.data != self._sb_adv_data.data
         )
-
-    def _modify_command(self, raw_command: str) -> bytes:
-        """Return command bytes, optionally modified by subclasses."""
-        return bytearray.fromhex(raw_command)
-
-    def _parse_response(self, raw_command: str, data: bytes) -> bytes:
-        """Return raw response data.
-
-        Subclasses may override to parse protocol-specific responses.
-        """
-        return data
 
     async def _send_command_locked_with_retry(
         self,
@@ -317,15 +365,6 @@ class BaseDevice:
             await self._start_notify()
             return True
 
-    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
-        """Resolve characteristics."""
-        self._read_char = services.get_characteristic(CHARACTERISTIC_NOTIFY)
-        if not self._read_char:
-            raise CharacteristicMissingError(CHARACTERISTIC_NOTIFY)
-        self._write_char = services.get_characteristic(CHARACTERISTIC_WRITE)
-        if not self._write_char:
-            raise CharacteristicMissingError(CHARACTERISTIC_WRITE)
-
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
         self._cancel_disconnect_timer()
@@ -413,10 +452,6 @@ class BaseDevice:
         if self._auto_reconnect:
             self.loop.create_task(self._restart_connection())
 
-    async def on_connect(self) -> None:
-        """Run after a new connection is made."""
-        return
-
     async def _restart_connection(self) -> None:
         """Reconnect after an unexpected disconnect."""
         try:
@@ -500,13 +535,6 @@ class BaseDevice:
             _LOGGER.debug(
                 "%s: Received unknown notification: %s", self.name, data.hex()
             )
-
-    def _handle_notification(self, data: bytearray) -> bool:
-        """Handle notification, return True if handled."""
-        if self._notify_future and not self._notify_future.done():
-            self._notify_future.set_result(data)
-            return True
-        return False
 
     async def _start_notify(self) -> None:
         """Start notification."""
