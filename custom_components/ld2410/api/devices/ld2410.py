@@ -379,10 +379,7 @@ class LD2410(Device):
     async def cmd_reboot(self) -> None:
         """Reboot the module."""
         await self.cmd_enable_config()
-        response = await self._send_command(CMD_REBOOT)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to reboot")
-        await self.cmd_end_config()
+        await self._send_command(CMD_REBOOT, wait_for_response=False)
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink frame.
