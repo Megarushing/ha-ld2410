@@ -62,7 +62,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.initial_setup",
+            "custom_components.ld2410.api.LD2410._on_connect",
             AsyncMock(),
         ),
         patch(
@@ -157,7 +157,7 @@ async def test_light_sensitivity_number(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
             AsyncMock(),
         ),
-        patch("custom_components.ld2410.api.LD2410.initial_setup", AsyncMock()),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
             AsyncMock(

@@ -1,6 +1,5 @@
 from bleak.backends.device import BLEDevice
 import pytest
-from unittest.mock import AsyncMock
 
 from custom_components.ld2410.api.devices.device import OperationError
 from custom_components.ld2410.api.devices.ld2410 import (
@@ -327,8 +326,8 @@ async def test_read_params_fail() -> None:
 
 
 @pytest.mark.asyncio
-async def test_initial_setup_reads_params() -> None:
-    """initial_setup reads parameters and stores them."""
+async def test_on_connect_reads_params() -> None:
+    """_on_connect reads parameters and stores them."""
     resp = [
         b"\x00\x00\x01\x00\x00@",
         b"\x00\x00",
@@ -348,8 +347,7 @@ async def test_initial_setup_reads_params() -> None:
         b"\x00\x00",
     ]
     dev = _TestDevice(password=None, response=resp)
-    dev._ensure_connected = AsyncMock(side_effect=dev.cmd_enable_engineering_mode)
-    await dev.initial_setup()
+    await dev._on_connect()
     assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_ENABLE_ENGINEERING,

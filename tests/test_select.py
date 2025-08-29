@@ -53,7 +53,7 @@ async def test_resolution_select(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
             AsyncMock(),
         ),
-        patch("custom_components.ld2410.api.LD2410.initial_setup", AsyncMock()),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
             AsyncMock(return_value={"resolution": 0}),
@@ -113,7 +113,7 @@ async def test_light_function_select(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
             AsyncMock(),
         ),
-        patch("custom_components.ld2410.api.LD2410.initial_setup", AsyncMock()),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
             AsyncMock(
@@ -179,7 +179,7 @@ async def test_out_level_select(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
             AsyncMock(),
         ),
-        patch("custom_components.ld2410.api.LD2410.initial_setup", AsyncMock()),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
         patch(
             "custom_components.ld2410.api.devices.device.Device.get_basic_info",
             AsyncMock(

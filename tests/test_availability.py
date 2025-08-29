@@ -61,7 +61,7 @@ async def test_entities_stay_available_with_uplink_frames(hass: HomeAssistant) -
             AsyncMock(),
         ),
         patch(
-            "custom_components.ld2410.api.LD2410.initial_setup",
+            "custom_components.ld2410.api.LD2410._on_connect",
             AsyncMock(),
         ),
     ):

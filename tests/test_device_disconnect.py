@@ -35,7 +35,6 @@ async def test_reconnect_after_unexpected_disconnect():
             AsyncMock(),
         ) as mock_connect,
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
-        patch.object(device, "initial_setup", AsyncMock()),
     ):
         device._on_disconnect(None)
         await asyncio.sleep(0)
@@ -95,7 +94,7 @@ async def test_restart_connection_skips_on_connect_if_already_connected() -> Non
             "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
             AsyncMock(return_value=False),
         ) as mock_connect,
-        patch.object(device, "on_connect", AsyncMock()) as mock_on_connect,
+        patch.object(device, "_on_connect", AsyncMock()) as mock_on_connect,
     ):
         await device._restart_connection()
 
