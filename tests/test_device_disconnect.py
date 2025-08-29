@@ -225,6 +225,87 @@ async def test_reload_does_not_reconnect_old_device(hass: HomeAssistant) -> None
 
 
 @pytest.mark.asyncio
+async def test_unload_cancels_restart_task(hass: HomeAssistant) -> None:
+    """Unloading the entry cancels any scheduled reconnect task."""
+
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "abc123",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410.cmd_enable_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410.cmd_end_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "absence_delay": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_resolution",
+            AsyncMock(return_value=0),
+        ),
+        patch("custom_components.ld2410.api.LD2410.cmd_get_light_config", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
+        ),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device = entry.runtime_data.device
+
+    restart_cancelled = asyncio.Event()
+
+    async def fake_restart() -> None:
+        try:
+            await asyncio.sleep(3600)
+        except asyncio.CancelledError:
+            restart_cancelled.set()
+            raise
+
+    device._restart_connection = fake_restart
+    device._restart_connection_task = device.loop.create_task(
+        device._restart_connection()
+    )
+    await asyncio.sleep(0)
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert restart_cancelled.is_set()
+    assert device._restart_connection_task is None
+
+
+@pytest.mark.asyncio
 async def test_on_disconnect_clears_command_queue() -> None:
     """Unexpected disconnect clears queued commands and releases the lock."""
     device = LD2410(
