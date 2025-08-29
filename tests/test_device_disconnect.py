@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
@@ -113,7 +113,7 @@ async def test_restart_connection_waits_before_retry():
         with patch.object(device.loop, "create_task", side_effect=_close) as mock_task:
             await device._restart_connection()
 
-    mock_sleep.assert_has_awaits([call(1), call(1)])
+    mock_sleep.assert_awaited_once_with(1)
     assert mock_task.call_count == 1
 
 

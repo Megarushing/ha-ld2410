@@ -472,7 +472,6 @@ class BaseDevice:
 
     async def _restart_connection(self) -> None:
         """Reconnect after an unexpected disconnect."""
-        await asyncio.sleep(1)
         if not self._auto_reconnect:
             return
         try:
