@@ -138,6 +138,7 @@ class BaseDevice:
 
         Override to perform any cleanup command that is needed post disconnection,
         but do include the super() in the call."""
+        self._clear_locked_commands()
         if self._expected_disconnect:
             _LOGGER.debug(
                 "%s: Disconnected from device; RSSI: %s", self.name, self.rssi

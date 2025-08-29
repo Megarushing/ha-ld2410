@@ -138,3 +138,23 @@ async def test_disconnect_clears_command_queue() -> None:
         with pytest.raises(OperationError):
             await task
     assert not device._operation_lock.locked()
+
+
+@pytest.mark.asyncio
+async def test_on_disconnect_clears_command_queue() -> None:
+    """Unexpected disconnect clears queued commands and releases the lock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    await device._operation_lock.acquire()
+    task1 = asyncio.create_task(device._send_command("FF000100"))
+    task2 = asyncio.create_task(device._send_command("FF000100"))
+    await asyncio.sleep(0)
+    device._auto_reconnect = False
+    device._on_disconnect(None)
+    await asyncio.sleep(0)
+    for task in (task1, task2):
+        with pytest.raises(OperationError):
+            await task
+    assert not device._operation_lock.locked()
