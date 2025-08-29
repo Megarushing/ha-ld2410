@@ -119,8 +119,11 @@ class BaseDevice:
         return bytearray.fromhex(key)
 
     def _parse_response(self, key: str, data: bytes) -> bytes:
-        """Parse a response to a command."""
-        raise NotImplementedError
+        """Return raw response data.
+
+        Subclasses may override to parse protocol-specific responses.
+        """
+        return data
 
     async def _send_command_locked_with_retry(
         self,

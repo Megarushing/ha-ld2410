@@ -38,6 +38,13 @@ def test_unwrap_frame_returns_input_if_no_markers() -> None:
     assert _unwrap_frame(data, "fdfc", "0403") == data
 
 
+def test_base_parse_response_returns_raw() -> None:
+    """Base device returns raw response bytes."""
+    raw = bytes.fromhex("001122")
+    dev = BaseDevice(device=BLEDevice(address="AA:BB", name="d", details=None))
+    assert dev._parse_response("cmd", raw) == raw
+
+
 def test_parse_response_unexpected_ack() -> None:
     """Unexpected ACK raises OperationError."""
     raw = bytes.fromhex("fdfcfbfa0400a802000004030201")
