@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
+from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -30,6 +31,7 @@ except ImportError:  # Home Assistant <2023.9
 async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
     """Test pressing the button starts auto sensitivity detection."""
     await async_setup_component(hass, DOMAIN, {})
+    await async_setup_component(hass, "persistent_notification", {})
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
@@ -95,17 +97,21 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
             {"entity_id": "button.test_name_auto_sensitivities"},
             blocking=True,
         )
+        await hass.async_block_till_done()
 
         auto_mock.assert_awaited_once_with(10)
         sleep_mock.assert_has_awaits([call(10)], any_order=True)
         query_mock.assert_awaited_once()
         read_mock.assert_awaited_once()
+        notifications = persistent_notification._async_get_or_create_notifications(hass)
+        assert "ld2410_auto_sensitivities" in notifications
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     """Test saving and loading sensitivities."""
     await async_setup_component(hass, DOMAIN, {})
+    await async_setup_component(hass, "persistent_notification", {})
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(
@@ -170,6 +176,8 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
         entry.options[CONF_SAVED_STILL_SENSITIVITY]
         == mock_parsed["still_gate_sensitivity"]
     )
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert "ld2410_save_sensitivities" in notifications
 
     new_move = [50] * 9
     new_still = [60] * 9
@@ -193,5 +201,8 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
             {"entity_id": "button.test_name_load_sensitivities"},
             blocking=True,
         )
+        await hass.async_block_till_done()
 
     set_mock.assert_has_awaits([call(g, 50, 60) for g in range(9)], any_order=False)
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert "ld2410_load_sensitivities" in notifications

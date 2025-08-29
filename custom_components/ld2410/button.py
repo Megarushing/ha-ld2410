@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+from homeassistant.components import persistent_notification
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -17,6 +18,8 @@ except ImportError:  # Home Assistant <2024.6
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
+import logging
+
 from .const import (
     CONF_SAVED_MOVE_SENSITIVITY,
     CONF_SAVED_STILL_SENSITIVITY,
@@ -27,6 +30,8 @@ from .entity import Entity, exception_handler
 PARALLEL_UPDATES = 0
 
 AUTO_THRESH_DURATION = 10
+
+LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -59,6 +64,12 @@ class AutoSensitivityButton(Entity, ButtonEntity):
     @exception_handler
     async def async_press(self) -> None:
         """Handle the button press."""
+        persistent_notification.async_create(
+            self.hass,
+            "Keep the room empty for 10 seconds while the device calibrates.",
+            title="LD2410",
+            notification_id="ld2410_auto_sensitivities",
+        )
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
         await asyncio.sleep(AUTO_THRESH_DURATION)
         while await self._device.cmd_query_auto_thresholds() != 0:
@@ -103,6 +114,13 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
             self.coordinator.hass.config_entries.async_update_entry(
                 self._entry, options=options
             )
+        LOGGER.info("Saved gate sensitivities to config entry %s", self._entry.entry_id)
+        persistent_notification.async_create(
+            self.hass,
+            "Sensitivities saved to configuration.",
+            title="LD2410",
+            notification_id="ld2410_save_sensitivities",
+        )
 
 
 class LoadSensitivitiesButton(Entity, ButtonEntity):
@@ -126,3 +144,10 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
             await self._device.cmd_set_gate_sensitivity(gate, m, s)
         if move and still:
             self._device._fire_callbacks()
+            LOGGER.info("Loaded saved gate sensitivities into device")
+            persistent_notification.async_create(
+                self.hass,
+                "Sensitivities loaded into device.",
+                title="LD2410",
+                notification_id="ld2410_load_sensitivities",
+            )
