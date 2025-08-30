@@ -152,11 +152,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     previous_auto_reconnect = device._auto_reconnect
     device._auto_reconnect = False
     device._cancel_disconnect_timer()
-    if device._restart_connection_task:
-        device._restart_connection_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await device._restart_connection_task
-        device._restart_connection_task = None
+    if device._restart_connection_tasks:
+        for task in device._restart_connection_tasks:
+            task.cancel()
+        for task in device._restart_connection_tasks:
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        device._restart_connection_tasks.clear()
     if device._timed_disconnect_task:
         device._timed_disconnect_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):

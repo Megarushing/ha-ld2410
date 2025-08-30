@@ -151,9 +151,8 @@ class BaseDevice:
             )
         self._cancel_disconnect_timer()
         if self._auto_reconnect:
-            self._restart_connection_task = self.loop.create_task(
-                self._restart_connection()
-            )
+            task = self.loop.create_task(self._restart_connection())
+            self._restart_connection_tasks.append(task)
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve GATT characteristics used for I/O.
@@ -195,7 +194,7 @@ class BaseDevice:
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
-        self._restart_connection_task: asyncio.Task[None] | None = None
+        self._restart_connection_tasks: list[asyncio.Task[None]] = []
         self._rssi: int = getattr(device, "rssi", -127) or -127
 
     def advertisement_changed(self, advertisement: Advertisement) -> bool:
@@ -475,9 +474,16 @@ class BaseDevice:
 
     async def _restart_connection(self) -> None:
         """Reconnect after an unexpected disconnect."""
+        current = asyncio.current_task()
+        for task in list(self._restart_connection_tasks):
+            if task is not current and not task.done():
+                task.cancel()
+        self._restart_connection_tasks = [
+            t for t in self._restart_connection_tasks if t is current
+        ]
         if not self._auto_reconnect:
-            if self._restart_connection_task is asyncio.current_task():
-                self._restart_connection_task = None
+            if current in self._restart_connection_tasks:
+                self._restart_connection_tasks.remove(current)
             return
         try:
             _LOGGER.debug("%s: Reconnecting...", self.name)
@@ -487,12 +493,11 @@ class BaseDevice:
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             await asyncio.sleep(1)
-            self._restart_connection_task = self.loop.create_task(
-                self._restart_connection()
-            )
+            task = self.loop.create_task(self._restart_connection())
+            self._restart_connection_tasks.append(task)
         finally:
-            if self._restart_connection_task is asyncio.current_task():
-                self._restart_connection_task = None
+            if current in self._restart_connection_tasks:
+                self._restart_connection_tasks.remove(current)
 
     async def _execute_disconnect(self) -> None:
         """Execute disconnection."""
