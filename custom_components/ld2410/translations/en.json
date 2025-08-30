@@ -3,8 +3,10 @@
         "button": {
             "auto_sensitivities": {"name": "Auto sensitivities"},
             "save_sensitivities": {"name": "Save sensitivities"},
-            "load_sensitivities": {"name": "Load sensitivities"}
+            "load_sensitivities": {"name": "Load sensitivities"},
+            "change_password": {"name": "Change password"}
         },
+        "text": {"new_password": {"name": "New password"}},
         "select": {
             "distance_resolution": {"name": "Distance resolution"},
             "light_function": {"name": "Light function"},

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 from homeassistant.components import persistent_notification
 from homeassistant.components.button import ButtonEntity
+from homeassistant.const import CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.event import async_call_later
@@ -47,6 +49,7 @@ async def async_setup_entry(
             AutoSensitivityButton(coordinator),
             SaveSensitivitiesButton(coordinator, entry),
             LoadSensitivitiesButton(coordinator, entry),
+            ChangePasswordButton(coordinator, entry),
         ]
     )
 
@@ -173,3 +176,76 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
                     self.hass, "ld2410_load_sensitivities"
                 ),
             )
+
+
+class ChangePasswordButton(Entity, ButtonEntity):
+    """Button to change the bluetooth password."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "change_password"
+
+    def __init__(self, coordinator: DataCoordinator, entry: ConfigEntryType) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{coordinator.base_unique_id}-change_password"
+
+    @exception_handler
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        password = getattr(self.coordinator, "new_password", "")
+        notification_id = "ld2410_change_password"
+        if len(password) != 6:
+            persistent_notification.async_create(
+                self.hass,
+                "Password must be exactly 6 characters long",
+                title="LD2410",
+                notification_id=notification_id,
+            )
+            async_call_later(
+                self.hass,
+                10,
+                lambda _: persistent_notification.async_dismiss(
+                    self.hass, notification_id
+                ),
+            )
+            return
+        if not re.fullmatch(r"^[ -~]{6}$", password):
+            persistent_notification.async_create(
+                self.hass,
+                "Password contains invalid characters; use printable ASCII",
+                title="LD2410",
+                notification_id=notification_id,
+            )
+            async_call_later(
+                self.hass,
+                10,
+                lambda _: persistent_notification.async_dismiss(
+                    self.hass, notification_id
+                ),
+            )
+            return
+        await self._device.cmd_set_bluetooth_password(password)
+        try:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry,
+                data={**self._entry.data, CONF_PASSWORD: password},
+                reload=False,
+            )
+        except TypeError:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry,
+                data={**self._entry.data, CONF_PASSWORD: password},
+            )
+        await self._device.cmd_reboot()
+        persistent_notification.async_create(
+            self.hass,
+            "Password changed successfully; device rebooting",
+            title="LD2410",
+            notification_id=notification_id,
+        )
+        async_call_later(
+            self.hass,
+            10,
+            lambda _: persistent_notification.async_dismiss(self.hass, notification_id),
+        )

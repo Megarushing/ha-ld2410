@@ -10,6 +10,7 @@ from bleak.backends.device import BLEDevice
 
 from ..const import (
     CMD_BT_GET_PERMISSION,
+    CMD_BT_SET_PWD,
     CMD_ENABLE_CFG,
     CMD_END_CFG,
     CMD_ENABLE_ENGINEERING,
@@ -160,6 +161,22 @@ class LD2410(Device):
         if response == b"\x01\x00":
             raise OperationError("Wrong password")
         return response == b"\x00\x00"
+
+    async def cmd_set_bluetooth_password(self, password: str) -> None:
+        """Set a new bluetooth password on the device."""
+        if len(password) != 6:
+            raise ValueError("password must be 6 characters")
+        try:
+            words = _password_to_words(password)
+        except UnicodeEncodeError as err:
+            raise ValueError("password must be ASCII") from err
+        await self.cmd_enable_config()
+        payload = "".join(words)
+        response = await self._send_command(CMD_BT_SET_PWD + payload)
+        if response != b"\x00\x00":
+            raise OperationError("Failed to set bluetooth password")
+        await self.cmd_end_config()
+        self._password_words = words
 
     async def cmd_enable_config(self) -> tuple[int, int]:
         """Enable configuration session.
