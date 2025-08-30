@@ -145,6 +145,36 @@ async def test_restart_connection_cancels_previous_task() -> None:
 
 
 @pytest.mark.asyncio
+async def test_restart_connection_cancelled_does_not_reschedule() -> None:
+    """Cancelling restart does not schedule another reconnect."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+
+    async def slow_connect() -> bool:
+        await asyncio.sleep(3600)
+        return True
+
+    device._ensure_connected = AsyncMock(side_effect=slow_connect)
+    device._on_connect = AsyncMock()
+
+    orig_create_task = device.loop.create_task
+    with patch.object(
+        device.loop, "create_task", wraps=orig_create_task
+    ) as mock_create_task:
+        task = device.loop.create_task(device._restart_connection())
+        device._restart_connection_tasks.append(task)
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        await asyncio.sleep(0)
+    assert device._restart_connection_tasks == []
+    assert mock_create_task.call_count == 1
+
+
+@pytest.mark.asyncio
 async def test_restart_connection_skips_on_connect_if_already_connected() -> None:
     """on_connect is not called when already connected."""
     device = LD2410(

@@ -490,6 +490,8 @@ class BaseDevice:
             connected = await self._ensure_connected()
             if connected:
                 await self._on_connect()
+        except asyncio.CancelledError:
+            raise  # do not reschedule when cancelled
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             await asyncio.sleep(1)
