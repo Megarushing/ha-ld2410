@@ -6,17 +6,17 @@
                 "data": {"address": "MAC address"},
                 "data_description": {
                     "address": "The Bluetooth MAC address of your device"
-                },
+                }
             },
-            "confirm": {"description": "Do you want to set up {name}?"},
+            "confirm": {"description": "Do you want to set up {name}?"}
         },
         "error": {},
         "abort": {
             "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
             "no_devices_found": "No supported devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as these devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the device is present.",
             "unknown": "[%key:common::config_flow::error::unknown%]",
-            "unsupported_type": "Unsupported device type.",
-        },
+            "unsupported_type": "Unsupported device type."
+        }
     },
     "options": {
         "step": {
@@ -24,7 +24,7 @@
                 "data": {"retry_count": "Retry count"},
                 "data_description": {
                     "retry_count": "How many times to retry sending commands to your devices"
-                },
+                }
             }
         }
     },
@@ -33,8 +33,10 @@
         "button": {
             "auto_sensitivities": {"name": "Auto sensitivities"},
             "save_sensitivities": {"name": "Save sensitivities"},
-            "load_sensitivities": {"name": "Load sensitivities"}
+            "load_sensitivities": {"name": "Load sensitivities"},
+            "change_password": {"name": "Change password"}
         },
+        "text": {"new_password": {"name": "New password"}},
         "select": {
             "distance_resolution": {"name": "Distance resolution"},
             "light_function": {"name": "Light function"},
@@ -47,7 +49,7 @@
             "light_level": {"name": "Light level"},
             "firmware_version": {"name": "Firmware version"},
             "firmware_build_date": {"name": "Firmware build date"}
-        },
+        }
     },
     "exceptions": {
         "operation_error": {

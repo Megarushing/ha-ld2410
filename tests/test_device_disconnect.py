@@ -118,6 +118,33 @@ async def test_restart_connection_waits_before_retry():
 
 
 @pytest.mark.asyncio
+async def test_restart_connection_cancels_previous_task() -> None:
+    """Starting a new restart cancels any previous scheduled task."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+
+    async def slow_connect() -> bool:
+        await asyncio.sleep(0.1)
+        return True
+
+    device._ensure_connected = AsyncMock(side_effect=slow_connect)
+    device._on_connect = AsyncMock()
+
+    first = device.loop.create_task(device._restart_connection())
+    device._restart_connection_tasks.append(first)
+    await asyncio.sleep(0)
+    second = device.loop.create_task(device._restart_connection())
+    device._restart_connection_tasks.append(second)
+    await asyncio.sleep(0.2)
+
+    assert first.cancelled()
+    assert second.done()
+    assert device._restart_connection_tasks == []
+
+
+@pytest.mark.asyncio
 async def test_restart_connection_skips_on_connect_if_already_connected() -> None:
     """on_connect is not called when already connected."""
     device = LD2410(
@@ -293,16 +320,15 @@ async def test_unload_cancels_restart_task(hass: HomeAssistant) -> None:
             raise
 
     device._restart_connection = fake_restart
-    device._restart_connection_task = device.loop.create_task(
-        device._restart_connection()
-    )
+    task = device.loop.create_task(device._restart_connection())
+    device._restart_connection_tasks.append(task)
     await asyncio.sleep(0)
 
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
 
     assert restart_cancelled.is_set()
-    assert device._restart_connection_task is None
+    assert device._restart_connection_tasks == []
 
 
 @pytest.mark.asyncio

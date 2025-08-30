@@ -13,6 +13,7 @@ from custom_components.ld2410.const import (
     CONF_SAVED_STILL_SENSITIVITY,
     DOMAIN,
 )
+from homeassistant.const import CONF_PASSWORD
 
 from . import LD2410b_SERVICE_INFO
 
@@ -237,3 +238,168 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     dismiss(None)
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_load_sensitivities" not in notifications
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_change_password_button(hass: HomeAssistant) -> None:
+    """Test changing the bluetooth password."""
+    await async_setup_component(hass, DOMAIN, {})
+    await async_setup_component(hass, "persistent_notification", {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            "address": "AA:BB:CC:DD:EE:FF",
+            "name": "test-name",
+            "password": "old123",
+            "sensor_type": "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_set_bluetooth_password",
+            AsyncMock(),
+        ) as set_mock,
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_reboot",
+            AsyncMock(),
+        ) as reboot_mock,
+        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+
+        await hass.services.async_call(
+            "text",
+            "set_value",
+            {"entity_id": "text.test_name_new_password", "value": "abcd12"},
+            blocking=True,
+        )
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.test_name_change_password"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+    set_mock.assert_awaited_once_with("abcd12")
+    reboot_mock.assert_awaited_once()
+    assert entry.data[CONF_PASSWORD] == "abcd12"
+    call_later_mock.assert_called()
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
+    """Test invalid passwords show notifications."""
+    await async_setup_component(hass, DOMAIN, {})
+    await async_setup_component(hass, "persistent_notification", {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            "address": "AA:BB:CC:DD:EE:FF",
+            "name": "test-name",
+            "password": "old123",
+            "sensor_type": "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_set_bluetooth_password",
+            AsyncMock(),
+        ) as set_mock,
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_reboot",
+            AsyncMock(),
+        ) as reboot_mock,
+        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+
+        await hass.services.async_call(
+            "text",
+            "set_value",
+            {"entity_id": "text.test_name_new_password", "value": "abc"},
+            blocking=True,
+        )
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.test_name_change_password"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+        set_mock.assert_not_awaited()
+        reboot_mock.assert_not_awaited()
+        notifications = persistent_notification._async_get_or_create_notifications(hass)
+        assert (
+            notifications["ld2410_change_password"]["message"]
+            == "Password must be exactly 6 characters long"
+        )
+        dismiss = call_later_mock.call_args[0][2]
+        dismiss(None)
+        notifications = persistent_notification._async_get_or_create_notifications(hass)
+        assert "ld2410_change_password" not in notifications
+
+        entry.runtime_data.new_password = "abc£$1"
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.test_name_change_password"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+        set_mock.assert_not_awaited()
+        notifications = persistent_notification._async_get_or_create_notifications(hass)
+        assert (
+            notifications["ld2410_change_password"]["message"]
+            == "Password contains invalid characters; use printable ASCII"
+        )
