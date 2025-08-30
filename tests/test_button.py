@@ -107,12 +107,12 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
         read_mock.assert_awaited_once()
         call_later_mock.assert_called_once()
         assert call_later_mock.call_args[0][1] == 10
-        dismiss = call_later_mock.call_args[0][2]
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert notifications["ld2410_auto_sensitivities"]["message"] == (
             "Please keep the room empty for 10 seconds while calibration is in progress"
         )
-        dismiss(None)
+        persistent_notification.async_dismiss(hass, "ld2410_auto_sensitivities")
+        await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_auto_sensitivities" not in notifications
 
@@ -191,12 +191,12 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     )
     call_later_mock.assert_called_once()
     assert call_later_mock.call_args_list[0][0][1] == 10
-    dismiss = call_later_mock.call_args_list[0][0][2]
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert notifications["ld2410_save_sensitivities"]["message"] == (
         "Sensitivities successfully saved to configurations"
     )
-    dismiss(None)
+    persistent_notification.async_dismiss(hass, "ld2410_save_sensitivities")
+    await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_save_sensitivities" not in notifications
 
@@ -230,12 +230,12 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     set_mock.assert_has_awaits([call(g, 50, 60) for g in range(9)], any_order=False)
     call_later_mock.assert_called_once()
     assert call_later_mock.call_args_list[0][0][1] == 10
-    dismiss = call_later_mock.call_args_list[0][0][2]
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert notifications["ld2410_load_sensitivities"]["message"] == (
         "Successfully loaded previously saved gate sensitivities into the device"
     )
-    dismiss(None)
+    persistent_notification.async_dismiss(hass, "ld2410_load_sensitivities")
+    await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_load_sensitivities" not in notifications
 
@@ -285,6 +285,14 @@ async def test_change_password_button(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_reboot",
             AsyncMock(),
         ) as reboot_mock,
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice.async_disconnect",
+            AsyncMock(),
+        ) as disconnect_mock,
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._restart_connection",
+            AsyncMock(),
+        ) as restart_mock,
         patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
@@ -308,6 +316,8 @@ async def test_change_password_button(hass: HomeAssistant) -> None:
 
     set_mock.assert_awaited_once_with("abcd12")
     reboot_mock.assert_awaited_once()
+    disconnect_mock.assert_awaited_once()
+    restart_mock.assert_awaited_once()
     assert entry.data[CONF_PASSWORD] == "abcd12"
     call_later_mock.assert_called()
 
@@ -377,6 +387,7 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
             blocking=True,
         )
         await hass.async_block_till_done()
+        call_later_mock.assert_called()
         set_mock.assert_not_awaited()
         reboot_mock.assert_not_awaited()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
@@ -384,8 +395,8 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
             notifications["ld2410_change_password"]["message"]
             == "Password must be exactly 6 characters long"
         )
-        dismiss = call_later_mock.call_args[0][2]
-        dismiss(None)
+        persistent_notification.async_dismiss(hass, "ld2410_change_password")
+        await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_change_password" not in notifications
 

@@ -77,8 +77,10 @@ class AutoSensitivityButton(Entity, ButtonEntity):
         async_call_later(
             self.hass,
             10,
-            lambda _: persistent_notification.async_dismiss(
-                self.hass, "ld2410_auto_sensitivities"
+            lambda _: self.hass.add_job(
+                persistent_notification.async_dismiss,
+                self.hass,
+                "ld2410_auto_sensitivities",
             ),
         )
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
@@ -135,8 +137,10 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
         async_call_later(
             self.hass,
             10,
-            lambda _: persistent_notification.async_dismiss(
-                self.hass, "ld2410_save_sensitivities"
+            lambda _: self.hass.add_job(
+                persistent_notification.async_dismiss,
+                self.hass,
+                "ld2410_save_sensitivities",
             ),
         )
 
@@ -172,8 +176,10 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
             async_call_later(
                 self.hass,
                 10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, "ld2410_load_sensitivities"
+                lambda _: self.hass.add_job(
+                    persistent_notification.async_dismiss,
+                    self.hass,
+                    "ld2410_load_sensitivities",
                 ),
             )
 
@@ -205,8 +211,10 @@ class ChangePasswordButton(Entity, ButtonEntity):
             async_call_later(
                 self.hass,
                 10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, notification_id
+                lambda _: self.hass.add_job(
+                    persistent_notification.async_dismiss,
+                    self.hass,
+                    notification_id,
                 ),
             )
             return
@@ -220,11 +228,15 @@ class ChangePasswordButton(Entity, ButtonEntity):
             async_call_later(
                 self.hass,
                 10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, notification_id
+                lambda _: self.hass.add_job(
+                    persistent_notification.async_dismiss,
+                    self.hass,
+                    notification_id,
                 ),
             )
             return
+        previous_auto_reconnect = self._device._auto_reconnect
+        self._device._auto_reconnect = False
         await self._device.cmd_set_bluetooth_password(password)
         try:
             self.coordinator.hass.config_entries.async_update_entry(
@@ -237,7 +249,13 @@ class ChangePasswordButton(Entity, ButtonEntity):
                 self._entry,
                 data={**self._entry.data, CONF_PASSWORD: password},
             )
+        self._device._expected_disconnect = True
         await self._device.cmd_reboot()
+        await self._device.async_disconnect()
+        self._device._auto_reconnect = previous_auto_reconnect
+        if self._device._auto_reconnect:
+            task = self._device.loop.create_task(self._device._restart_connection())
+            self._device._restart_connection_tasks.append(task)
         persistent_notification.async_create(
             self.hass,
             "Password changed successfully; device rebooting",
@@ -247,5 +265,9 @@ class ChangePasswordButton(Entity, ButtonEntity):
         async_call_later(
             self.hass,
             10,
-            lambda _: persistent_notification.async_dismiss(self.hass, notification_id),
+            lambda _: self.hass.add_job(
+                persistent_notification.async_dismiss,
+                self.hass,
+                notification_id,
+            ),
         )
