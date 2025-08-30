@@ -97,10 +97,14 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
                 device=self._discovered_adv.device,
                 password=user_input[CONF_PASSWORD],
             )
+            previous_auto_reconnect = device._auto_reconnect
+            device._auto_reconnect = False
             try:
                 await device.cmd_send_bluetooth_password()
             except OperationError:
                 errors["base"] = "wrong_password"
+            finally:
+                device._auto_reconnect = previous_auto_reconnect
             if not errors:
                 return await self._async_create_entry_from_discovery(user_input)
 
