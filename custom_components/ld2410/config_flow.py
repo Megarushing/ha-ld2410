@@ -103,6 +103,7 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
                 await device.cmd_send_bluetooth_password()
             except OperationError:
                 errors["base"] = "wrong_password"
+                await device.async_disconnect()
             finally:
                 device._auto_reconnect = previous_auto_reconnect
             if not errors:

@@ -84,12 +84,17 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
             assert device._auto_reconnect is False
             raise OperationError("Wrong password")
 
+        async def fake_disconnect():
+            assert device._auto_reconnect is False
+
         device.cmd_send_bluetooth_password.side_effect = fake_cmd
+        device.async_disconnect = AsyncMock(side_effect=fake_disconnect)
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_PASSWORD: "bad"},
         )
     assert device._auto_reconnect is True
+    device.async_disconnect.assert_awaited_once()
     assert result2["type"] is FlowResultType.FORM
     assert result2["step_id"] == "password"
     assert result2["errors"] == {"base": "wrong_password"}
