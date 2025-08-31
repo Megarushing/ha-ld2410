@@ -164,7 +164,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await device._timed_disconnect_task
         device._timed_disconnect_task = None
     await device.async_disconnect()
-    device._should_reconnect = device._auto_reconnect
     return await hass.config_entries.async_unload_platforms(
         entry, PLATFORMS_BY_TYPE[sensor_type]
     )
