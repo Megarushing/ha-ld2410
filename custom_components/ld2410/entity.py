@@ -66,7 +66,10 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return self.coordinator.device.is_connected or super().available
+        device = self.coordinator.device
+        if device.is_reconnecting:
+            return False
+        return device.is_connected or super().available
 
     @callback
     def _async_update_attrs(self) -> None:

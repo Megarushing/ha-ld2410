@@ -89,3 +89,62 @@ async def test_entities_stay_available_with_uplink_frames(hass: HomeAssistant) -
 
     assert hass.states.get(entity_id).state != STATE_UNAVAILABLE
     assert not coordinator._was_unavailable
+
+
+@pytest.mark.asyncio
+async def test_entities_unavailable_during_reconnect(
+    hass: HomeAssistant,
+) -> None:
+    """Entities report unavailable while the device reconnects."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410._on_connect",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device._restart_connection",
+            AsyncMock(),
+        ),
+        patch.object(
+            Device, "is_connected", new_callable=PropertyMock, return_value=True
+        ) as mock_connected,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    entity_id = "binary_sensor.test_name_motion"
+    assert hass.states.get(entity_id).state != STATE_UNAVAILABLE
+
+    mock_connected.return_value = False
+    entry.runtime_data.device._on_disconnect(None)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
