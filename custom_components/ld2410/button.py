@@ -145,18 +145,25 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
         """Handle the button press."""
         move = self._entry.options.get(CONF_SAVED_MOVE_SENSITIVITY) or []
         still = self._entry.options.get(CONF_SAVED_STILL_SENSITIVITY) or []
-        for gate, (m, s) in enumerate(zip(move, still)):
-            await self._device.cmd_set_gate_sensitivity(gate, m, s)
-        if move and still:
-            self._device._fire_callbacks()
-            LOGGER.info("Loaded saved gate sensitivities into device")
-            notification_id = "ld2410_load_sensitivities"
+        notification_id = "ld2410_load_sensitivities"
+        if not move or not still:
             async_ephemeral_notification(
                 self.hass,
-                "Successfully loaded previously saved gate sensitivities into the device",
+                "No saved gate sensitivities found",
                 title="LD2410",
                 notification_id=notification_id,
             )
+            return
+        for gate, (m, s) in enumerate(zip(move, still)):
+            await self._device.cmd_set_gate_sensitivity(gate, m, s)
+        self._device._fire_callbacks()
+        LOGGER.info("Loaded saved gate sensitivities into device")
+        async_ephemeral_notification(
+            self.hass,
+            "Successfully loaded previously saved gate sensitivities into the device",
+            title="LD2410",
+            notification_id=notification_id,
+        )
 
 
 class ChangePasswordButton(Entity, ButtonEntity):
