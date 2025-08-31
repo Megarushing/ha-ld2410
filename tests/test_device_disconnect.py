@@ -49,10 +49,13 @@ async def test_reconnect_after_unexpected_disconnect():
     device.cmd_get_light_config = AsyncMock()
     device._update_parsed_data = MagicMock()
 
+    async def mock_connect():
+        await device._on_connect()
+        return True
+
     with (
-        patch(
-            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
-            AsyncMock(),
+        patch.object(
+            device, "_ensure_connected", AsyncMock(side_effect=mock_connect)
         ) as mock_connect,
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
     ):
@@ -61,6 +64,38 @@ async def test_reconnect_after_unexpected_disconnect():
 
     mock_connect.assert_awaited_once()
     mock_pass.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_on_connect_can_send_commands_without_deadlock() -> None:
+    """on_connect can safely send commands without deadlock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    dummy_client = MagicMock()
+    dummy_client.is_connected = True
+    dummy_client.services = MagicMock()
+    dummy_client.start_notify = AsyncMock()
+
+    device._resolve_characteristics = MagicMock()
+    device._start_notify = AsyncMock()
+    device._reset_disconnect_timer = MagicMock()
+    device._execute_command_locked = AsyncMock(return_value=b"")
+
+    async def on_connect():
+        await device._send_command("FF000101")
+
+    device._on_connect = AsyncMock(side_effect=on_connect)
+
+    with patch(
+        "custom_components.ld2410.api.devices.device.establish_connection",
+        AsyncMock(return_value=dummy_client),
+    ):
+        await asyncio.wait_for(device._send_command("FF000100"), 1)
+
+    device._on_connect.assert_awaited_once()
+    assert device._execute_command_locked.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -202,6 +237,7 @@ async def test_disconnect_clears_command_queue() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
+    device._ensure_connected = AsyncMock()
     await device._operation_lock.acquire()
     task1 = asyncio.create_task(device._send_command("FF000100"))
     task2 = asyncio.create_task(device._send_command("FF000100"))
@@ -235,11 +271,15 @@ async def test_reload_does_not_reconnect_old_device(hass: HomeAssistant) -> None
     )
     entry.add_to_hass(hass)
 
+    async def mock_ensure_connected(self):
+        await self._on_connect()
+        return True
+
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
             "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
-            AsyncMock(),
+            mock_ensure_connected,
         ),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
@@ -368,6 +408,7 @@ async def test_on_disconnect_clears_command_queue() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
+    device._ensure_connected = AsyncMock()
     await device._operation_lock.acquire()
     task1 = asyncio.create_task(device._send_command("FF000100"))
     task2 = asyncio.create_task(device._send_command("FF000100"))

@@ -82,15 +82,21 @@ async def test_wait_for_response_defaults_to_class_setting() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password=None,
     )
-    with patch.object(
-        dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
-    ) as mock_send:
+    with (
+        patch.object(dev, "_ensure_connected", AsyncMock()),
+        patch.object(
+            dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+        ) as mock_send,
+    ):
         await dev._send_command("FF000100")
         assert mock_send.await_args.args[4] is False
 
-    with patch.object(
-        dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
-    ) as mock_send:
+    with (
+        patch.object(dev, "_ensure_connected", AsyncMock()),
+        patch.object(
+            dev, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+        ) as mock_send,
+    ):
         await dev._send_command("FF000100", wait_for_response=True)
         assert mock_send.await_args.args[4] is True
 
@@ -98,9 +104,12 @@ async def test_wait_for_response_defaults_to_class_setting() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password=None,
     )
-    with patch.object(
-        dev_true, "_send_command_locked_with_retry", AsyncMock(return_value=None)
-    ) as mock_send:
+    with (
+        patch.object(dev_true, "_ensure_connected", AsyncMock()),
+        patch.object(
+            dev_true, "_send_command_locked_with_retry", AsyncMock(return_value=None)
+        ) as mock_send,
+    ):
         await dev_true._send_command("FF000100")
         assert mock_send.await_args.args[4] is True
 

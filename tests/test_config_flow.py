@@ -51,6 +51,10 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
             "custom_components.ld2410.config_flow.LD2410.cmd_send_bluetooth_password",
             AsyncMock(),
         ),
+        patch(
+            "custom_components.ld2410.config_flow.LD2410.async_disconnect",
+            AsyncMock(),
+        ) as mock_disconnect,
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -67,6 +71,7 @@ async def test_bluetooth_discovery_requires_password(hass: HomeAssistant) -> Non
     }
 
     assert len(mock_setup_entry.mock_calls) == 1
+    mock_disconnect.assert_awaited_once()
 
 
 async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> None:
@@ -94,7 +99,7 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
             result["flow_id"],
             {CONF_PASSWORD: "bad"},
         )
-    assert device._should_reconnect is True
+    assert device._should_reconnect is False
     device.async_disconnect.assert_awaited_once()
     assert result2["type"] is FlowResultType.FORM
     assert result2["step_id"] == "password"
