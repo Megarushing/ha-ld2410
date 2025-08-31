@@ -5,12 +5,10 @@ from __future__ import annotations
 import asyncio
 import re
 
-from homeassistant.components import persistent_notification
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
-from homeassistant.helpers.event import async_call_later
 
 try:
     from homeassistant.helpers.entity_platform import (
@@ -29,6 +27,7 @@ from .const import (
 )
 from .coordinator import ConfigEntryType, DataCoordinator
 from .entity import Entity, exception_handler
+from .helpers import async_ephemeral_notification
 
 PARALLEL_UPDATES = 0
 
@@ -68,18 +67,12 @@ class AutoSensitivityButton(Entity, ButtonEntity):
     @exception_handler
     async def async_press(self) -> None:
         """Handle the button press."""
-        persistent_notification.async_create(
+        notification_id = "ld2410_auto_sensitivities"
+        async_ephemeral_notification(
             self.hass,
             "Please keep the room empty for 10 seconds while calibration is in progress",
             title="LD2410",
-            notification_id="ld2410_auto_sensitivities",
-        )
-        async_call_later(
-            self.hass,
-            10,
-            lambda _: persistent_notification.async_dismiss(
-                self.hass, "ld2410_auto_sensitivities"
-            ),
+            notification_id=notification_id,
         )
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
         await asyncio.sleep(AUTO_THRESH_DURATION)
@@ -126,18 +119,12 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
                 self._entry, options=options
             )
         LOGGER.info("Saved gate sensitivities to config entry %s", self._entry.entry_id)
-        persistent_notification.async_create(
+        notification_id = "ld2410_save_sensitivities"
+        async_ephemeral_notification(
             self.hass,
             "Sensitivities successfully saved to configurations",
             title="LD2410",
-            notification_id="ld2410_save_sensitivities",
-        )
-        async_call_later(
-            self.hass,
-            10,
-            lambda _: persistent_notification.async_dismiss(
-                self.hass, "ld2410_save_sensitivities"
-            ),
+            notification_id=notification_id,
         )
 
 
@@ -163,18 +150,12 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
         if move and still:
             self._device._fire_callbacks()
             LOGGER.info("Loaded saved gate sensitivities into device")
-            persistent_notification.async_create(
+            notification_id = "ld2410_load_sensitivities"
+            async_ephemeral_notification(
                 self.hass,
                 "Successfully loaded previously saved gate sensitivities into the device",
                 title="LD2410",
-                notification_id="ld2410_load_sensitivities",
-            )
-            async_call_later(
-                self.hass,
-                10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, "ld2410_load_sensitivities"
-                ),
+                notification_id=notification_id,
             )
 
 
@@ -196,33 +177,19 @@ class ChangePasswordButton(Entity, ButtonEntity):
         password = getattr(self.coordinator, "new_password", "")
         notification_id = "ld2410_change_password"
         if len(password) != 6:
-            persistent_notification.async_create(
+            async_ephemeral_notification(
                 self.hass,
                 "Password must be exactly 6 characters long",
                 title="LD2410",
                 notification_id=notification_id,
             )
-            async_call_later(
-                self.hass,
-                10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, notification_id
-                ),
-            )
             return
         if not re.fullmatch(r"^[ -~]{6}$", password):
-            persistent_notification.async_create(
+            async_ephemeral_notification(
                 self.hass,
                 "Password contains invalid characters; use printable ASCII",
                 title="LD2410",
                 notification_id=notification_id,
-            )
-            async_call_later(
-                self.hass,
-                10,
-                lambda _: persistent_notification.async_dismiss(
-                    self.hass, notification_id
-                ),
             )
             return
         await self._device.cmd_set_bluetooth_password(password)
@@ -238,14 +205,9 @@ class ChangePasswordButton(Entity, ButtonEntity):
                 data={**self._entry.data, CONF_PASSWORD: password},
             )
         await self._device.cmd_reboot()
-        persistent_notification.async_create(
+        async_ephemeral_notification(
             self.hass,
             "Password changed successfully; device rebooting",
             title="LD2410",
             notification_id=notification_id,
-        )
-        async_call_later(
-            self.hass,
-            10,
-            lambda _: persistent_notification.async_dismiss(self.hass, notification_id),
         )
