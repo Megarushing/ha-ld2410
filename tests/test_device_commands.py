@@ -76,7 +76,7 @@ async def test_wait_for_response_defaults_to_class_setting() -> None:
     """Ensure class-level default controls waiting for responses."""
 
     class NoWaitLD2410(LD2410):
-        _should_wait_for_response = False
+        _default_should_wait_for_response = False
 
     dev = NoWaitLD2410(
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),

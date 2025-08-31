@@ -64,7 +64,7 @@ class LD2410(Device):
     """Representation of a device."""
 
     _auto_reconnect: bool = True
-    _should_wait_for_response: bool = True
+    _default_should_wait_for_response: bool = True
 
     def __init__(
         self,

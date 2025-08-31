@@ -79,13 +79,14 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
     with patch("custom_components.ld2410.config_flow.LD2410") as ld_cls:
         device = ld_cls.return_value
         device._auto_reconnect = True
+        device._should_reconnect = True
 
         async def fake_cmd():
-            assert device._auto_reconnect is False
+            assert device._should_reconnect is False
             raise OperationError("Wrong password")
 
         async def fake_disconnect():
-            assert device._auto_reconnect is False
+            assert device._should_reconnect is False
 
         device.cmd_send_bluetooth_password.side_effect = fake_cmd
         device.async_disconnect = AsyncMock(side_effect=fake_disconnect)
@@ -93,7 +94,7 @@ async def test_bluetooth_wrong_password_allows_retry(hass: HomeAssistant) -> Non
             result["flow_id"],
             {CONF_PASSWORD: "bad"},
         )
-    assert device._auto_reconnect is True
+    assert device._should_reconnect is True
     device.async_disconnect.assert_awaited_once()
     assert result2["type"] is FlowResultType.FORM
     assert result2["step_id"] == "password"
