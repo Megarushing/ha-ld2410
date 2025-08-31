@@ -764,14 +764,6 @@ class BaseDevice:
         time_since_last_full_update = time.monotonic() - self._last_full_update
         return not time_since_last_full_update < PASSIVE_POLL_INTERVAL
 
-    def _check_function_support(self, cmd: str | None = None) -> None:
-        """Check if the command is supported by the device model."""
-        if not cmd:
-            raise OperationError(
-                f"Current device {self._device.address} does not support this functionality"
-            )
-
-
 class Device(BaseDevice):
     """Representation of a device."""
 
