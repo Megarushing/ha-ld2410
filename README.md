@@ -12,31 +12,67 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 - Distance and energy measurements for moving and stationary targets.
 - Per-gate energy sensors for detailed zone analysis.
 
-## Sensors
-### Binary sensors
-- **Occupancy** – overall presence state combining motion and static data.
-  - We recommend using this sensor for automations as it aggregates both motion and static presence.
-- **Motion** – active when movement is detected.
-- **Static** – indicates a stationary presence.
+## Entities
 
-### Numeric sensors
-- **Detect distance** – distance at which a target is detected (cm).
-- **Photo Sensor** – photo sensor value (0-255).
-- **Motion Gates** – Energy level of individual motion gates (0-100%)
-- **Static Gates** – Energy level of individual static gates (0-100%)
+🔹 **Occupancy** – overall presence state combining motion and static data. Use this sensor for automations; it clears only when both motion and static detection are absent.
 
-### Diagnostic sensors
+🔹 **Motion** – turns on when movement is detected, making it ideal for instant motion-triggered actions.
 
-- **Moving distance** – distance to the closest moving target (cm).
-- **Still distance** – distance to the closest stationary target (cm).
-- **Moving energy** – strongest gate energy of moving target.
-- **Still energy** – strongest gate energy of stationary targets.
-- **Max motion gate** – index of latest motion gate.
-- **Max still gate** – index of latest still gate.
-- **Firmware version** – device firmware version.
-- **Firmware build date** – build date of the installed firmware.
-- **Frame type** – type of uplink frames (basic or engineering).
-- **Bluetooth signal** – RSSI of the device.
+🔹 **Static** – indicates a stationary presence so lights or HVAC can remain active even after motion stops.
+
+🔹 **OUT pin** – reports the current state of the device’s hardware output pin for wiring diagnostics.
+
+🔹 **Detect distance** – distance at which a target is detected (cm); helps tune sensor placement.
+
+🔹 **Photo sensor** – onboard light level (0‑255) for integrating ambient light into automations.
+
+🔹 **Motion gate energy sensors (0‑8)** – energy level of each motion gate (0‑100%); inspect these to fine‑tune motion zones.
+
+🔹 **Static gate energy sensors (0‑8)** – energy level of each static gate (0‑100%); useful for adjusting static presence sensitivity.
+
+🔹 **Moving distance** – distance to the closest moving target (cm).
+
+🔹 **Still distance** – distance to the closest stationary target (cm).
+
+🔹 **Moving energy** – strongest gate energy of a moving target, indicating motion intensity.
+
+🔹 **Still energy** – strongest gate energy of a stationary target.
+
+🔹 **Max motion gate** – index of the gate with highest motion energy; helpful when debugging sensitivity.
+
+🔹 **Max still gate** – index of the gate with highest static energy.
+
+🔹 **Firmware version** – version of the firmware running on the device; include when reporting issues.
+
+🔹 **Firmware build date** – build date of the installed firmware.
+
+🔹 **Frame type** – shows whether the sensor sends basic or engineering frames.
+
+🔹 **Bluetooth signal** – RSSI strength; move the device closer if the value is weak.
+
+🔹 **New password** – text field for entering a new Bluetooth password. The password must be exactly six printable ASCII characters.
+
+🔹 **Change password** – button that applies the password from *New password* and reboots the device. Fails if the password is not six ASCII characters.
+
+🔹 **Auto sensitivities** – button to calibrate gate sensitivities automatically. Keep the room empty for 10 seconds during calibration.
+
+🔹 **Save sensitivities** – button to store current gate sensitivities in the config entry.
+
+🔹 **Load sensitivities** – button to restore previously saved gate sensitivities to the device.
+
+🔹 **Motion gate sensitivity sliders (MG0–MG8)** – number entities to set motion sensitivity for each gate.
+
+🔹 **Static gate sensitivity sliders (SG0–SG8)** – number entities to set static sensitivity for each gate.
+
+🔹 **Absence delay** – numeric value (0‑65535 seconds) before occupancy clears, preventing false absence.
+
+🔹 **Light sensitivity** – threshold for the photo sensor (0‑255) that controls when the device considers it dark.
+
+🔹 **Distance resolution** – select entity to choose detection resolution (0.75 m or 0.20 m).
+
+🔹 **Light function** – select how the photo sensor affects the OUT pin (off, dimmer than, or brighter than).
+
+🔹 **OUT level** – select the default level of the OUT pin (low or high).
 
 ## Installation instructions
 1. The easiest way to install the integration is using HACS. Click the button below and follow the instructions:  
