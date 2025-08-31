@@ -133,7 +133,7 @@ class BaseDevice:
 
         return
 
-    def _on_disconnect(self, client: BleakClientWithServiceCache) -> None:
+    def _on_disconnect(self, client: BleakClientWithServiceCache = None) -> None:
         """Disconnected callback. Run after a bluetooth disconnection.
 
         Override to perform any cleanup command that is needed post disconnection,
