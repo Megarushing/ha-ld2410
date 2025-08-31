@@ -16,7 +16,7 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 
 🏠 **Occupancy** – overall presence state combining motion and static data. Use this sensor for automations; it clears only when both motion and static detection are absent.
 
-🏃 **Motion** – turns on when movement is detected, making it ideal for instant motion-triggered actions.
+🏃 **Motion** – turns on when movement is detected, making it ideal for instant motion-triggered automations.
 
 🧍 **Static** – indicates a stationary presence so lights or HVAC can remain active even after motion stops.
 
@@ -28,7 +28,7 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 
 🎯 **Motion gate energy sensors (0‑8)** – energy level of each motion gate (0‑100%); inspect these to fine‑tune motion zones.
 
-🧊 **Static gate energy sensors (0‑8)** – energy level of each static gate (0‑100%); useful for adjusting static presence sensitivity.
+🧊 **Static gate energy sensors (0‑8)** – energy level of each static gate (0‑100%); with them its possible to detect presence in individual spots of a room.
 
 📡 **Moving distance** – distance to the closest moving target (cm).
 
@@ -38,41 +38,41 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 
 🔋 **Still energy** – strongest gate energy of a stationary target.
 
-📈 **Max motion gate** – index of the gate with highest motion energy; helpful when debugging sensitivity.
+📈 **Max motion gate** – index of latest motion gate currently activated, default is 8, meaning 9 total gates.
 
-📊 **Max still gate** – index of the gate with highest static energy.
+📊 **Max still gate** – index of latest still gate currently activated, default is 8, meaning 9 total gates.
 
 🏷️ **Firmware version** – version of the firmware running on the device; include when reporting issues.
 
 📅 **Firmware build date** – build date of the installed firmware.
 
-🖼️ **Frame type** – shows whether the sensor sends basic or engineering frames.
+🖼️ **Frame type** – shows whether the sensor is sending basic or engineering frames. The integration automatically upgrades to engineering when possible
 
 📶 **Bluetooth signal** – RSSI strength; move the device closer if the value is weak.
 
 🔑 **New password** – text field for entering a new Bluetooth password. The password must be exactly six printable ASCII characters.
 
-🔄 **Change password** – button that applies the password from *New password* and reboots the device. Fails if the password is not six ASCII characters.
+🔄 **Change password** – button that applies the password from *New password* and reboots the device.
 
-🤖 **Auto sensitivities** – button to calibrate gate sensitivities automatically. Keep the room empty for 10 seconds during calibration.
+🤖 **Auto sensitivities** – button to calibrate gate sensitivities automatically. Leave the room before clicking it, keep it empty for 10 seconds during calibration.
 
-💾 **Save sensitivities** – button to store current gate sensitivities in the config entry.
+💾 **Save sensitivities** – button to store current gate sensitivities in the config entry. Useful for playing around with calibration without missing the sweet spot.
 
 📥 **Load sensitivities** – button to restore previously saved gate sensitivities to the device.
 
-🎚️ **Motion gate sensitivity sliders (MG0–MG8)** – number entities to set motion sensitivity for each gate.
+🎚️ **Motion gate sensitivity sliders (MG0–MG8)** – sets the motion sensitivity for each gate, the lower the slider the easier it gets activated.
 
-🎛️ **Static gate sensitivity sliders (SG0–SG8)** – number entities to set static sensitivity for each gate.
+🎛️ **Static gate sensitivity sliders (SG0–SG8)** – number entities to set static sensitivity for each gate, the lower the slider the easier it gets activated.
 
-⏱️ **Absence delay** – numeric value (0‑65535 seconds) before occupancy clears, preventing false absence.
+⏱️ **Absence delay** – number of seconds to wait before occupancy clears, preventing false absence.
 
-🌗 **Light sensitivity** – threshold for the photo sensor (0‑255) that controls when the device considers it dark.
+🕯️ **Light function** – when enabled the OUT pin will only be activated if the photo sensor reading is (dimmer than/brighter than) *Light sensitivity* .
 
-📐 **Distance resolution** – select entity to choose detection resolution (0.75 m or 0.20 m).
+🌗 **Light sensitivity** – threshold for the photo sensor (0‑255) when using the light function.
 
-🕯️ **Light function** – select how the photo sensor affects the OUT pin (off, dimmer than, or brighter than).
+📐 **Distance resolution** – select detection resolution (0.75m or 0.20m); the higher the resolution, more distant targets are detected.
 
-📤 **OUT level** – select the default level of the OUT pin (low or high).
+📤 **OUT level** – select the default level of the OUT pin (usually low becoming high when activated / usually high becoming low when activated).
 
 ## Installation instructions
 1. The easiest way to install the integration is using HACS. Click the button below and follow the instructions:  
