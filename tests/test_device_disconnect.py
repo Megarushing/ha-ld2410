@@ -67,6 +67,38 @@ async def test_reconnect_after_unexpected_disconnect():
 
 
 @pytest.mark.asyncio
+async def test_on_connect_can_send_commands_without_deadlock() -> None:
+    """on_connect can safely send commands without deadlock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    dummy_client = MagicMock()
+    dummy_client.is_connected = True
+    dummy_client.services = MagicMock()
+    dummy_client.start_notify = AsyncMock()
+
+    device._resolve_characteristics = MagicMock()
+    device._start_notify = AsyncMock()
+    device._reset_disconnect_timer = MagicMock()
+    device._execute_command_locked = AsyncMock(return_value=b"")
+
+    async def on_connect():
+        await device._send_command("FF000101")
+
+    device._on_connect = AsyncMock(side_effect=on_connect)
+
+    with patch(
+        "custom_components.ld2410.api.devices.device.establish_connection",
+        AsyncMock(return_value=dummy_client),
+    ):
+        await asyncio.wait_for(device._send_command("FF000100"), 1)
+
+    device._on_connect.assert_awaited_once()
+    assert device._execute_command_locked.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_no_reconnect_when_disabled() -> None:
     """Device does not reconnect when _auto_reconnect is False."""
 
@@ -205,6 +237,7 @@ async def test_disconnect_clears_command_queue() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
+    device._ensure_connected = AsyncMock()
     await device._operation_lock.acquire()
     task1 = asyncio.create_task(device._send_command("FF000100"))
     task2 = asyncio.create_task(device._send_command("FF000100"))
@@ -375,6 +408,7 @@ async def test_on_disconnect_clears_command_queue() -> None:
         device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
         password="HiLink",
     )
+    device._ensure_connected = AsyncMock()
     await device._operation_lock.acquire()
     task1 = asyncio.create_task(device._send_command("FF000100"))
     task2 = asyncio.create_task(device._send_command("FF000100"))
