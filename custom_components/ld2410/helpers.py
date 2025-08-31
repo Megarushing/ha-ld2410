@@ -1,7 +1,5 @@
 """Helper utilities for the LD2410 integration."""
 
-import asyncio
-
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_call_later
@@ -28,16 +26,7 @@ def async_ephemeral_notification(
         notification_id=notification_id,
     )
 
-    def _handle_dismiss(_: float) -> None:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop is hass.loop:
-            hass.async_create_task(_async_dismiss(hass, notification_id))
-        else:
-            hass.loop.call_soon_threadsafe(
-                hass.async_create_task, _async_dismiss(hass, notification_id)
-            )
+    async def _dismiss_cb(_: float) -> None:
+        await _async_dismiss(hass, notification_id)
 
-    async_call_later(hass, duration, _handle_dismiss)
+    async_call_later(hass, duration, _dismiss_cb)

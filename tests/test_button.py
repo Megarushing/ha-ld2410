@@ -112,7 +112,7 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
         assert notifications["ld2410_auto_sensitivities"]["message"] == (
             "Please keep the room empty for 10 seconds while calibration is in progress"
         )
-        dismiss(None)
+        await dismiss(None)
         await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_auto_sensitivities" not in notifications
@@ -197,7 +197,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     assert notifications["ld2410_save_sensitivities"]["message"] == (
         "Sensitivities successfully saved to configurations"
     )
-    dismiss(None)
+    await dismiss(None)
     await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_save_sensitivities" not in notifications
@@ -237,7 +237,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
     assert notifications["ld2410_load_sensitivities"]["message"] == (
         "Successfully loaded previously saved gate sensitivities into the device"
     )
-    dismiss(None)
+    await dismiss(None)
     await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_load_sensitivities" not in notifications
@@ -388,7 +388,7 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
             == "Password must be exactly 6 characters long"
         )
         dismiss = call_later_mock.call_args[0][2]
-        dismiss(None)
+        await dismiss(None)
         await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_change_password" not in notifications
