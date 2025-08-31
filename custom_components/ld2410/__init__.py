@@ -149,7 +149,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     sensor_type = entry.data[CONF_SENSOR_TYPE]
     device = entry.runtime_data.device
-    previous_auto_reconnect = device._auto_reconnect
     device._auto_reconnect = False
     device._cancel_disconnect_timer()
     if device._restart_connection_tasks:
@@ -164,8 +163,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         with contextlib.suppress(asyncio.CancelledError):
             await device._timed_disconnect_task
         device._timed_disconnect_task = None
+    if device._client:
+        device._client.set_disconnected_callback(None)
     await device.async_disconnect()
-    device._auto_reconnect = previous_auto_reconnect
     return await hass.config_entries.async_unload_platforms(
         entry, PLATFORMS_BY_TYPE[sensor_type]
     )

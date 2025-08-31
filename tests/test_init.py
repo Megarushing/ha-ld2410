@@ -1,7 +1,8 @@
 """Test the integration init."""
 
 from collections.abc import Callable
-from unittest.mock import AsyncMock, patch
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -254,3 +255,147 @@ async def test_unload_disconnects_device(hass: HomeAssistant) -> None:
 
     mock_client.stop_notify.assert_awaited_once_with(mock_char)
     mock_client.disconnect.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_remove_device_single_reconnect(hass: HomeAssistant) -> None:
+    """Removing the device only triggers one reconnect for new password."""
+
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "old-pass",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    ensure_connected = AsyncMock(return_value=True)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            ensure_connected,
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_end_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "absence_delay": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_resolution",
+            AsyncMock(return_value=0),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_light_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    ensure_connected.reset_mock()
+    device = entry.runtime_data.device
+    mock_client = AsyncMock()
+    mock_client.is_connected = True
+    mock_client.set_disconnected_callback = MagicMock()
+    device._client = mock_client
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    await asyncio.sleep(0)
+    assert ensure_connected.await_count == 0
+
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+    entry2 = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "new-pass",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry2.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            ensure_connected,
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_end_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_read_params",
+            AsyncMock(
+                return_value={
+                    "move_gate_sensitivity": [],
+                    "still_gate_sensitivity": [],
+                    "absence_delay": 0,
+                }
+            ),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_resolution",
+            AsyncMock(return_value=0),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_get_light_config",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._update_parsed_data",
+            autospec=True,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry2.entry_id)
+        await hass.async_block_till_done()
+
+    assert ensure_connected.await_count == 1
