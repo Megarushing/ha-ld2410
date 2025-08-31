@@ -84,7 +84,7 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
         patch(
             "custom_components.ld2410.button.asyncio.sleep", AsyncMock()
         ) as sleep_mock,
-        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -113,6 +113,7 @@ async def test_auto_sensitivities_button(hass: HomeAssistant) -> None:
             "Please keep the room empty for 10 seconds while calibration is in progress"
         )
         dismiss(None)
+        await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_auto_sensitivities" not in notifications
 
@@ -169,7 +170,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
 
     with (
         patch.object(hass.config_entries, "async_reload", AsyncMock()) as reload_mock,
-        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
     ):
         await hass.services.async_call(
             "button",
@@ -197,6 +198,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
         "Sensitivities successfully saved to configurations"
     )
     dismiss(None)
+    await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_save_sensitivities" not in notifications
 
@@ -217,7 +219,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_set_gate_sensitivity",
             AsyncMock(),
         ) as set_mock,
-        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
     ):
         await hass.services.async_call(
             "button",
@@ -236,6 +238,7 @@ async def test_save_and_load_sensitivities_buttons(hass: HomeAssistant) -> None:
         "Successfully loaded previously saved gate sensitivities into the device"
     )
     dismiss(None)
+    await hass.async_block_till_done()
     notifications = persistent_notification._async_get_or_create_notifications(hass)
     assert "ld2410_load_sensitivities" not in notifications
 
@@ -285,7 +288,7 @@ async def test_change_password_button(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_reboot",
             AsyncMock(),
         ) as reboot_mock,
-        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -357,7 +360,7 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
             "custom_components.ld2410.api.LD2410.cmd_reboot",
             AsyncMock(),
         ) as reboot_mock,
-        patch("custom_components.ld2410.button.async_call_later") as call_later_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -386,6 +389,7 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
         )
         dismiss = call_later_mock.call_args[0][2]
         dismiss(None)
+        await hass.async_block_till_done()
         notifications = persistent_notification._async_get_or_create_notifications(hass)
         assert "ld2410_change_password" not in notifications
 

@@ -113,7 +113,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             ),
             patch("custom_components.ld2410.button.asyncio.sleep", AsyncMock()),
             patch(
-                "custom_components.ld2410.button.async_call_later"
+                "custom_components.ld2410.helpers.async_call_later"
             ) as call_later_mock,
         ):
             await hass.services.async_call(
@@ -126,6 +126,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             call_later_mock.assert_called_once()
             dismiss = call_later_mock.call_args[0][2]
             dismiss(None)
+            await hass.async_block_till_done()
 
         assert hass.states.get("number.test_name_mg0_sensitivity").state == "90"
         assert hass.states.get("number.test_name_sg0_sensitivity").state == "80"
