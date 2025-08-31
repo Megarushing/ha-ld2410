@@ -276,6 +276,7 @@ class BaseDevice:
             retry = self._retry_count
         command = self._modify_command(raw_command)
         max_attempts = retry + 1
+        await self._ensure_connected()
         if self._operation_lock.locked():
             _LOGGER.debug(
                 "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
@@ -541,7 +542,6 @@ class BaseDevice:
         self, raw_command: str, command: bytes, wait_for_response: bool
     ) -> bytes | None:
         """Send command to device and optionally read response."""
-        await self._ensure_connected()
         try:
             return await self._execute_command_locked(
                 raw_command, command, wait_for_response
