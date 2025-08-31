@@ -87,7 +87,7 @@ class BaseDevice:
 
     # Represents if the device should wait for up to Timeout seconds
     # by default after sending a command via the write channel
-    _should_wait_for_response: bool = True
+    _default_should_wait_for_response: bool = True
 
     # ---------------------------------------------------------------------
     # Subclass hooks
@@ -150,7 +150,7 @@ class BaseDevice:
                 self.rssi,
             )
         self._cancel_disconnect_timer()
-        if self._auto_reconnect:
+        if self._should_reconnect:
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
 
@@ -196,6 +196,8 @@ class BaseDevice:
         self._timed_disconnect_task: asyncio.Task[None] | None = None
         self._restart_connection_tasks: list[asyncio.Task[None]] = []
         self._rssi: int = getattr(device, "rssi", -127) or -127
+        self._should_reconnect = self._auto_reconnect
+        self._should_wait_for_response = self._default_should_wait_for_response
 
     def advertisement_changed(self, advertisement: Advertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -481,7 +483,7 @@ class BaseDevice:
         self._restart_connection_tasks = [
             t for t in self._restart_connection_tasks if t is current
         ]
-        if not self._auto_reconnect:
+        if not self._should_reconnect:
             if current in self._restart_connection_tasks:
                 self._restart_connection_tasks.remove(current)
             return

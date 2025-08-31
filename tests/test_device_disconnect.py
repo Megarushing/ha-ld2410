@@ -372,7 +372,7 @@ async def test_on_disconnect_clears_command_queue() -> None:
     task1 = asyncio.create_task(device._send_command("FF000100"))
     task2 = asyncio.create_task(device._send_command("FF000100"))
     await asyncio.sleep(0)
-    device._auto_reconnect = False
+    device._should_reconnect = False
     device._on_disconnect(None)
     await asyncio.sleep(0)
     for task in (task1, task2):
