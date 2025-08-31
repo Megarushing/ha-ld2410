@@ -543,6 +543,10 @@ class BaseDevice:
             )
         else:
             _LOGGER.debug("%s: Disconnect completed successfully", self.name)
+        # Some times _on_disconnect isnt triggered, so we call it here to ensure
+        if self._should_reconnect:
+            task = self.loop.create_task(self._restart_connection())
+            self._restart_connection_tasks.append(task)
 
     async def _send_command_locked(
         self, raw_command: str, command: bytes, wait_for_response: bool

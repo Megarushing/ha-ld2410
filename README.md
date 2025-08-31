@@ -3,14 +3,17 @@
 Integration for HiLink **LD2410** Bluetooth Low Energy (BLE) mmWave radar sensors.
 This integration allows Home Assistant to interface directly with LD2410 devices over Bluetooth.
 
-## Recommended Setup
-
-For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components/bluetooth_proxy.html) to connect your LD2410 to Home Assistant.
-
 ## Features
 - Real-time motion and occupancy detection using the LD2410 radar.
 - Distance and energy measurements for moving and stationary targets.
 - Per-gate energy sensors for detailed zone analysis.
+
+## Recommended Setup
+
+For best results, 
+- Use an [ESPHome Bluetooth Proxy](https://esphome.io/components/bluetooth_proxy.html) to connect your LD2410 to Home Assistant.
+- Use firmware version 2.44.24073110 or higher on your LD2410 device. 
+  - If your device has an older firmware, you can update it using the HLKRadarTool app on [Android](https://play.google.com/store/apps/details?id=com.hlk.hlkradartool&hl=en) or [iOS](https://apps.apple.com/us/app/hlkradartool/id1638651152).
 
 ## Entities
 
@@ -87,6 +90,50 @@ For best results, use an [ESPHome Bluetooth Proxy](https://esphome.io/components
 
 2. Navigate to **Settings → Devices & Services**; the HA-LD2410 device should be auto-detected.  
    If it's not detected, click the **Add Integration** button, search for "HA-LD2410", and install it. Your device should appear in the list.
+
+## Note on recorder
+To avoid filling up your database with high-frequency sensor data, we have some sensors come deactivated by default, if you want to activate them it's recommended to exclude certain entities from being recorded. You can do this by adding the following configuration to your `configuration.yaml` file:
+
+- To remove the whole device
+
+```yaml
+recorder:
+  exclude:
+    domains:
+      - ld2410
+```
+
+- Or to exclude only specific sensors (replace `{address}` with your device's last 2 bytes address, e.g., `E5F6`):
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      - sensor.hlk_ld2410_{address}_moving_distance
+      - sensor.hlk_ld2410_{address}_still_distance
+      - sensor.hlk_ld2410_{address}_move_energy
+      - sensor.hlk_ld2410_{address}_still_energy
+      - sensor.hlk_ld2410_{address}_detect_distance
+      - sensor.hlk_ld2410_{address}_photo_sensor
+      - sensor.hlk_ld2410_{address}_move_gate_0_energy
+      - sensor.hlk_ld2410_{address}_move_gate_1_energy
+      - sensor.hlk_ld2410_{address}_move_gate_2_energy
+      - sensor.hlk_ld2410_{address}_move_gate_3_energy
+      - sensor.hlk_ld2410_{address}_move_gate_4_energy
+      - sensor.hlk_ld2410_{address}_move_gate_5_energy
+      - sensor.hlk_ld2410_{address}_move_gate_6_energy
+      - sensor.hlk_ld2410_{address}_move_gate_7_energy
+      - sensor.hlk_ld2410_{address}_move_gate_8_energy
+      - sensor.hlk_ld2410_{address}_still_gate_0_energy
+      - sensor.hlk_ld2410_{address}_still_gate_1_energy
+      - sensor.hlk_ld2410_{address}_still_gate_2_energy
+      - sensor.hlk_ld2410_{address}_still_gate_3_energy
+      - sensor.hlk_ld2410_{address}_still_gate_4_energy
+      - sensor.hlk_ld2410_{address}_still_gate_5_energy
+      - sensor.hlk_ld2410_{address}_still_gate_6_energy
+      - sensor.hlk_ld2410_{address}_still_gate_7_energy
+      - sensor.hlk_ld2410_{address}_still_gate_8_energy
+```
 
 ## Contributing
 Contributions are welcome! To set up the development environment:
