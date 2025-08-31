@@ -153,6 +153,7 @@ class BaseDevice:
         if self._should_reconnect:
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
+        self._fire_callbacks()
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve GATT characteristics used for I/O.
@@ -336,6 +337,11 @@ class BaseDevice:
     def is_connected(self) -> bool:
         """Return if the BLE client is connected."""
         return bool(self._client and self._client.is_connected)
+
+    @property
+    def is_reconnecting(self) -> bool:
+        """Return if the device is attempting to reconnect."""
+        return not self.is_connected and bool(self._restart_connection_tasks)
 
     async def _ensure_connected(self) -> bool:
         """Ensure connection to device is established and initialized.
@@ -763,6 +769,7 @@ class BaseDevice:
             return False
         time_since_last_full_update = time.monotonic() - self._last_full_update
         return not time_since_last_full_update < PASSIVE_POLL_INTERVAL
+
 
 class Device(BaseDevice):
     """Representation of a device."""
