@@ -337,7 +337,7 @@ class BaseDevice:
         return bool(self._client and self._client.is_connected)
 
     async def _ensure_connected(self) -> bool:
-        """Ensure connection to device is established.
+        """Ensure connection to device is established and initialized.
 
         Returns True if a new connection was made.
         """
@@ -399,6 +399,7 @@ class BaseDevice:
             )
             self._reset_disconnect_timer()
             await self._start_notify()
+            await self._on_connect()
             return True
 
     def _reset_disconnect_timer(self):
@@ -489,9 +490,7 @@ class BaseDevice:
             return
         try:
             _LOGGER.debug("%s: Reconnecting...", self.name)
-            connected = await self._ensure_connected()
-            if connected:
-                await self._on_connect()
+            await self._ensure_connected()
         except asyncio.CancelledError:
             raise  # do not reschedule when cancelled
         except Exception as ex:  # pragma: no cover - best effort

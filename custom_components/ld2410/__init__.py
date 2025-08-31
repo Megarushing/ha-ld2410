@@ -101,8 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         return False
 
     if entry.data.get(CONF_PASSWORD):
-        if await device._ensure_connected():
-            await device._on_connect()
+        await device._ensure_connected()
 
     data_coordinator = entry.runtime_data = DataCoordinator(
         hass,

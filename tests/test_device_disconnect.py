@@ -49,10 +49,13 @@ async def test_reconnect_after_unexpected_disconnect():
     device.cmd_get_light_config = AsyncMock()
     device._update_parsed_data = MagicMock()
 
+    async def mock_connect():
+        await device._on_connect()
+        return True
+
     with (
-        patch(
-            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
-            AsyncMock(),
+        patch.object(
+            device, "_ensure_connected", AsyncMock(side_effect=mock_connect)
         ) as mock_connect,
         patch.object(device, "cmd_send_bluetooth_password", AsyncMock()) as mock_pass,
     ):
@@ -235,11 +238,15 @@ async def test_reload_does_not_reconnect_old_device(hass: HomeAssistant) -> None
     )
     entry.add_to_hass(hass)
 
+    async def mock_ensure_connected(self):
+        await self._on_connect()
+        return True
+
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
             "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
-            AsyncMock(),
+            mock_ensure_connected,
         ),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",

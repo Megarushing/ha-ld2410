@@ -127,6 +127,10 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
 
+    async def mock_ensure_connected(self):
+        await self._on_connect()
+        return True
+
     with (
         patch("custom_components.ld2410.api.close_stale_connections_by_address"),
         patch(
@@ -135,7 +139,7 @@ async def test_send_password_on_setup(hass: HomeAssistant) -> None:
         ) as mock_send,
         patch(
             "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
-            AsyncMock(),
+            mock_ensure_connected,
         ),
         patch(
             "custom_components.ld2410.api.LD2410.cmd_enable_config",
