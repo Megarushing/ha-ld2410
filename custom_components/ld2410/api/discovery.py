@@ -44,18 +44,30 @@ class GetDevices:
             adapter=self._interface,
         )
 
-        async with CONNECT_LOCK:
-            await devices.start()
-            await asyncio.sleep(scan_timeout)
-            await devices.stop()
-
-        if devices is None:
+        try:
+            async with CONNECT_LOCK:
+                await devices.start()
+                await asyncio.sleep(scan_timeout)
+                await devices.stop()
+        except bleak.BleakError:
             if retry < 1:
                 _LOGGER.error("Scanning for devices failed. Stop trying", exc_info=True)
                 return self._adv_data
 
             _LOGGER.warning(
                 "Error scanning for devices. Retrying (remaining: %d)",
+                retry,
+            )
+            await asyncio.sleep(DEFAULT_RETRY_TIMEOUT)
+            return await self.discover(retry - 1, scan_timeout)
+
+        if not self._adv_data:
+            if retry < 1:
+                _LOGGER.error("No devices found. Stop trying")
+                return self._adv_data
+
+            _LOGGER.warning(
+                "No devices found. Retrying (remaining: %d)",
                 retry,
             )
             await asyncio.sleep(DEFAULT_RETRY_TIMEOUT)
