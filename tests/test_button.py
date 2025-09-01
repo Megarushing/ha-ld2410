@@ -487,3 +487,74 @@ async def test_change_password_button_invalid(hass: HomeAssistant) -> None:
             notifications["ld2410_change_password"]["message"]
             == "Password contains invalid characters; use printable ASCII"
         )
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_reboot_button(hass: HomeAssistant) -> None:
+    """Test rebooting the device via button."""
+    await async_setup_component(hass, DOMAIN, {})
+    await async_setup_component(hass, "persistent_notification", {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            "address": "AA:BB:CC:DD:EE:FF",
+            "name": "test-name",
+            "password": "test-password",
+            "sensor_type": "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_reboot",
+            AsyncMock(),
+        ) as reboot_mock,
+        patch("custom_components.ld2410.helpers.async_call_later") as call_later_mock,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+
+        assert hass.states.get("button.test_name_reboot_device") is not None
+
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.test_name_reboot_device"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+    reboot_mock.assert_awaited_once()
+    call_later_mock.assert_called_once()
+    assert call_later_mock.call_args[0][1] == 10
+    dismiss = call_later_mock.call_args[0][2]
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert notifications["ld2410_reboot"]["message"] == "Device rebooting"
+    dismiss(None)
+    await hass.async_block_till_done()
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert "ld2410_reboot" not in notifications

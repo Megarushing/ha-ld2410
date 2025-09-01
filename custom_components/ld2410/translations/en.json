@@ -4,7 +4,8 @@
             "auto_sensitivities": {"name": "Auto sensitivities"},
             "save_sensitivities": {"name": "Save sensitivities"},
             "load_sensitivities": {"name": "Load sensitivities"},
-            "change_password": {"name": "Change password"}
+            "change_password": {"name": "Change password"},
+            "reboot": {"name": "Reboot device"}
         },
         "text": {"new_password": {"name": "New password"}},
         "select": {
