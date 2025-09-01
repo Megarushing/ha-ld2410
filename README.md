@@ -63,6 +63,8 @@ For best results,
 
 📥 **Load sensitivities** – button to restore previously saved gate sensitivities to the device.
 
+♻️ **Reboot device** – button to reboot the device.
+
 🎚️ **Motion gate sensitivity sliders (MG0–MG8)** – sets the motion sensitivity for each gate, the lower the slider the easier it gets activated.
 
 🎛️ **Static gate sensitivity sliders (SG0–SG8)** – number entities to set static sensitivity for each gate, the lower the slider the easier it gets activated.

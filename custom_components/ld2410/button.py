@@ -49,6 +49,7 @@ async def async_setup_entry(
             SaveSensitivitiesButton(coordinator, entry),
             LoadSensitivitiesButton(coordinator, entry),
             ChangePasswordButton(coordinator, entry),
+            RebootButton(coordinator),
         ]
     )
 
@@ -215,6 +216,30 @@ class ChangePasswordButton(Entity, ButtonEntity):
         async_ephemeral_notification(
             self.hass,
             "Password changed successfully; device rebooting",
+            title="LD2410",
+            notification_id=notification_id,
+        )
+
+
+class RebootButton(Entity, ButtonEntity):
+    """Button to reboot the device."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "reboot"
+
+    def __init__(self, coordinator: DataCoordinator) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.base_unique_id}-reboot"
+
+    @exception_handler
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        notification_id = "ld2410_reboot"
+        await self._device.cmd_reboot()
+        async_ephemeral_notification(
+            self.hass,
+            "Device rebooting",
             title="LD2410",
             notification_id=notification_id,
         )
