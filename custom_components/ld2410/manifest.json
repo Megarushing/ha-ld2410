@@ -1,6 +1,4 @@
 {
-  "domain": "ld2410",
-  "name": "LD2410",
   "bluetooth": [
     {
       "local_name": "HLK-LD2410B_*"
@@ -20,9 +18,11 @@
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/Megarushing/ha-ld2410/blob/main/README.md",
-  "issue_tracker": "https://github.com/Megarushing/ha-ld2410/issues",
+  "domain": "ld2410",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Megarushing/ha-ld2410/issues",
   "loggers": ["ld2410"],
+  "name": "LD2410",
   "requirements": [],
   "version": "0.4"
 }
