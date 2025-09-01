@@ -32,6 +32,7 @@ from .helpers import async_ephemeral_notification
 PARALLEL_UPDATES = 0
 
 AUTO_THRESH_DURATION = 10
+AUTO_THRESH_TIMEOUT = 30
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,8 +78,18 @@ class AutoSensitivityButton(Entity, ButtonEntity):
         )
         await self._device.cmd_auto_thresholds(AUTO_THRESH_DURATION)
         await asyncio.sleep(AUTO_THRESH_DURATION)
-        while await self._device.cmd_query_auto_thresholds() != 0:
-            await asyncio.sleep(1)
+        try:
+            async with asyncio.timeout(AUTO_THRESH_TIMEOUT):
+                while await self._device.cmd_query_auto_thresholds() != 0:
+                    await asyncio.sleep(1)
+        except asyncio.TimeoutError:
+            async_ephemeral_notification(
+                self.hass,
+                "Timed out waiting for automatic sensitivities",
+                title="LD2410",
+                notification_id=notification_id,
+            )
+            return
         params = await self._device.cmd_read_params()
         if self._device._update_parsed_data(
             {
