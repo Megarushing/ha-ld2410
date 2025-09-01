@@ -185,6 +185,7 @@ class BaseDevice:
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
+        self._operation_tasks: list[asyncio.Task[Any]] = []
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -284,10 +285,19 @@ class BaseDevice:
                 self.name,
                 self.rssi,
             )
-        async with self._operation_lock:
-            return await self._send_command_locked_with_retry(
-                raw_command, command, retry, max_attempts, wait_for_response
-            )
+        current = asyncio.current_task()
+        assert current is not None
+        self._operation_tasks.append(current)
+        try:
+            async with self._operation_lock:
+                return await self._send_command_locked_with_retry(
+                    raw_command, command, retry, max_attempts, wait_for_response
+                )
+        except asyncio.CancelledError as err:
+            raise OperationError("Device disconnecting") from err
+        finally:
+            if current in self._operation_tasks:
+                self._operation_tasks.remove(current)
 
     @property
     def name(self) -> str:
@@ -418,14 +428,13 @@ class BaseDevice:
         )
 
     def _clear_locked_commands(self):
-        waiters_attr = getattr(self._operation_lock, "_waiters", None)
-        if not (self._operation_lock.locked() or waiters_attr):
+        if not (self._operation_lock.locked() or self._operation_tasks):
             return
         _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
-        waiters = list(waiters_attr or [])
-        for waiter in waiters:
-            if not waiter.done():
-                waiter.set_exception(OperationError("Device disconnecting"))
+        for task in list(self._operation_tasks):
+            if not task.done():
+                task.cancel()
+        self._operation_tasks.clear()
         if self._notify_future:
             if not self._notify_future.done():
                 self._notify_future.cancel()
