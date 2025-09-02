@@ -96,6 +96,10 @@ class LD2410(Device):
                 "resolution": res,
             }
         )
+        _LOGGER.info(
+            "%s: Negotiation complete, start receiving uplink frames…",
+            self.name,
+        )
 
     def _modify_command(self, raw_command: str) -> bytes:
         command_word = raw_command[:4]
