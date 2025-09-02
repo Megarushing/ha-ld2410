@@ -254,6 +254,27 @@ async def test_disconnect_clears_command_queue() -> None:
 
 
 @pytest.mark.asyncio
+async def test_disconnect_error_triggers_restart() -> None:
+    """Reconnect is scheduled even if disconnect raises an error."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    device._client = AsyncMock()
+    device._client.disconnect = AsyncMock(side_effect=Exception)
+    device._should_reconnect = True
+    mock_task = MagicMock()
+    with patch.object(
+        device.loop, "create_task", MagicMock(return_value=mock_task)
+    ) as mock_create_task:
+        with pytest.raises(Exception):
+            async with device._connect_lock:
+                await device._execute_disconnect_with_lock()
+    assert mock_create_task.call_count == 1
+    assert mock_task in device._restart_connection_tasks
+
+
+@pytest.mark.asyncio
 async def test_reload_does_not_reconnect_old_device(hass: HomeAssistant) -> None:
     """Reloading the entry does not trigger reconnect of the old device."""
 
