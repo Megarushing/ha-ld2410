@@ -619,7 +619,7 @@ class BaseDevice:
         timeout_expired = False
         try:
             notify_msg_raw = await self._notify_future
-        except TimeoutError:
+        except asyncio.TimeoutError:
             timeout_expired = True
             raise
         finally:
