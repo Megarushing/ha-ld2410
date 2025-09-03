@@ -99,6 +99,36 @@ async def test_on_connect_can_send_commands_without_deadlock() -> None:
 
 
 @pytest.mark.asyncio
+async def test_on_connect_runs_without_lock() -> None:
+    """_on_connect is called outside the connect lock."""
+    device = LD2410(
+        device=BLEDevice(address="AA:BB", name="test", details=None, rssi=-60),
+        password="HiLink",
+    )
+    dummy_client = MagicMock()
+    dummy_client.is_connected = True
+    dummy_client.services = MagicMock()
+    dummy_client.start_notify = AsyncMock()
+
+    device._resolve_characteristics = MagicMock()
+    device._start_notify = AsyncMock()
+    device._reset_disconnect_timer = MagicMock()
+
+    async def on_connect() -> None:
+        assert not device._connect_lock.locked()
+
+    device._on_connect = AsyncMock(side_effect=on_connect)
+
+    with patch(
+        "custom_components.ld2410.api.devices.device.establish_connection",
+        AsyncMock(return_value=dummy_client),
+    ):
+        assert await device._ensure_connected() is True
+
+    device._on_connect.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_no_reconnect_when_disabled() -> None:
     """Device does not reconnect when _auto_reconnect is False."""
 
