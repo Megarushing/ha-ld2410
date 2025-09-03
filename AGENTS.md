@@ -1,6 +1,7 @@
 # Repo Contributor Guide
 
 - Your objective is to write code as concise and humanly readable as possible while always following the recommended best practices.
+- For LD2410 protocol documentation refer to file custom_components/ld2410/api/const/__init__.py
 
 ## The following steps are required before commiting changes:
 - Setup the environment:
@@ -29,4 +30,4 @@
 
 ## Testing convention
 - Unit test coverage must be kept above 80%, for every new feature make unit tests that cover the new code.
-- For every bugfix please add a unit test that covers the bug, so it doesn't happen again in the future.
+- For every bugfix please add a unit test that covers the bug against regressions, so it doesn't happen again in the future.
