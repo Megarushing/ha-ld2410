@@ -372,6 +372,7 @@ class BaseDevice:
             )
             self._reset_disconnect_timer()
             return False
+        new_connection = False
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
@@ -416,8 +417,11 @@ class BaseDevice:
             )
             self._reset_disconnect_timer()
             await self._start_notify()
+            new_connection = True
+
+        if new_connection:
             await self._on_connect()
-            return True
+        return new_connection
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
