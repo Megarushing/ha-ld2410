@@ -82,37 +82,24 @@ async def test_setup_entry_without_ble_device(
     assert "Could not find test with address AA:BB:CC:DD:EE:FF" in caplog.text
 
 
-async def test_coordinator_wait_ready_timeout(
+async def test_setup_does_not_block_waiting_for_advertising(
     hass: HomeAssistant,
     mock_entry_factory: Callable[[str], MockConfigEntry],
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test the coordinator async_wait_ready timeout by calling it directly."""
+    """Setup should not block waiting for advertising readiness."""
 
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = mock_entry_factory("ld2410")
     entry.add_to_hass(hass)
 
-    timeout_mock = AsyncMock()
-    timeout_mock.__aenter__.side_effect = TimeoutError
-    timeout_mock.__aexit__.return_value = None
-
-    with (
-        patch(
-            "custom_components.ld2410.coordinator.asyncio.timeout",
-            return_value=timeout_mock,
-        ),
-        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
-    ):
-        await hass.config_entries.async_setup(entry.entry_id)
+    with patch("custom_components.ld2410.api.close_stale_connections_by_address"):
+        assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-
-    assert "AA:BB:CC:DD:EE:FF is not advertising state" in caplog.text
 
 
 async def test_send_password_on_setup(hass: HomeAssistant) -> None:
-    """Ensure the bluetooth password is sent during setup."""
+    """Ensure the bluetooth password is sent during setup when connection succeeds."""
     inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
 
     entry = MockConfigEntry(

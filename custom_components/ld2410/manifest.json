@@ -24,5 +24,5 @@
   "issue_tracker": "https://github.com/Megarushing/ha-ld2410/issues",
   "loggers": ["ld2410"],
   "requirements": [],
-  "version": "0.4"
+  "version": "0.5"
 }

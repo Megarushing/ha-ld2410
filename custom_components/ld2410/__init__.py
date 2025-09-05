@@ -32,6 +32,12 @@ from .const import (
 )
 from .coordinator import ConfigEntryType, DataCoordinator
 
+
+async def _async_try_connect(device: api.Device) -> None:
+    """Attempt background connection; suppress failures in setup context."""
+    with contextlib.suppress(Exception):
+        await device._ensure_connected()
+
 PLATFORMS_BY_TYPE = {
     SupportedModels.LD2410.value: [
         Platform.BINARY_SENSOR,
@@ -100,8 +106,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         )
         return False
 
-    if entry.data.get(CONF_PASSWORD):
-        await device._ensure_connected()
+    # Start establishing a connection in the background to provoke retries
+    # and initial authorization, but do not await it to avoid blocking setup.
+    hass.async_create_task(_async_try_connect(device))
 
     data_coordinator = entry.runtime_data = DataCoordinator(
         hass,
@@ -115,12 +122,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
     )
     data_coordinator.options = dict(entry.options)
     entry.async_on_unload(data_coordinator.async_start())
-    if not await data_coordinator.async_wait_ready():
-        raise ConfigEntryNotReady(
-            translation_domain=DOMAIN,
-            translation_key="advertising_state_error",
-            translation_placeholders={"address": address},
-        )
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(
