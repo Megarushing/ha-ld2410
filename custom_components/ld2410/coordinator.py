@@ -107,6 +107,7 @@ class DataCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
             )
         ):
             return
+        _LOGGER.debug("%s: Advertisement data: %s", self.ble_device.address, adv.data)
         if "modelName" in adv.data:
             self._ready_event.set()
         _LOGGER.debug("%s: Device data: %s", self.ble_device.address, self.device.data)
