@@ -14,6 +14,7 @@ For best results,
 - Use an [ESPHome Bluetooth Proxy](https://esphome.io/components/bluetooth_proxy.html) to connect your LD2410 to Home Assistant.
 - Use firmware version 2.44.24073110 or higher on your LD2410 device. 
   - If your device has an older firmware, you can update it using the HLKRadarTool app on [Android](https://play.google.com/store/apps/details?id=com.hlk.hlkradartool&hl=en) or [iOS](https://apps.apple.com/us/app/hlkradartool/id1638651152).
+- If you ever run into issues, you can reset to factory defaults by connecting and disconnecting power from the device 5 times.
 
 ## Entities
 
@@ -165,6 +166,7 @@ Contributions are welcome! To set up the development environment:
 - The integration may not work with some LD2410 devices due to firmware differences. If you encounter issues, please open an issue on GitHub with details about your device and firmware version.
 
 ### Enabling debug logging
+Before registering issues, please enable debug logging to help diagnose problems and paste your logs in it.
 Add the following to your `configuration.yaml` file then restart Home Assistant:
 
 ```yaml
