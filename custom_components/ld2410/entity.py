@@ -78,7 +78,22 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle data update."""
+        if not self.enabled:
+            return
+
         self._async_update_attrs()
+
+        if not self.hass or self.entity_id is None:
+            return
+
+        if (current_state := self.hass.states.get(self.entity_id)) is not None:
+            new_state, new_attributes, *_ = self._Entity__async_calculate_state()
+            if (
+                new_state == current_state.state
+                and new_attributes == current_state.attributes
+            ):
+                return
+
         self.async_write_ha_state()
 
     async def async_added_to_hass(self) -> None:
