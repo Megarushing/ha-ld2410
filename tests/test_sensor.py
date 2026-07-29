@@ -4,11 +4,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
-
 from homeassistant.components.sensor import SensorDeviceClass
-from custom_components.ld2410.const import (
-    DOMAIN,
-)
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
     ATTR_FRIENDLY_NAME,
@@ -19,7 +15,12 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_component import async_update_entity
 from homeassistant.setup import async_setup_component
+
+from custom_components.ld2410.const import (
+    DOMAIN,
+)
 
 from . import LD2410b_SERVICE_INFO
 
@@ -157,7 +158,7 @@ async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
         inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
         await hass.async_block_till_done()
-        await hass.helpers.entity_component.async_update_entity(sensor_id)
+        await async_update_entity(hass, sensor_id)
 
         assert hass.states.get(sensor_id) is not None
 
@@ -168,7 +169,7 @@ async def test_rssi_sensor_updates_via_connection(hass: HomeAssistant) -> None:
             return -70
 
         with patch.object(device, "read_rssi", mock_read_rssi):
-            await hass.helpers.entity_component.async_update_entity(sensor_id)
+            await async_update_entity(hass, sensor_id)
 
         assert hass.states.get(sensor_id).state == "-70"
 
