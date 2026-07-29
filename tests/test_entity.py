@@ -87,10 +87,16 @@ async def test_handle_update_skips_when_state_unchanged(
 ) -> None:
     """Repeated updates with the same data should be ignored."""
 
-    entity._handle_coordinator_update()
-    await hass.async_block_till_done()
+    hass.states.async_set(entity.entity_id, "10", {"last_run_success": None})
 
-    with patch.object(entity, "async_write_ha_state") as mock_write:
+    with (
+        patch.object(
+            entity,
+            "_Entity__async_calculate_state",
+            return_value=("10", {"last_run_success": None}),
+        ),
+        patch.object(entity, "async_write_ha_state") as mock_write,
+    ):
         entity._handle_coordinator_update()
         await hass.async_block_till_done()
 
