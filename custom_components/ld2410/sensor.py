@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    LIGHT_LUX,
     EntityCategory,
     UnitOfLength,
 )
@@ -115,6 +116,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     "photo_sensor": SensorEntityDescription(
         key="photo_sensor",
         name="Photo sensor",
+        native_unit_of_measurement=LIGHT_LUX,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ILLUMINANCE,
         entity_registry_enabled_default=False,
