@@ -195,6 +195,7 @@ class BaseDevice:
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
+        self._last_frame_time: float | None = None
         self._timed_disconnect_task: asyncio.Task[None] | None = None
         self._restart_connection_tasks: list[asyncio.Task[None]] = []
         self._rssi: int = getattr(device, "rssi", -127) or -127
@@ -320,6 +321,16 @@ class BaseDevice:
     def rssi(self) -> int:
         """Return RSSI of device."""
         return self._rssi
+
+    @property
+    def last_frame_time(self) -> float | None:
+        """Return the epoch time of the last uplink data frame, if any.
+
+        Tracks frame *arrival*, not data change: a device streaming identical
+        frames (still room) is healthy, while a device whose stream stopped is
+        not, and the parsed values look the same in both cases.
+        """
+        return self._last_frame_time
 
     async def read_rssi(self) -> int | None:
         """Update and return the RSSI using the active connection."""

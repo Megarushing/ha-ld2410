@@ -13,7 +13,8 @@
             "light_function": {"name": "Light function"},
             "out_level": {"name": "OUT level"}
         },
-        "number": {"light_sensitivity": {"name": "Light sensitivity"}}
+        "number": {"light_sensitivity": {"name": "Light sensitivity"}},
+        "sensor": {"last_frame": {"name": "Last frame"}}
     },
     "exceptions": {
         "operation_error": {

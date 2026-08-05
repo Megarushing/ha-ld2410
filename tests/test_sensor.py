@@ -12,6 +12,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_SENSOR_TYPE,
+    STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -431,3 +432,65 @@ async def test_frame_type_and_photo_sensors_disabled_by_default(
         assert entity.disabled
         assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
         assert hass.states.get(entity_id) is None
+
+
+async def test_last_frame_sensor_tracks_frame_arrival(hass: HomeAssistant) -> None:
+    """The last frame sensor reports arrival time and is polled, not callback-driven."""
+    await async_setup_component(hass, DOMAIN, {})
+    inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_NAME: "test-name",
+            CONF_PASSWORD: "test-password",
+            CONF_SENSOR_TYPE: "ld2410",
+        },
+        unique_id="aabbccddeeff",
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch("custom_components.ld2410.api.close_stale_connections_by_address"),
+        patch(
+            "custom_components.ld2410.api.devices.device.BaseDevice._ensure_connected",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_send_bluetooth_password",
+            AsyncMock(),
+        ),
+        patch(
+            "custom_components.ld2410.api.LD2410.cmd_enable_engineering_mode",
+            AsyncMock(),
+        ),
+        patch("custom_components.ld2410.api.LD2410._on_connect", AsyncMock()),
+        patch(
+            "custom_components.ld2410.api.devices.device.Device.get_basic_info",
+            AsyncMock(return_value={}),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        sensor_id = "sensor.test_name_last_frame"
+        registry = er.async_get(hass)
+        registry.async_update_entity(sensor_id, disabled_by=None)
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        inject_bluetooth_service_info(hass, LD2410b_SERVICE_INFO)
+        await hass.async_block_till_done()
+        await async_update_entity(hass, sensor_id)
+
+        # No frame received yet.
+        assert hass.states.get(sensor_id).state == STATE_UNKNOWN
+
+        device = entry.runtime_data.device
+        device._last_frame_time = datetime(
+            2026, 8, 5, 12, 0, tzinfo=timezone.utc
+        ).timestamp()
+        await async_update_entity(hass, sensor_id)
+
+        state = hass.states.get(sensor_id)
+        assert state.state == "2026-08-05T12:00:00+00:00"
+        assert state.attributes[ATTR_DEVICE_CLASS] == SensorDeviceClass.TIMESTAMP

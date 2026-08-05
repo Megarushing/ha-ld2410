@@ -49,7 +49,8 @@
             "wifi_signal": {"name": "Wi-Fi signal"},
             "light_level": {"name": "Light level"},
             "firmware_version": {"name": "Firmware version"},
-            "firmware_build_date": {"name": "Firmware build date"}
+            "firmware_build_date": {"name": "Firmware build date"},
+            "last_frame": {"name": "Last frame"}
         }
     },
     "exceptions": {
