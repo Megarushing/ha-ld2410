@@ -20,7 +20,6 @@ except ImportError:  # Home Assistant <2024.6
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
-from .api import OperationError
 from .coordinator import ConfigEntryType, DataCoordinator
 from .entity import Entity, exception_handler
 
@@ -75,18 +74,11 @@ class GateSensitivityNumber(Entity, NumberEntity):
 
     @exception_handler
     async def async_set_native_value(self, value: float) -> None:
-        move_values = self.parsed_data.get("move_gate_sensitivity") or []
-        still_values = self.parsed_data.get("still_gate_sensitivity") or []
-        if self._gate >= min(len(move_values), len(still_values)):
-            # Both values are sent together; guessing the other one would overwrite it.
-            raise OperationError("Gate sensitivities not read from the device yet")
-        move = move_values[self._gate]
-        still = still_values[self._gate]
+        # Send only this value; the device layer fills in the paired one.
         if self._data_key == "move_gate_sensitivity":
-            move = int(value)
+            await self._device.cmd_set_gate_sensitivity(self._gate, move=int(value))
         else:
-            still = int(value)
-        await self._device.cmd_set_gate_sensitivity(self._gate, move, still)
+            await self._device.cmd_set_gate_sensitivity(self._gate, still=int(value))
 
 
 class AbsenceDelayNumber(Entity, NumberEntity):

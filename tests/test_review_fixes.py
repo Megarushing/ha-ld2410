@@ -429,22 +429,12 @@ async def test_config_session_closed_on_error() -> None:
 # 10. Sensitivity slider never sends a guessed value --------------------------
 
 
-@pytest.mark.usefixtures("entity_registry_enabled_by_default")
-async def test_gate_sensitivity_refuses_unknown_pair(hass: HomeAssistant) -> None:
+async def test_gate_sensitivity_refuses_unknown_pair() -> None:
     """Without the other value known, sending 0 would wipe it on the device."""
-    with ExitStack() as stack:
-        device = await _setup(hass, stack, _entry())
-        send = stack.enter_context(
-            patch.object(device, "cmd_set_gate_sensitivity", AsyncMock())
-        )
-        with pytest.raises(HomeAssistantError):
-            await hass.services.async_call(
-                "number",
-                "set_value",
-                {"entity_id": "number.test_name_mg0_sensitivity", "value": 30},
-                blocking=True,
-            )
-    send.assert_not_awaited()
+    device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00"])
+    with pytest.raises(OperationError):
+        await device.cmd_set_gate_sensitivity(0, move=30)
+    assert device.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_END_CFG]
 
 
 # 11. Entities refresh right after a setting is written -----------------------
@@ -506,10 +496,10 @@ async def test_set_max_move_gate_keeps_other_values() -> None:
 
 async def test_set_max_gate_refused_when_settings_unknown() -> None:
     """Without the current values, sending guesses would overwrite them."""
-    device = _ScriptedDevice([])
+    device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00"])
     with pytest.raises(OperationError):
         await device.cmd_set_max_gates(still_gate=4)
-    assert device.raw_commands == []
+    assert device.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_END_CFG]
 
 
 @pytest.mark.parametrize("gate", [1, 9])
@@ -535,3 +525,55 @@ async def test_max_gate_number_entity(hass: HomeAssistant) -> None:
             "number", "set_value", {"entity_id": eid, "value": 5}, blocking=True
         )
     send.assert_awaited_once_with(still_gate=5)
+
+
+# Concurrent changes to settings that share one command (Codex review, #102) --
+
+OK_SESSION = [b"\x00\x00\x01\x00\x00@", b"\x00\x00", b"\x00\x00"]
+
+
+async def test_concurrent_max_gates_do_not_undo_each_other() -> None:
+    """Setting both max gates at once must keep both new values."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
+    )
+    await asyncio.gather(
+        device.cmd_set_max_gates(move_gate=4), device.cmd_set_max_gates(still_gate=3)
+    )
+    last = device.raw_commands[4]
+    assert "0000" + (4).to_bytes(4, "little").hex() in last
+    assert "0100" + (3).to_bytes(4, "little").hex() in last
+    assert (
+        device.parsed_data["max_move_gate"],
+        device.parsed_data["max_still_gate"],
+    ) == (4, 3)
+
+
+async def test_concurrent_gate_sensitivities_do_not_undo_each_other() -> None:
+    """MG3 and SG3 share one command; changing both at once keeps both."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"move_gate_sensitivity": [50] * 9, "still_gate_sensitivity": [40] * 9}
+    )
+    await asyncio.gather(
+        device.cmd_set_gate_sensitivity(3, move=20),
+        device.cmd_set_gate_sensitivity(3, still=10),
+    )
+    assert device.parsed_data["move_gate_sensitivity"][3] == 20
+    assert device.parsed_data["still_gate_sensitivity"][3] == 10
+
+
+async def test_concurrent_light_settings_do_not_undo_each_other() -> None:
+    """Light mode and threshold share one command; both changes must stick."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"light_function": 0, "light_threshold": 128, "light_out_level": 0}
+    )
+    await asyncio.gather(
+        device.cmd_set_light_config(mode=1), device.cmd_set_light_config(threshold=50)
+    )
+    assert (
+        device.parsed_data["light_function"],
+        device.parsed_data["light_threshold"],
+    ) == (1, 50)

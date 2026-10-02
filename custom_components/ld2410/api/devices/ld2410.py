@@ -260,38 +260,49 @@ class LD2410(Device):
                 raise OperationError("Failed to query automatic threshold status")
         return int.from_bytes(response[2:4], "little")
 
-    async def cmd_set_gate_sensitivity(self, gate: int, move: int, still: int) -> None:
-        """Set move and still sensitivity for a gate."""
+    async def cmd_set_gate_sensitivity(
+        self, gate: int, move: int | None = None, still: int | None = None
+    ) -> None:
+        """Set move and/or still sensitivity for a gate.
+
+        Both values go in one command, so a value not given is re-sent as read
+        from the device. It is read inside the session lock: read before it,
+        two concurrent changes would each re-send the other's old value.
+        """
         if not 0 <= gate <= 8:
             raise ValueError("gate must be 0..8")
-        if not 0 <= move <= 100:
-            raise ValueError("move must be 0..100")
-        if not 0 <= still <= 100:
-            raise ValueError("still must be 0..100")
-        payload = (
-            PAR_DISTANCE_GATE
-            + gate.to_bytes(4, "little").hex()
-            + PAR_MOVE_SENS
-            + move.to_bytes(4, "little").hex()
-            + PAR_STILL_SENS
-            + still.to_bytes(4, "little").hex()
-        )
+        for value in (move, still):
+            if value is not None and not 0 <= value <= 100:
+                raise ValueError("sensitivity must be 0..100")
         async with self._config_session():
+            move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
+            still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
+            known = gate < min(len(move_list), len(still_list))
+            if (move is None or still is None) and not known:
+                raise OperationError("Gate sensitivities not read from the device yet")
+            move = move_list[gate] if move is None else move
+            still = still_list[gate] if still is None else still
+            payload = (
+                PAR_DISTANCE_GATE
+                + gate.to_bytes(4, "little").hex()
+                + PAR_MOVE_SENS
+                + move.to_bytes(4, "little").hex()
+                + PAR_STILL_SENS
+                + still.to_bytes(4, "little").hex()
+            )
             response = await self._send_command(CMD_SET_SENSITIVITY + payload)
             if response != b"\x00\x00":
                 raise OperationError("Failed to set sensitivity")
-        move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
-        still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
-        if gate < len(move_list):
-            move_list[gate] = move
-        if gate < len(still_list):
-            still_list[gate] = still
-        self._update_and_notify(
-            {
-                "move_gate_sensitivity": move_list,
-                "still_gate_sensitivity": still_list,
-            }
-        )
+            if gate < len(move_list):
+                move_list[gate] = move
+            if gate < len(still_list):
+                still_list[gate] = still
+            self._update_and_notify(
+                {
+                    "move_gate_sensitivity": move_list,
+                    "still_gate_sensitivity": still_list,
+                }
+            )
 
     def _update_and_notify(self, data: dict[str, Any]) -> None:
         """Store values just written to the device and refresh entities now."""
@@ -355,25 +366,29 @@ class LD2410(Device):
         Values not being changed are re-sent as read from the device. If one is
         unknown the command is refused: a guessed value would overwrite it.
         """
-        values = {
-            key: self.parsed_data.get(key) if changes.get(key) is None else changes[key]
-            for key in ("max_move_gate", "max_still_gate", "absence_delay")
-        }
-        if None in values.values():
-            raise OperationError("Settings not read from the device yet")
-        payload = (
-            PAR_MAX_MOVE_GATE
-            + values["max_move_gate"].to_bytes(4, "little").hex()
-            + PAR_MAX_STILL_GATE
-            + values["max_still_gate"].to_bytes(4, "little").hex()
-            + PAR_NOBODY_DURATION
-            + values["absence_delay"].to_bytes(4, "little").hex()
-        )
+        # Read inside the lock, so a concurrent change is not undone (see
+        # cmd_set_gate_sensitivity).
         async with self._config_session():
+            values = {
+                key: self.parsed_data.get(key)
+                if changes.get(key) is None
+                else changes[key]
+                for key in ("max_move_gate", "max_still_gate", "absence_delay")
+            }
+            if None in values.values():
+                raise OperationError("Settings not read from the device yet")
+            payload = (
+                PAR_MAX_MOVE_GATE
+                + values["max_move_gate"].to_bytes(4, "little").hex()
+                + PAR_MAX_STILL_GATE
+                + values["max_still_gate"].to_bytes(4, "little").hex()
+                + PAR_NOBODY_DURATION
+                + values["absence_delay"].to_bytes(4, "little").hex()
+            )
             response = await self._send_command(CMD_SET_MAX_GATES_AND_NOBODY + payload)
             if response != b"\x00\x00":
                 raise OperationError("Failed to set max gates and absence delay")
-        self._update_and_notify(values)
+            self._update_and_notify(values)
 
     async def cmd_get_light_config(self) -> Dict[str, int]:
         """Get light control configuration."""
@@ -407,24 +422,26 @@ class LD2410(Device):
             raise ValueError("threshold must be 0..255")
         if out_level is not None and out_level not in (0, 1):
             raise ValueError("out_level must be 0 or 1")
-        current_mode = self.parsed_data.get("light_function", 0)
-        current_threshold = self.parsed_data.get("light_threshold", 0x80)
-        current_out_level = self.parsed_data.get("light_out_level", 0)
-        mode_byte = mode if mode is not None else current_mode
-        threshold_byte = threshold if threshold is not None else current_threshold
-        out_level_byte = out_level if out_level is not None else current_out_level
-        payload = bytes([mode_byte, threshold_byte, out_level_byte, 0]).hex()
+        # Read inside the lock, so a concurrent change is not undone (see
+        # cmd_set_gate_sensitivity).
         async with self._config_session():
+            if mode is None:
+                mode = self.parsed_data.get("light_function", 0)
+            if threshold is None:
+                threshold = self.parsed_data.get("light_threshold", 0x80)
+            if out_level is None:
+                out_level = self.parsed_data.get("light_out_level", 0)
+            payload = bytes([mode, threshold, out_level, 0]).hex()
             response = await self._send_command(CMD_SET_AUX + payload)
             if response != b"\x00\x00":
                 raise OperationError("Failed to set light config")
-        self._update_and_notify(
-            {
-                "light_function": mode_byte,
-                "light_threshold": threshold_byte,
-                "light_out_level": out_level_byte,
-            }
-        )
+            self._update_and_notify(
+                {
+                    "light_function": mode,
+                    "light_threshold": threshold,
+                    "light_out_level": out_level,
+                }
+            )
 
     async def cmd_get_resolution(self) -> int:
         """Query the distance resolution."""
