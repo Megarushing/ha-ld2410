@@ -33,11 +33,6 @@ from .const import (
 from .coordinator import ConfigEntryType, DataCoordinator
 
 
-async def _async_try_connect(device: api.Device) -> None:
-    """Attempt background connection; suppress failures in setup context."""
-    with contextlib.suppress(Exception):
-        await device._ensure_connected()
-
 PLATFORMS_BY_TYPE = {
     SupportedModels.LD2410.value: [
         Platform.BINARY_SENSOR,
@@ -106,9 +101,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntryType) -> bool
         )
         return False
 
-    # Start establishing a connection in the background to provoke retries
-    # and initial authorization, but do not await it to avoid blocking setup.
-    hass.async_create_task(_async_try_connect(device))
+    # Connect in the background; on failure it keeps retrying, so a device that
+    # is busy or out of range at startup does not stay silently unconnected.
+    device.start_connecting()
 
     data_coordinator = entry.runtime_data = DataCoordinator(
         hass,
@@ -151,6 +146,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     device = entry.runtime_data.device
     device._should_reconnect = False
     device._cancel_disconnect_timer()
+    if (task := device._initial_connect_task) and not task.done():
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
     if device._restart_connection_tasks:
         for task in device._restart_connection_tasks:
             task.cancel()

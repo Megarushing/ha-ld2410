@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from .api import Advertisement, LD2410, OperationError, parse_advertisement_data
+from bleak_retry_connector import BLEAK_RETRY_EXCEPTIONS
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
@@ -102,6 +103,8 @@ class LD2410ConfigFlow(ConfigFlow, domain=DOMAIN):
                 await device.cmd_send_bluetooth_password()
             except OperationError:
                 errors["base"] = "wrong_password"
+            except BLEAK_RETRY_EXCEPTIONS:
+                errors["base"] = "cannot_connect"
             finally:
                 await device.async_disconnect()
             if not errors:
@@ -227,8 +230,10 @@ class LD2410OptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage options."""
         if user_input is not None:
-            # Update common entity options for all other entities.
-            return self.async_create_entry(title="", data=user_input)
+            # Merge, so options stored elsewhere (saved sensitivities) survive.
+            return self.async_create_entry(
+                title="", data={**self.config_entry.options, **user_input}
+            )
 
         options: dict[vol.Optional, Any] = {
             vol.Optional(
@@ -236,6 +241,6 @@ class LD2410OptionsFlowHandler(OptionsFlow):
                 default=self.config_entry.options.get(
                     CONF_RETRY_COUNT, DEFAULT_RETRY_COUNT
                 ),
-            ): int
+            ): vol.All(int, vol.Range(min=0))
         }
         return self.async_show_form(step_id="init", data_schema=vol.Schema(options))

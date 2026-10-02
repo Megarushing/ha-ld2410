@@ -3,25 +3,41 @@
         "flow_title": "{name}",
         "step": {
             "user": {
-                "data": {"address": "MAC address"},
+                "data": {
+                    "address": "MAC address"
+                },
                 "data_description": {
                     "address": "The Bluetooth MAC address of your device"
                 }
             },
-            "confirm": {"description": "Do you want to set up {name}?"}
+            "confirm": {
+                "description": "Do you want to set up {name}?"
+            },
+            "password": {
+                "description": "Enter the Bluetooth password of {name}. The factory default is HiLink.",
+                "data": {
+                    "password": "Password"
+                }
+            }
         },
-        "error": {},
+        "error": {
+            "wrong_password": "The device rejected the password.",
+            "cannot_connect": "Could not connect to the device. Move it closer to a Bluetooth adapter or proxy and try again."
+        },
         "abort": {
             "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
             "no_devices_found": "No supported devices found in range; If the device is in range, ensure the scanner has active scanning enabled, as these devices cannot be discovered with passive scans. Active scans can be disabled once the device is configured. If you need clarification on whether the device is in-range, download the diagnostics for the integration that provides your Bluetooth adapter or proxy and check if the MAC address of the device is present.",
             "unknown": "[%key:common::config_flow::error::unknown%]",
-            "unsupported_type": "Unsupported device type."
+            "unsupported_type": "Unsupported device type.",
+            "not_supported": "This device is not supported."
         }
     },
     "options": {
         "step": {
             "init": {
-                "data": {"retry_count": "Retry count"},
+                "data": {
+                    "retry_count": "Retry count"
+                },
                 "data_description": {
                     "retry_count": "How many times to retry sending commands to your devices"
                 }
@@ -29,28 +45,68 @@
         }
     },
     "entity": {
-        "binary_sensor": {"door_timeout": {"name": "Timeout"}},
+        "binary_sensor": {
+            "door_timeout": {
+                "name": "Timeout"
+            }
+        },
         "button": {
-            "auto_sensitivities": {"name": "Auto sensitivities"},
-            "save_sensitivities": {"name": "Save sensitivities"},
-            "load_sensitivities": {"name": "Load sensitivities"},
-            "change_password": {"name": "Change password"},
-            "reboot": {"name": "Reboot device"}
+            "auto_sensitivities": {
+                "name": "Auto sensitivities"
+            },
+            "save_sensitivities": {
+                "name": "Save sensitivities"
+            },
+            "load_sensitivities": {
+                "name": "Load sensitivities"
+            },
+            "change_password": {
+                "name": "Change password"
+            },
+            "reboot": {
+                "name": "Reboot device"
+            }
         },
-        "text": {"new_password": {"name": "New password"}},
+        "text": {
+            "new_password": {
+                "name": "New password"
+            }
+        },
         "select": {
-            "distance_resolution": {"name": "Distance resolution"},
-            "light_function": {"name": "Light function"},
-            "out_level": {"name": "OUT level"}
+            "distance_resolution": {
+                "name": "Distance resolution"
+            },
+            "light_function": {
+                "name": "Light function"
+            },
+            "out_level": {
+                "name": "OUT level"
+            }
         },
-        "number": {"light_sensitivity": {"name": "Light sensitivity"}},
+        "number": {
+            "light_sensitivity": {
+                "name": "Light sensitivity"
+            }
+        },
         "sensor": {
-            "bluetooth_signal": {"name": "Bluetooth signal"},
-            "wifi_signal": {"name": "Wi-Fi signal"},
-            "light_level": {"name": "Light level"},
-            "firmware_version": {"name": "Firmware version"},
-            "firmware_build_date": {"name": "Firmware build date"},
-            "last_frame": {"name": "Last frame"}
+            "bluetooth_signal": {
+                "name": "Bluetooth signal"
+            },
+            "wifi_signal": {
+                "name": "Wi-Fi signal"
+            },
+            "light_level": {
+                "name": "Light level"
+            },
+            "firmware_version": {
+                "name": "Firmware version"
+            },
+            "firmware_build_date": {
+                "name": "Firmware build date"
+            },
+            "last_frame": {
+                "name": "Last frame"
+            }
         }
     },
     "exceptions": {
@@ -60,7 +116,9 @@
         "value_error": {
             "message": "Device initialization failed because of incorrect configuration parameters: {error}"
         },
-        "advertising_state_error": {"message": "{address} is not advertising state"},
+        "advertising_state_error": {
+            "message": "{address} is not advertising state"
+        },
         "device_not_found_error": {
             "message": "Could not find {sensor_type} with address {address}"
         }
