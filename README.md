@@ -72,6 +72,8 @@ For best results,
 
 ⏱️ **Absence delay** – number of seconds to wait before occupancy clears, preventing false absence.
 
+📏 **Max motion gate / Max still gate** – the farthest gate (2–8) that detects motion or presence, to stop detection beyond a wall or doorway. Disabled by default; enable them under the device's entities.
+
 🕯️ **Light function** – when enabled the OUT pin will only be activated if the photo sensor reading is (dimmer than/brighter than) *Light sensitivity* .
 
 🌗 **Light sensitivity** – threshold for the photo sensor (0‑255) when using the light function.

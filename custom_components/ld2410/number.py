@@ -43,6 +43,8 @@ async def async_setup_entry(
             GateSensitivityNumber(coordinator, "still_gate_sensitivity", gate)
         )
     entities.append(AbsenceDelayNumber(coordinator))
+    entities.append(MaxGateNumber(coordinator, "max_move_gate"))
+    entities.append(MaxGateNumber(coordinator, "max_still_gate"))
     entities.append(LightSensitivityNumber(coordinator))
     async_add_entities(entities)
 
@@ -111,6 +113,34 @@ class AbsenceDelayNumber(Entity, NumberEntity):
     @exception_handler
     async def async_set_native_value(self, value: float) -> None:
         await self._device.cmd_set_absence_delay(int(value))
+
+
+class MaxGateNumber(Entity, NumberEntity):
+    """Farthest gate that detects motion or presence; limits the range."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_native_min_value = 2
+    _attr_native_max_value = 8
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: DataCoordinator, data_key: str) -> None:
+        super().__init__(coordinator)
+        self._data_key = data_key
+        self._attr_translation_key = data_key
+        self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-number"
+
+    @property
+    def native_value(self) -> int | None:
+        return self.parsed_data.get(self._data_key)
+
+    @exception_handler
+    async def async_set_native_value(self, value: float) -> None:
+        if self._data_key == "max_move_gate":
+            await self._device.cmd_set_max_gates(move_gate=int(value))
+        else:
+            await self._device.cmd_set_max_gates(still_gate=int(value))
 
 
 class LightSensitivityNumber(Entity, NumberEntity):

@@ -336,21 +336,44 @@ class LD2410(Device):
         """Set the absence delay (no-one duration)."""
         if not 0 <= delay <= 65535:
             raise ValueError("delay must be 0..65535")
-        move_gate = self.parsed_data.get("max_move_gate", 8)
-        still_gate = self.parsed_data.get("max_still_gate", 8)
+        await self._set_max_gates_and_nobody(absence_delay=delay)
+
+    async def cmd_set_max_gates(
+        self, move_gate: int | None = None, still_gate: int | None = None
+    ) -> None:
+        """Set the farthest gate that detects motion and/or presence."""
+        for gate in (move_gate, still_gate):
+            if gate is not None and not 2 <= gate <= 8:
+                raise ValueError("max gate must be 2..8")
+        await self._set_max_gates_and_nobody(
+            max_move_gate=move_gate, max_still_gate=still_gate
+        )
+
+    async def _set_max_gates_and_nobody(self, **changes: int | None) -> None:
+        """Write max gates and absence delay, which share one device command.
+
+        Values not being changed are re-sent as read from the device. If one is
+        unknown the command is refused: a guessed value would overwrite it.
+        """
+        values = {
+            key: self.parsed_data.get(key) if changes.get(key) is None else changes[key]
+            for key in ("max_move_gate", "max_still_gate", "absence_delay")
+        }
+        if None in values.values():
+            raise OperationError("Settings not read from the device yet")
         payload = (
             PAR_MAX_MOVE_GATE
-            + move_gate.to_bytes(4, "little").hex()
+            + values["max_move_gate"].to_bytes(4, "little").hex()
             + PAR_MAX_STILL_GATE
-            + still_gate.to_bytes(4, "little").hex()
+            + values["max_still_gate"].to_bytes(4, "little").hex()
             + PAR_NOBODY_DURATION
-            + delay.to_bytes(4, "little").hex()
+            + values["absence_delay"].to_bytes(4, "little").hex()
         )
         async with self._config_session():
             response = await self._send_command(CMD_SET_MAX_GATES_AND_NOBODY + payload)
             if response != b"\x00\x00":
-                raise OperationError("Failed to set absence delay")
-        self._update_and_notify({"absence_delay": delay})
+                raise OperationError("Failed to set max gates and absence delay")
+        self._update_and_notify(values)
 
     async def cmd_get_light_config(self) -> Dict[str, int]:
         """Get light control configuration."""

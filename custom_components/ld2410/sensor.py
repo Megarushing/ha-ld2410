@@ -102,20 +102,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
     ),
-    "max_move_gate": SensorEntityDescription(
-        key="max_move_gate",
-        name="Max motion gate",
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "max_still_gate": SensorEntityDescription(
-        key="max_still_gate",
-        name="Max still gate",
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
     "photo_sensor": SensorEntityDescription(
         key="photo_sensor",
         name="Photo sensor",
