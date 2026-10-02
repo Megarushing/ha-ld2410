@@ -80,7 +80,8 @@ class AutoSensitivityButton(Entity, ButtonEntity):
         await asyncio.sleep(AUTO_THRESH_DURATION)
         try:
             async with asyncio.timeout(AUTO_THRESH_TIMEOUT):
-                while await self._device.cmd_query_auto_thresholds() != 0:
+                # Status: 0 idle, 1 in progress, 2 completed. Only 1 means wait.
+                while await self._device.cmd_query_auto_thresholds() == 1:
                     await asyncio.sleep(1)
         except asyncio.TimeoutError:
             async_ephemeral_notification(
@@ -211,18 +212,14 @@ class ChangePasswordButton(Entity, ButtonEntity):
                 notification_id=notification_id,
             )
             return
-        await self._device.cmd_set_bluetooth_password(password)
         try:
-            self.coordinator.hass.config_entries.async_update_entry(
-                self._entry,
-                data={**self._entry.data, CONF_PASSWORD: password},
-                reload=False,
-            )
-        except TypeError:
-            self.coordinator.hass.config_entries.async_update_entry(
-                self._entry,
-                data={**self._entry.data, CONF_PASSWORD: password},
-            )
+            await self._device.cmd_set_bluetooth_password(password)
+        finally:
+            # Save even if a later step failed: once the device accepted the
+            # new password, keeping the old one would lock us out.
+            if self._device.password_is(password):
+                self._save_password(password)
+        self.coordinator.new_password = ""
         await self._device.cmd_reboot()
         async_ephemeral_notification(
             self.hass,
@@ -230,6 +227,17 @@ class ChangePasswordButton(Entity, ButtonEntity):
             title="LD2410",
             notification_id=notification_id,
         )
+
+    def _save_password(self, password: str) -> None:
+        data = {**self._entry.data, CONF_PASSWORD: password}
+        try:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry, data=data, reload=False
+            )
+        except TypeError:
+            self.coordinator.hass.config_entries.async_update_entry(
+                self._entry, data=data
+            )
 
 
 class RebootButton(Entity, ButtonEntity):

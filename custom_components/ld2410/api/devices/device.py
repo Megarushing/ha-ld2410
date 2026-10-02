@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import contextvars
 import logging
 import time
 from collections.abc import Callable
@@ -29,6 +30,12 @@ from ..const import (
 )
 from ..discovery import GetDevices
 from ..models import Advertisement
+
+# True while the current task runs ``_on_connect``. Config sessions opened by
+# ``_on_connect`` must not wait for a session that is waiting for this connection.
+IN_ON_CONNECT: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "in_on_connect", default=False
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -150,10 +157,29 @@ class BaseDevice:
                 self.rssi,
             )
         self._cancel_disconnect_timer()
+        self.schedule_reconnect()
+        self._fire_callbacks()
+
+    def start_connecting(self) -> None:
+        """Connect in the background without blocking setup."""
+        self._initial_connect_task = self.loop.create_task(self._initial_connect())
+
+    async def _initial_connect(self) -> None:
+        try:
+            await self._ensure_connected()
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:  # noqa: BLE001 - any failure means "try again"
+            # Nothing else would retry: reconnects are only scheduled from a
+            # disconnect, so the device would stay silently unconnected.
+            _LOGGER.debug("%s: Initial connection failed, retrying: %s", self.name, ex)
+            self.schedule_reconnect()
+
+    def schedule_reconnect(self) -> None:
+        """Keep (re)connecting in the background until connected."""
         if self._should_reconnect:
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
-        self._fire_callbacks()
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve GATT characteristics used for I/O.
@@ -186,6 +212,7 @@ class BaseDevice:
         self._connect_lock = asyncio.Lock()
         self._operation_lock = asyncio.Lock()
         self._operation_tasks: list[asyncio.Task[Any]] = []
+        self._disconnect_cancelled: set[asyncio.Task[Any]] = set()
         self._client: BleakClientWithServiceCache | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
@@ -198,6 +225,7 @@ class BaseDevice:
         self._last_frame_time: float | None = None
         self._timed_disconnect_task: asyncio.Task[None] | None = None
         self._restart_connection_tasks: list[asyncio.Task[None]] = []
+        self._initial_connect_task: asyncio.Task[None] | None = None
         self._rssi: int = getattr(device, "rssi", -127) or -127
         self._should_reconnect = self._auto_reconnect
         self._should_wait_for_response = self._default_should_wait_for_response
@@ -295,6 +323,10 @@ class BaseDevice:
                     raw_command, command, retry, max_attempts, wait_for_response
                 )
         except asyncio.CancelledError as err:
+            if current not in self._disconnect_cancelled:
+                raise  # cancelled by the caller (timeout, unload): propagate
+            self._disconnect_cancelled.discard(current)
+            current.uncancel()
             raise OperationError("Device disconnecting") from err
         finally:
             if current in self._operation_tasks:
@@ -431,7 +463,11 @@ class BaseDevice:
             new_connection = True
 
         if new_connection:
-            await self._on_connect()
+            token = IN_ON_CONNECT.set(True)
+            try:
+                await self._on_connect()
+            finally:
+                IN_ON_CONNECT.reset(token)
         return new_connection
 
     def _reset_disconnect_timer(self):
@@ -448,6 +484,7 @@ class BaseDevice:
         _LOGGER.debug("%s: Clearing queued commands before disconnect", self.name)
         for task in list(self._operation_tasks):
             if not task.done():
+                self._disconnect_cancelled.add(task)
                 task.cancel()
         self._operation_tasks.clear()
         if self._notify_future:
@@ -527,8 +564,7 @@ class BaseDevice:
         except Exception as ex:  # pragma: no cover - best effort
             _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
             await asyncio.sleep(1)
-            task = self.loop.create_task(self._restart_connection())
-            self._restart_connection_tasks.append(task)
+            self.schedule_reconnect()
         finally:
             if current in self._restart_connection_tasks:
                 self._restart_connection_tasks.remove(current)

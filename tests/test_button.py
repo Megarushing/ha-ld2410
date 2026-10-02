@@ -365,6 +365,10 @@ async def test_change_password_button(hass: HomeAssistant) -> None:
             AsyncMock(),
         ) as set_mock,
         patch(
+            "custom_components.ld2410.api.LD2410.password_is",
+            side_effect=lambda pw: pw == "abcd12",
+        ),
+        patch(
             "custom_components.ld2410.api.LD2410.cmd_reboot",
             AsyncMock(),
         ) as reboot_mock,

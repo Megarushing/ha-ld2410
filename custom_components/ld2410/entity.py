@@ -6,6 +6,8 @@ from collections.abc import Callable, Coroutine, Mapping
 import logging
 from typing import Any, Concatenate
 
+from bleak_retry_connector import BLEAK_RETRY_EXCEPTIONS
+
 from .api import Device, OperationError
 
 from homeassistant.components.bluetooth.passive_update_coordinator import (
@@ -120,7 +122,7 @@ def exception_handler[_EntityT: Entity, **_P](
     async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:
         try:
             await func(self, *args, **kwargs)
-        except OperationError as error:
+        except (OperationError, ValueError, *BLEAK_RETRY_EXCEPTIONS) as error:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="operation_error",

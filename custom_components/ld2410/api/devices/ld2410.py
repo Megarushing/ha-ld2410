@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import time
+from collections.abc import AsyncIterator
 from typing import Any, Dict, Sequence
 
 from bleak.backends.device import BLEDevice
@@ -37,7 +40,7 @@ from ..const import (
     RX_HEADER,
     RX_FOOTER,
 )
-from .device import Device, OperationError
+from .device import IN_ON_CONNECT, Device, OperationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +80,35 @@ class LD2410(Device):
         self._inverse: bool = kwargs.pop("inverse_mode", False)
         super().__init__(device, interface=interface, **kwargs)
         self._password_words = _password_to_words(password) if password else ()
+        self._config_lock = asyncio.Lock()
+
+    def password_is(self, password: str) -> bool:
+        """Return True if ``password`` is the one the device now expects."""
+        return self._password_words == _password_to_words(password)
+
+    @contextlib.asynccontextmanager
+    async def _config_session(self, end: bool = True) -> AsyncIterator[None]:
+        """Run commands inside one enable_config ... end_config session.
+
+        The lock stops two sessions interleaving: one task's END_CFG would
+        otherwise close the other's session halfway. On error the session is
+        still closed, because the radar stops streaming while in config mode.
+        """
+        # Connect first: a new connection runs _on_connect, which opens its own
+        # sessions and would deadlock on the lock if we already held it.
+        await self._ensure_connected()
+        lock = contextlib.nullcontext() if IN_ON_CONNECT.get() else self._config_lock
+        async with lock:
+            await self.cmd_enable_config()
+            try:
+                yield
+            except Exception:
+                if end:
+                    with contextlib.suppress(Exception):
+                        await self.cmd_end_config()
+                raise
+            if end:
+                await self.cmd_end_config()
 
     async def _on_connect(self) -> None:
         """Reauthorize and refresh configuration after connecting."""
@@ -178,13 +210,12 @@ class LD2410(Device):
             words = _password_to_words(password)
         except UnicodeEncodeError as err:
             raise ValueError("password must be ASCII") from err
-        await self.cmd_enable_config()
-        payload = "".join(words)
-        response = await self._send_command(CMD_BT_SET_PWD + payload)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to set bluetooth password")
-        await self.cmd_end_config()
-        self._password_words = words
+        async with self._config_session():
+            response = await self._send_command(CMD_BT_SET_PWD + "".join(words))
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set bluetooth password")
+            # Accepted: from now on the device expects the new password.
+            self._password_words = words
 
     async def cmd_enable_config(self) -> tuple[int, int]:
         """Enable configuration session.
@@ -206,32 +237,28 @@ class LD2410(Device):
 
     async def cmd_enable_engineering_mode(self) -> None:
         """Enable engineering mode."""
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_ENABLE_ENGINEERING)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to enable engineering mode")
-        await self.cmd_end_config()
+        async with self._config_session():
+            response = await self._send_command(CMD_ENABLE_ENGINEERING)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to enable engineering mode")
 
     async def cmd_auto_thresholds(self, duration_sec: int) -> None:
         """Start automatic threshold detection for the specified duration."""
         if not 0 <= duration_sec <= 0xFFFF:
             raise ValueError("duration_sec must be 0..65535")
-        await self.cmd_enable_config()
         raw_command = CMD_START_AUTO_THRESH + duration_sec.to_bytes(2, "little").hex()
-        response = await self._send_command(raw_command)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to start automatic threshold detection")
-        await self.cmd_end_config()
+        async with self._config_session():
+            response = await self._send_command(raw_command)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to start automatic threshold detection")
 
     async def cmd_query_auto_thresholds(self) -> int:
         """Query automatic threshold detection status."""
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_QUERY_AUTO_THRESH)
-        if not response or len(response) < 4 or response[:2] != b"\x00\x00":
-            raise OperationError("Failed to query automatic threshold status")
-        r = int.from_bytes(response[2:4], "little")
-        await self.cmd_end_config()
-        return r
+        async with self._config_session():
+            response = await self._send_command(CMD_QUERY_AUTO_THRESH)
+            if not response or len(response) < 4 or response[:2] != b"\x00\x00":
+                raise OperationError("Failed to query automatic threshold status")
+        return int.from_bytes(response[2:4], "little")
 
     async def cmd_set_gate_sensitivity(self, gate: int, move: int, still: int) -> None:
         """Set move and still sensitivity for a gate."""
@@ -241,7 +268,6 @@ class LD2410(Device):
             raise ValueError("move must be 0..100")
         if not 0 <= still <= 100:
             raise ValueError("still must be 0..100")
-        await self.cmd_enable_config()
         payload = (
             PAR_DISTANCE_GATE
             + gate.to_bytes(4, "little").hex()
@@ -250,27 +276,32 @@ class LD2410(Device):
             + PAR_STILL_SENS
             + still.to_bytes(4, "little").hex()
         )
-        response = await self._send_command(CMD_SET_SENSITIVITY + payload)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to set sensitivity")
+        async with self._config_session():
+            response = await self._send_command(CMD_SET_SENSITIVITY + payload)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set sensitivity")
         move_list = list(self.parsed_data.get("move_gate_sensitivity") or [])
         still_list = list(self.parsed_data.get("still_gate_sensitivity") or [])
         if gate < len(move_list):
             move_list[gate] = move
         if gate < len(still_list):
             still_list[gate] = still
-        self._update_parsed_data(
+        self._update_and_notify(
             {
                 "move_gate_sensitivity": move_list,
                 "still_gate_sensitivity": still_list,
             }
         )
-        await self.cmd_end_config()
+
+    def _update_and_notify(self, data: dict[str, Any]) -> None:
+        """Store values just written to the device and refresh entities now."""
+        if self._update_parsed_data(data):
+            self._fire_callbacks()
 
     async def cmd_read_params(self) -> Dict[str, Any]:
         """Read and parse device configuration parameters."""
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_READ_PARAMS)
+        async with self._config_session():
+            response = await self._send_command(CMD_READ_PARAMS)
         if (
             not response
             or len(response) < 10
@@ -292,7 +323,7 @@ class LD2410(Device):
         still_gate_sensitivity = list(payload[idx : idx + move_len])
         idx += move_len
         absence_delay = int.from_bytes(payload[idx : idx + 2], "little")
-        r = {
+        return {
             "max_gate": max_gate,
             "max_move_gate": max_move_gate,
             "max_still_gate": max_still_gate,
@@ -300,8 +331,6 @@ class LD2410(Device):
             "still_gate_sensitivity": still_gate_sensitivity,
             "absence_delay": absence_delay,
         }
-        await self.cmd_end_config()
-        return r
 
     async def cmd_set_absence_delay(self, delay: int) -> None:
         """Set the absence delay (no-one duration)."""
@@ -309,7 +338,6 @@ class LD2410(Device):
             raise ValueError("delay must be 0..65535")
         move_gate = self.parsed_data.get("max_move_gate", 8)
         still_gate = self.parsed_data.get("max_still_gate", 8)
-        await self.cmd_enable_config()
         payload = (
             PAR_MAX_MOVE_GATE
             + move_gate.to_bytes(4, "little").hex()
@@ -318,16 +346,16 @@ class LD2410(Device):
             + PAR_NOBODY_DURATION
             + delay.to_bytes(4, "little").hex()
         )
-        response = await self._send_command(CMD_SET_MAX_GATES_AND_NOBODY + payload)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to set absence delay")
-        self._update_parsed_data({"absence_delay": delay})
-        await self.cmd_end_config()
+        async with self._config_session():
+            response = await self._send_command(CMD_SET_MAX_GATES_AND_NOBODY + payload)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set absence delay")
+        self._update_and_notify({"absence_delay": delay})
 
     async def cmd_get_light_config(self) -> Dict[str, int]:
         """Get light control configuration."""
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_GET_AUX)
+        async with self._config_session():
+            response = await self._send_command(CMD_GET_AUX)
         if not response or len(response) < 6 or response[:2] != b"\x00\x00":
             raise OperationError("Failed to get light config")
         mode = response[2]
@@ -340,7 +368,6 @@ class LD2410(Device):
                 "light_out_level": out_level,
             }
         )
-        await self.cmd_end_config()
         return {"mode": mode, "threshold": threshold, "out_level": out_level}
 
     async def cmd_set_light_config(
@@ -364,27 +391,25 @@ class LD2410(Device):
         threshold_byte = threshold if threshold is not None else current_threshold
         out_level_byte = out_level if out_level is not None else current_out_level
         payload = bytes([mode_byte, threshold_byte, out_level_byte, 0]).hex()
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_SET_AUX + payload)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to set light config")
-        self._update_parsed_data(
+        async with self._config_session():
+            response = await self._send_command(CMD_SET_AUX + payload)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set light config")
+        self._update_and_notify(
             {
                 "light_function": mode_byte,
                 "light_threshold": threshold_byte,
                 "light_out_level": out_level_byte,
             }
         )
-        await self.cmd_end_config()
 
     async def cmd_get_resolution(self) -> int:
         """Query the distance resolution."""
-        await self.cmd_enable_config()
-        response = await self._send_command(CMD_GET_RES)
+        async with self._config_session():
+            response = await self._send_command(CMD_GET_RES)
         if not response or len(response) < 4 or response[:2] != b"\x00\x00":
             raise OperationError("Failed to get resolution")
         idx = int.from_bytes(response[2:4], "little")
-        await self.cmd_end_config()
         self._update_parsed_data({"resolution": idx})
         return idx
 
@@ -392,19 +417,19 @@ class LD2410(Device):
         """Set the distance resolution."""
         if index not in (0, 1):
             raise ValueError("index must be 0 or 1")
-        await self.cmd_enable_config()
         payload = index.to_bytes(2, "little").hex()
-        response = await self._send_command(CMD_SET_RES + payload)
-        if response != b"\x00\x00":
-            raise OperationError("Failed to set resolution")
-        self._update_parsed_data({"resolution": index})
-        await self.cmd_end_config()
+        async with self._config_session():
+            response = await self._send_command(CMD_SET_RES + payload)
+            if response != b"\x00\x00":
+                raise OperationError("Failed to set resolution")
+        self._update_and_notify({"resolution": index})
         await self.cmd_reboot()
 
     async def cmd_reboot(self) -> None:
         """Reboot the module."""
-        await self.cmd_enable_config()
-        await self._send_command(CMD_REBOOT, wait_for_response=False)
+        # No END_CFG: the module reboots and leaves config mode by itself.
+        async with self._config_session(end=False):
+            await self._send_command(CMD_REBOOT, wait_for_response=False)
 
     def _parse_uplink_frame(self, data: bytes) -> Dict[str, Any] | None:
         """Parse an uplink frame.
@@ -475,8 +500,10 @@ class LD2410(Device):
             out_pin = content[idx + 1]
             result.update(
                 {
-                    "max_move_gate": max_move_gate,
-                    "max_still_gate": max_still_gate,
+                    # Gate counts of this frame, NOT the configured max gates
+                    # (cmd_read_params); sharing a key let frames overwrite them.
+                    "frame_move_gates": max_move_gate,
+                    "frame_still_gates": max_still_gate,
                     "move_gate_energy": move_gate_energy,
                     "still_gate_energy": still_gate_energy,
                     "photo_sensor": photo_sensor,

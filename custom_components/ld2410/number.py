@@ -20,6 +20,7 @@ except ImportError:  # Home Assistant <2024.6
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
+from .api import OperationError
 from .coordinator import ConfigEntryType, DataCoordinator
 from .entity import Entity, exception_handler
 
@@ -74,8 +75,11 @@ class GateSensitivityNumber(Entity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         move_values = self.parsed_data.get("move_gate_sensitivity") or []
         still_values = self.parsed_data.get("still_gate_sensitivity") or []
-        move = move_values[self._gate] if self._gate < len(move_values) else 0
-        still = still_values[self._gate] if self._gate < len(still_values) else 0
+        if self._gate >= min(len(move_values), len(still_values)):
+            # Both values are sent together; guessing the other one would overwrite it.
+            raise OperationError("Gate sensitivities not read from the device yet")
+        move = move_values[self._gate]
+        still = still_values[self._gate]
         if self._data_key == "move_gate_sensitivity":
             move = int(value)
         else:

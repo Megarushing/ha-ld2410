@@ -34,7 +34,7 @@ class NewPasswordText(Entity, TextEntity):
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "new_password"
-    _attr_mode = TextMode.TEXT
+    _attr_mode = TextMode.PASSWORD
     _attr_pattern = r"^[ -~]*$"
 
     def __init__(self, coordinator: DataCoordinator) -> None:
@@ -45,8 +45,8 @@ class NewPasswordText(Entity, TextEntity):
 
     @property
     def native_value(self) -> str | None:
-        """Return the current value."""
-        return getattr(self.coordinator, "new_password", "")
+        """Return a mask, never the password: the state is stored in history."""
+        return "*" * len(getattr(self.coordinator, "new_password", ""))
 
     async def async_set_value(self, value: str) -> None:
         """Set the text value."""

@@ -6,11 +6,12 @@ from typing import Any
 
 from homeassistant.components import bluetooth
 from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.const import CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 
 from .coordinator import ConfigEntryType
 
-TO_REDACT: list[str] = []
+TO_REDACT = [CONF_PASSWORD]
 
 
 async def async_get_config_entry_diagnostics(

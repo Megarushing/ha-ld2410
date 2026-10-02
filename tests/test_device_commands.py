@@ -70,6 +70,9 @@ class _TestDevice(LD2410):
             return self._response.pop(0)
         return self._response
 
+    async def _ensure_connected(self) -> bool:
+        return False  # simulated device is always connected
+
 
 @pytest.mark.asyncio
 async def test_wait_for_response_defaults_to_class_setting() -> None:
@@ -197,7 +200,11 @@ async def test_enable_engineering_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_enable_engineering_mode()
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_ENABLE_ENGINEERING]
+    assert dev.raw_commands == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_ENABLE_ENGINEERING,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
@@ -235,6 +242,7 @@ async def test_auto_thresholds_fail() -> None:
     assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_START_AUTO_THRESH + "0500",
+        CMD_END_CFG,
     ]
 
 
@@ -271,7 +279,11 @@ async def test_query_auto_thresholds_fail() -> None:
     )
     with pytest.raises(OperationError):
         await dev.cmd_query_auto_thresholds()
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_QUERY_AUTO_THRESH]
+    assert dev.raw_commands == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_QUERY_AUTO_THRESH,
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
@@ -323,6 +335,7 @@ async def test_set_gate_sensitivity_fail() -> None:
     assert dev.raw_commands == [
         CMD_ENABLE_CFG + "0001",
         CMD_SET_SENSITIVITY + "00000400000001000f000000020028000000",
+        CMD_END_CFG,
     ]
 
 
@@ -366,7 +379,7 @@ async def test_read_params_fail() -> None:
     dev = _TestDevice(password=None, response=resp)
     with pytest.raises(OperationError):
         await dev.cmd_read_params()
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_READ_PARAMS, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
@@ -462,7 +475,7 @@ async def test_set_absence_delay_fail() -> None:
         + PAR_NOBODY_DURATION
         + "1e000000"
     )
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", expected_payload]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", expected_payload, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
@@ -489,11 +502,12 @@ async def test_get_resolution_fail() -> None:
         response=[
             b"\x00\x00\x01\x00\x00@",
             b"\x01\x00\x01\x00",
+            b"\x00\x00",
         ],
     )
     with pytest.raises(OperationError):
         await dev.cmd_get_resolution()
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_GET_RES]
+    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_GET_RES, CMD_END_CFG]
 
 
 @pytest.mark.asyncio
@@ -528,11 +542,16 @@ async def test_set_resolution_fail() -> None:
         response=[
             b"\x00\x00\x01\x00\x00@",
             b"\x01\x00",
+            b"\x00\x00",
         ],
     )
     with pytest.raises(OperationError):
         await dev.cmd_set_resolution(1)
-    assert dev.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_SET_RES + "0100"]
+    assert dev.raw_commands == [
+        CMD_ENABLE_CFG + "0001",
+        CMD_SET_RES + "0100",
+        CMD_END_CFG,
+    ]
 
 
 @pytest.mark.asyncio
