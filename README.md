@@ -122,7 +122,7 @@ recorder:
       - sensor.<device>_frame_type
 ```
 
-To stop recording a whole device instead, use one glob per entity domain:
+To stop recording a whole device instead (all its sensors and binary sensors), use one glob per device:
 
 ```yaml
 recorder:
