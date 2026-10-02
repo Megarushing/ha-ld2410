@@ -12,6 +12,7 @@ from homeassistant.const import CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 from custom_components.ld2410.api.const import CMD_ENABLE_CFG, CMD_END_CFG
@@ -263,7 +264,9 @@ async def test_disconnect_cancel_becomes_operation_error() -> None:
 async def test_engineering_frame_does_not_overwrite_max_gates() -> None:
     """Frames report their own gate count; it must not replace the config."""
     device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00", b"\x00\x00"])
-    device._update_parsed_data({"max_move_gate": 4, "max_still_gate": 3})
+    device._update_parsed_data(
+        {"max_move_gate": 4, "max_still_gate": 3, "absence_delay": 5}
+    )
     frame = device._parse_uplink_frame(
         bytes.fromhex("01aa031e00641e00641e000808")
         + bytes(9)
@@ -394,7 +397,14 @@ async def test_config_sessions_do_not_interleave() -> None:
     """Two commands at once must each run ENABLE, command, END in one block."""
     ok_enable = b"\x00\x00\x01\x00\x00@"
     device = _ScriptedDevice([ok_enable, b"\x00\x00", b"\x00\x00"] * 2)
-    device._update_parsed_data({"move_gate_sensitivity": [0] * 9})
+    device._update_parsed_data(
+        {
+            "move_gate_sensitivity": [0] * 9,
+            "max_move_gate": 8,
+            "max_still_gate": 8,
+            "absence_delay": 5,
+        }
+    )
     await asyncio.gather(
         device.cmd_set_light_config(threshold=10),
         device.cmd_set_absence_delay(5),
@@ -408,6 +418,9 @@ async def test_config_sessions_do_not_interleave() -> None:
 async def test_config_session_closed_on_error() -> None:
     """A rejected command must still end config mode, or streaming stops."""
     device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x01\x00", b"\x00\x00"])
+    device._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
+    )
     with pytest.raises(OperationError):
         await device.cmd_set_absence_delay(5)
     assert device.raw_commands[-1] == CMD_END_CFG
@@ -416,22 +429,12 @@ async def test_config_session_closed_on_error() -> None:
 # 10. Sensitivity slider never sends a guessed value --------------------------
 
 
-@pytest.mark.usefixtures("entity_registry_enabled_by_default")
-async def test_gate_sensitivity_refuses_unknown_pair(hass: HomeAssistant) -> None:
+async def test_gate_sensitivity_refuses_unknown_pair() -> None:
     """Without the other value known, sending 0 would wipe it on the device."""
-    with ExitStack() as stack:
-        device = await _setup(hass, stack, _entry())
-        send = stack.enter_context(
-            patch.object(device, "cmd_set_gate_sensitivity", AsyncMock())
-        )
-        with pytest.raises(HomeAssistantError):
-            await hass.services.async_call(
-                "number",
-                "set_value",
-                {"entity_id": "number.test_name_mg0_sensitivity", "value": 30},
-                blocking=True,
-            )
-    send.assert_not_awaited()
+    device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00"])
+    with pytest.raises(OperationError):
+        await device.cmd_set_gate_sensitivity(0, move=30)
+    assert device.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_END_CFG]
 
 
 # 11. Entities refresh right after a setting is written -----------------------
@@ -440,6 +443,9 @@ async def test_gate_sensitivity_refuses_unknown_pair(hass: HomeAssistant) -> Non
 async def test_set_command_fires_callbacks() -> None:
     """The UI must show a new setting at once, not after the next frame."""
     device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00", b"\x00\x00"])
+    device._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
+    )
     fired = []
     device.subscribe(lambda: fired.append(True))
     await device.cmd_set_absence_delay(42)
@@ -457,3 +463,117 @@ def test_translations_cover_config_and_options() -> None:
     assert {"wrong_password", "cannot_connect"} <= set(en["config"]["error"])
     assert "not_supported" in en["config"]["abort"]
     assert "retry_count" in en["options"]["step"]["init"]["data"]
+
+
+# Max gates (new number entities) -------------------------------------------
+
+
+def _gates_device() -> _ScriptedDevice:
+    device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00", b"\x00\x00"])
+    device._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 6, "absence_delay": 30}
+    )
+    return device
+
+
+async def test_set_max_move_gate_keeps_other_values() -> None:
+    """Changing one max gate re-sends the other gate and the absence delay."""
+    device = _gates_device()
+    await device.cmd_set_max_gates(move_gate=4)
+    payload = device.raw_commands[1]
+    assert payload == (
+        "6000"
+        + "0000"
+        + (4).to_bytes(4, "little").hex()
+        + "0100"
+        + (6).to_bytes(4, "little").hex()
+        + "0200"
+        + (30).to_bytes(4, "little").hex()
+    )
+    assert device.parsed_data["max_move_gate"] == 4
+    assert device.parsed_data["max_still_gate"] == 6
+
+
+async def test_set_max_gate_refused_when_settings_unknown() -> None:
+    """Without the current values, sending guesses would overwrite them."""
+    device = _ScriptedDevice([b"\x00\x00\x01\x00\x00@", b"\x00\x00"])
+    with pytest.raises(OperationError):
+        await device.cmd_set_max_gates(still_gate=4)
+    assert device.raw_commands == [CMD_ENABLE_CFG + "0001", CMD_END_CFG]
+
+
+@pytest.mark.parametrize("gate", [1, 9])
+async def test_set_max_gate_range(gate: int) -> None:
+    """The radar accepts max gates 2..8 only."""
+    with pytest.raises(ValueError):
+        await _gates_device().cmd_set_max_gates(move_gate=gate)
+
+
+async def test_max_gate_number_entity(hass: HomeAssistant) -> None:
+    """The Max still gate control calls the device with only that gate."""
+    eid = "number.test_name_max_still_gate"
+    with ExitStack() as stack:
+        entry = _entry()
+        await _setup(hass, stack, entry)
+        er.async_get(hass).async_update_entity(eid, disabled_by=None)  # off by default
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        send = stack.enter_context(
+            patch.object(entry.runtime_data.device, "cmd_set_max_gates", AsyncMock())
+        )
+        await hass.services.async_call(
+            "number", "set_value", {"entity_id": eid, "value": 5}, blocking=True
+        )
+    send.assert_awaited_once_with(still_gate=5)
+
+
+# Concurrent changes to settings that share one command (Codex review, #102) --
+
+OK_SESSION = [b"\x00\x00\x01\x00\x00@", b"\x00\x00", b"\x00\x00"]
+
+
+async def test_concurrent_max_gates_do_not_undo_each_other() -> None:
+    """Setting both max gates at once must keep both new values."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
+    )
+    await asyncio.gather(
+        device.cmd_set_max_gates(move_gate=4), device.cmd_set_max_gates(still_gate=3)
+    )
+    last = device.raw_commands[4]
+    assert "0000" + (4).to_bytes(4, "little").hex() in last
+    assert "0100" + (3).to_bytes(4, "little").hex() in last
+    assert (
+        device.parsed_data["max_move_gate"],
+        device.parsed_data["max_still_gate"],
+    ) == (4, 3)
+
+
+async def test_concurrent_gate_sensitivities_do_not_undo_each_other() -> None:
+    """MG3 and SG3 share one command; changing both at once keeps both."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"move_gate_sensitivity": [50] * 9, "still_gate_sensitivity": [40] * 9}
+    )
+    await asyncio.gather(
+        device.cmd_set_gate_sensitivity(3, move=20),
+        device.cmd_set_gate_sensitivity(3, still=10),
+    )
+    assert device.parsed_data["move_gate_sensitivity"][3] == 20
+    assert device.parsed_data["still_gate_sensitivity"][3] == 10
+
+
+async def test_concurrent_light_settings_do_not_undo_each_other() -> None:
+    """Light mode and threshold share one command; both changes must stick."""
+    device = _ScriptedDevice(OK_SESSION * 2)
+    device._update_parsed_data(
+        {"light_function": 0, "light_threshold": 128, "light_out_level": 0}
+    )
+    await asyncio.gather(
+        device.cmd_set_light_config(mode=1), device.cmd_set_light_config(threshold=50)
+    )
+    assert (
+        device.parsed_data["light_function"],
+        device.parsed_data["light_threshold"],
+    ) == (1, 50)

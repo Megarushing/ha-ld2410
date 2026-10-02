@@ -92,7 +92,7 @@ async def test_gate_sensitivity_numbers(hass: HomeAssistant) -> None:
             blocking=True,
         )
 
-        set_mock.assert_awaited_once_with(0, 55, 20)
+        set_mock.assert_awaited_once_with(0, move=55)
 
         new_params = {
             "move_gate_sensitivity": [90] * 9,

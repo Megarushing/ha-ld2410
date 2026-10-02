@@ -439,6 +439,9 @@ async def test_set_absence_delay_success() -> None:
             b"\x00\x00",
         ],
     )
+    dev._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
+    )
     await dev.cmd_set_absence_delay(30)
     expected_payload = (
         CMD_SET_MAX_GATES_AND_NOBODY
@@ -463,6 +466,9 @@ async def test_set_absence_delay_fail() -> None:
             b"\x01\x00",
             b"\x00\x00",
         ],
+    )
+    dev._update_parsed_data(
+        {"max_move_gate": 8, "max_still_gate": 8, "absence_delay": 5}
     )
     with pytest.raises(OperationError):
         await dev.cmd_set_absence_delay(30)
