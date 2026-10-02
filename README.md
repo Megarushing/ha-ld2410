@@ -97,38 +97,37 @@ For best results,
 ## Note on recorder
 Some sensors update several times per second. They are **disabled by default**. If you enable them, exclude them from the recorder, or they will fill your database. Real example: six devices with `Last frame` enabled wrote 3.7 million rows in 7 days, 38% of the whole database.
 
-Add this to your `configuration.yaml`, then restart Home Assistant.
-
-Replace every `<device>` with your device's entity id prefix. To find it, open any sensor of the device in **Settings → Entities** and take the entity id without the `sensor.` part and the sensor name. Examples:
-
-| Entity id | `<device>` |
-|---|---|
-| `sensor.hlk_ld2410_a1b2_still_energy` | `hlk_ld2410_a1b2` |
-| `sensor.bathroom_sensor_still_energy` (renamed device) | `bathroom_sensor` |
-
-Add one set of `<device>` lines per device:
+Copy this into your `configuration.yaml`, then restart Home Assistant. It works for every device that keeps its default name (`HLK-LD2410_XXXX`):
 
 ```yaml
 recorder:
   exclude:
     entity_globs:
-      # Safe for every device: these names are unique to this integration
-      - sensor.*_gate_?_energy      # 18 per-gate energy sensors
-      - sensor.*_last_frame         # updates on every received frame
-      # Generic names: scope them to your device so other integrations are not affected
+      - sensor.*_gate_?_energy        # 18 per-gate energy sensors
+      - sensor.*_last_frame           # updates on every received frame
+      - sensor.*hlk_ld2410_*_distance
+      - sensor.*hlk_ld2410_*_energy
+      - sensor.*hlk_ld2410_*_photo_sensor
+      - sensor.*hlk_ld2410_*_frame_type
+```
+
+**Renamed a device and its entity ids?** The `hlk_ld2410` lines no longer match it. Add these lines for each renamed device, and replace `<device>` with its new entity id prefix (for `sensor.bathroom_sensor_still_energy` it is `bathroom_sensor`):
+
+```yaml
       - sensor.<device>_*_distance
       - sensor.<device>_*_energy
       - sensor.<device>_photo_sensor
       - sensor.<device>_frame_type
 ```
 
-To stop recording a whole device instead (all its sensors and binary sensors), use one glob per device:
+To stop recording a whole device instead (all its sensors and binary sensors):
 
 ```yaml
 recorder:
   exclude:
     entity_globs:
-      - "*.<device>_*"
+      - "*.*hlk_ld2410_*"     # every device with its default name
+      - "*.<device>_*"        # one line per renamed device
 ```
 
 Notes:
