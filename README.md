@@ -95,48 +95,45 @@ For best results,
    If it's not detected, click the **Add Integration** button, search for "HA-LD2410", and install it. Your device should appear in the list.
 
 ## Note on recorder
-To avoid filling up your database with high-frequency sensor data, we have some sensors come deactivated by default, if you want to activate them it's recommended to exclude certain entities from being recorded. You can do this by adding the following configuration to your `configuration.yaml` file:
+Some sensors update several times per second. They are **disabled by default**. If you enable them, exclude them from the recorder, or they will fill your database. Real example: six devices with `Last frame` enabled wrote 3.7 million rows in 7 days, 38% of the whole database.
 
-- To remove the whole device
-
-```yaml
-recorder:
-  exclude:
-    domains:
-      - ld2410
-```
-
-- Or to exclude only specific sensors (replace `{address}` with your device's last 2 bytes address, e.g., `E5F6`):
+Copy this into your `configuration.yaml`, then restart Home Assistant. It works for every device that keeps its default name (`HLK-LD2410_XXXX`):
 
 ```yaml
 recorder:
   exclude:
-    entities:
-      - sensor.hlk_ld2410_{address}_moving_distance
-      - sensor.hlk_ld2410_{address}_still_distance
-      - sensor.hlk_ld2410_{address}_move_energy
-      - sensor.hlk_ld2410_{address}_still_energy
-      - sensor.hlk_ld2410_{address}_detect_distance
-      - sensor.hlk_ld2410_{address}_photo_sensor
-      - sensor.hlk_ld2410_{address}_move_gate_0_energy
-      - sensor.hlk_ld2410_{address}_move_gate_1_energy
-      - sensor.hlk_ld2410_{address}_move_gate_2_energy
-      - sensor.hlk_ld2410_{address}_move_gate_3_energy
-      - sensor.hlk_ld2410_{address}_move_gate_4_energy
-      - sensor.hlk_ld2410_{address}_move_gate_5_energy
-      - sensor.hlk_ld2410_{address}_move_gate_6_energy
-      - sensor.hlk_ld2410_{address}_move_gate_7_energy
-      - sensor.hlk_ld2410_{address}_move_gate_8_energy
-      - sensor.hlk_ld2410_{address}_still_gate_0_energy
-      - sensor.hlk_ld2410_{address}_still_gate_1_energy
-      - sensor.hlk_ld2410_{address}_still_gate_2_energy
-      - sensor.hlk_ld2410_{address}_still_gate_3_energy
-      - sensor.hlk_ld2410_{address}_still_gate_4_energy
-      - sensor.hlk_ld2410_{address}_still_gate_5_energy
-      - sensor.hlk_ld2410_{address}_still_gate_6_energy
-      - sensor.hlk_ld2410_{address}_still_gate_7_energy
-      - sensor.hlk_ld2410_{address}_still_gate_8_energy
+    entity_globs:
+      - sensor.*_gate_?_energy        # 18 per-gate energy sensors
+      - sensor.*_last_frame           # updates on every received frame
+      - sensor.*hlk_ld2410_*_distance
+      - sensor.*hlk_ld2410_*_energy
+      - sensor.*hlk_ld2410_*_photo_sensor
+      - sensor.*hlk_ld2410_*_frame_type
 ```
+
+**Renamed a device and its entity ids?** The `hlk_ld2410` lines no longer match it. Add these lines for each renamed device, and replace `<device>` with its new entity id prefix (for `sensor.bathroom_sensor_still_energy` it is `bathroom_sensor`):
+
+```yaml
+      - sensor.<device>_*_distance
+      - sensor.<device>_*_energy
+      - sensor.<device>_photo_sensor
+      - sensor.<device>_frame_type
+```
+
+To stop recording a whole device instead (all its sensors and binary sensors):
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - "*.*hlk_ld2410_*"     # every device with its default name
+      - "*.<device>_*"        # one line per renamed device
+```
+
+Notes:
+- `exclude: domains: [ld2410]` does **not** work. Recorder domains are entity domains such as `sensor` or `binary_sensor`, not integrations.
+- Excluding an entity does not delete rows it already wrote. To remove them, call `recorder.purge` with `apply_filter: true`.
+- Recorder changes need a Home Assistant restart.
 
 ## Contributing
 Contributions are welcome! To set up the development environment:

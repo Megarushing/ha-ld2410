@@ -1,0 +1,24 @@
+name: Check version
+
+on:
+  push:
+    tags:
+      - "*"
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  manifest-matches-tag:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare tag with manifest version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(jq -r .version custom_components/ld2410/manifest.json)"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match manifest.json version $version"
+            exit 1
+          fi

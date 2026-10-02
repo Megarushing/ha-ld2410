@@ -137,6 +137,10 @@ class LD2410(Device):
                 )
             return True
         if data.startswith(bytearray.fromhex(RX_HEADER)):
+            # Stamp arrival before parsing: an unparseable frame still proves
+            # the device is streaming. Command responses (TX_HEADER, above) are
+            # excluded so a config exchange cannot mask a dead uplink stream.
+            self._last_frame_time = time.time()
             payload = _unwrap_frame(data, RX_HEADER, RX_FOOTER)
             try:
                 parsed = self._parse_uplink_frame(payload)

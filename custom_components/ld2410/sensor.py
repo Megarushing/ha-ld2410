@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -9,12 +11,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     LIGHT_LUX,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfLength,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 try:
     from homeassistant.helpers.entity_platform import (
@@ -121,6 +124,13 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.ILLUMINANCE,
         entity_registry_enabled_default=False,
     ),
+    "last_frame": SensorEntityDescription(
+        key="last_frame",
+        translation_key="last_frame",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 }
 
 
@@ -131,10 +141,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensors based on a config entry."""
     coordinator = entry.runtime_data
+    polled = ("rssi", "last_frame")
     entities = [
-        Sensor(coordinator, sensor) for sensor in SENSOR_TYPES if sensor != "rssi"
+        Sensor(coordinator, sensor) for sensor in SENSOR_TYPES if sensor not in polled
     ]
     entities.append(RSSISensor(coordinator, "rssi"))
+    entities.append(LastFrameSensor(coordinator, "last_frame"))
     for key in ("move_gate_energy", "still_gate_energy"):
         for gate in range(9):
             entities.append(GateEnergySensor(coordinator, key, gate))
@@ -197,7 +209,7 @@ class RSSISensor(Sensor):
 
     _attr_should_poll = True
 
-    async def async_update(self) -> None:  # noqa: D102
+    async def async_update(self) -> None:
         await self._device.read_rssi()
 
     @property
@@ -205,3 +217,23 @@ class RSSISensor(Sensor):
         """Return the state of the sensor."""
         rssi = self._device.rssi
         return None if rssi == -127 else rssi
+
+
+class LastFrameSensor(Sensor):
+    """Representation of the last uplink frame timestamp.
+
+    Diagnostic probe for a stalled uplink stream. Polled rather than
+    callback-driven because callbacks only fire when frame *content* changes,
+    which is exactly what a stalled stream and an empty room have in common.
+    """
+
+    _attr_should_poll = True
+
+    async def async_update(self) -> None:
+        """Refresh on the poll interval; the value is read in native_value."""
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the state of the sensor."""
+        timestamp = self._device.last_frame_time
+        return None if timestamp is None else dt_util.utc_from_timestamp(timestamp)
