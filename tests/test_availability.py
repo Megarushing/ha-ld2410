@@ -12,7 +12,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
-from custom_components.ld2410.api.devices.device import Device
+from custom_components.ld2410.api.devices.device import RECONNECT_GRACE, Device
 from custom_components.ld2410.api.const import RX_HEADER, RX_FOOTER
 
 from . import LD2410b_SERVICE_INFO
@@ -143,8 +143,25 @@ async def test_entities_unavailable_during_reconnect(
     entity_id = "binary_sensor.test_name_motion"
     assert hass.states.get(entity_id).state != STATE_UNAVAILABLE
 
+    device = entry.runtime_data.device
     mock_connected.return_value = False
-    entry.runtime_data.device._on_disconnect(None)
+    device._on_disconnect(None)
     await hass.async_block_till_done()
 
+    # A short blip keeps the last state: most BLE drops reconnect in seconds.
+    assert hass.states.get(entity_id).state != STATE_UNAVAILABLE
+    assert device._grace_timer is not None
+
+    # Once the reconnect outlasts the grace period, entities go unavailable.
+    device._reconnect_since -= RECONNECT_GRACE
+    device._fire_callbacks()  # what the grace timer does when it expires
+    await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
+
+    # Reconnected: the grace period is cleared for the next drop.
+    mock_connected.return_value = True
+    device.clear_reconnect_grace()
+    device._fire_callbacks()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state != STATE_UNAVAILABLE
+    assert device._grace_timer is None

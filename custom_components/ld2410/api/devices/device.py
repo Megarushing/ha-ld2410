@@ -46,6 +46,9 @@ DBUS_ERROR_BACKOFF_TIME = 0.25
 # to wait for additional commands for
 # disconnecting the device.
 DISCONNECT_DELAY = 8.5
+# Seconds a reconnect may take before entities show as unavailable. Most BLE
+# drops reconnect in 5-10 s; without this, each one blinks every entity.
+RECONNECT_GRACE = 30
 
 
 # If the scanner is in passive mode, we
@@ -178,6 +181,13 @@ class BaseDevice:
     def schedule_reconnect(self) -> None:
         """Keep (re)connecting in the background until connected."""
         if self._should_reconnect:
+            if self._reconnect_since is None:
+                self._reconnect_since = time.monotonic()
+                # Nothing else fires while the link is down, so wake the
+                # entities when the grace period ends to show "unavailable".
+                self._grace_timer = self.loop.call_later(
+                    RECONNECT_GRACE, self._fire_callbacks
+                )
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
 
@@ -226,6 +236,8 @@ class BaseDevice:
         self._timed_disconnect_task: asyncio.Task[None] | None = None
         self._restart_connection_tasks: list[asyncio.Task[None]] = []
         self._initial_connect_task: asyncio.Task[None] | None = None
+        self._reconnect_since: float | None = None
+        self._grace_timer: asyncio.TimerHandle | None = None
         self._rssi: int = getattr(device, "rssi", -127) or -127
         self._should_reconnect = self._auto_reconnect
         self._should_wait_for_response = self._default_should_wait_for_response
@@ -396,6 +408,22 @@ class BaseDevice:
         """Return if the device is attempting to reconnect."""
         return not self.is_connected and bool(self._restart_connection_tasks)
 
+    @property
+    def reconnect_overdue(self) -> bool:
+        """Return if a reconnect has taken longer than RECONNECT_GRACE."""
+        return (
+            self.is_reconnecting
+            and self._reconnect_since is not None
+            and time.monotonic() - self._reconnect_since >= RECONNECT_GRACE
+        )
+
+    def clear_reconnect_grace(self) -> None:
+        """Forget a reconnect in progress (connected again, or unloading)."""
+        self._reconnect_since = None
+        if self._grace_timer:
+            self._grace_timer.cancel()
+            self._grace_timer = None
+
     async def _ensure_connected(self) -> bool:
         """Ensure connection to device is established and initialized.
 
@@ -463,6 +491,7 @@ class BaseDevice:
             new_connection = True
 
         if new_connection:
+            self.clear_reconnect_grace()
             token = IN_ON_CONNECT.set(True)
             try:
                 await self._on_connect()

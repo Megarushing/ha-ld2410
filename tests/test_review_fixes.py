@@ -577,3 +577,40 @@ async def test_concurrent_light_settings_do_not_undo_each_other() -> None:
         device.parsed_data["light_function"],
         device.parsed_data["light_threshold"],
     ) == (1, 50)
+
+
+# Reconnect grace period ------------------------------------------------------
+
+
+async def test_grace_starts_once_per_outage() -> None:
+    """Retries during one outage must not restart the grace period."""
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    first = device._reconnect_since
+    device.schedule_reconnect()  # a failed retry schedules again
+    assert device._reconnect_since == first
+    device.clear_reconnect_grace()
+
+
+async def test_new_connection_clears_grace() -> None:
+    """A successful connect resets the grace period for the next drop."""
+    from custom_components.ld2410.api.devices import device as device_mod
+
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    client = AsyncMock()
+    client.is_connected = True
+    with (
+        patch.object(
+            device_mod, "establish_connection", AsyncMock(return_value=client)
+        ),
+        patch.object(device, "_resolve_characteristics"),
+        patch.object(device, "_start_notify", AsyncMock()),
+        patch.object(device, "_on_connect", AsyncMock()),
+    ):
+        await device._ensure_connected()
+    assert device._reconnect_since is None
+    assert device._grace_timer is None
+    device._cancel_disconnect_timer()

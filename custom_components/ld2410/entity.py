@@ -69,7 +69,7 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
     def available(self) -> bool:
         """Return if entity is available."""
         device = self.coordinator.device
-        if device.is_reconnecting:
+        if device.reconnect_overdue:
             return False
         return device.is_connected or super().available
 
