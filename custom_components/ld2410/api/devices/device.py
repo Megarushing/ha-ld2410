@@ -497,6 +497,9 @@ class BaseDevice:
                 await self._on_connect()
             finally:
                 IN_ON_CONNECT.reset(token)
+            # Entities may show "unavailable" from an outage past the grace
+            # period, and identical frames never fire callbacks: refresh now.
+            self._fire_callbacks()
         return new_connection
 
     def _reset_disconnect_timer(self):
@@ -634,9 +637,8 @@ class BaseDevice:
             _LOGGER.debug("%s: Disconnect completed successfully", self.name)
         finally:
             # Some times _on_disconnect isnt triggered, so we call it here to ensure
-            if self._should_reconnect:
-                task = self.loop.create_task(self._restart_connection())
-                self._restart_connection_tasks.append(task)
+            # a reconnect; through schedule_reconnect so the grace period starts.
+            self.schedule_reconnect()
 
     async def _send_command_locked(
         self, raw_command: str, command: bytes, wait_for_response: bool
