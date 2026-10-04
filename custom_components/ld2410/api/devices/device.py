@@ -410,10 +410,14 @@ class BaseDevice:
 
     @property
     def reconnect_overdue(self) -> bool:
-        """Return if a reconnect has taken longer than RECONNECT_GRACE."""
+        """Return if recovery has taken longer than RECONNECT_GRACE.
+
+        Recovery ends only when a connection completes _on_connect, so a link
+        that connects but fails setup over and over counts as ONE outage
+        (not one flap per attempt), even while momentarily connected.
+        """
         return (
-            self.is_reconnecting
-            and self._reconnect_since is not None
+            self._reconnect_since is not None
             and time.monotonic() - self._reconnect_since >= RECONNECT_GRACE
         )
 
@@ -491,12 +495,12 @@ class BaseDevice:
             new_connection = True
 
         if new_connection:
-            self.clear_reconnect_grace()
             token = IN_ON_CONNECT.set(True)
             try:
                 await self._on_connect()
             finally:
                 IN_ON_CONNECT.reset(token)
+            self.clear_reconnect_grace()  # only once setup fully succeeded
             # Entities may show "unavailable" from an outage past the grace
             # period, and identical frames never fire callbacks: refresh now.
             self._fire_callbacks()

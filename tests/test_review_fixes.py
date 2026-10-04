@@ -657,3 +657,34 @@ async def test_fallback_reconnect_starts_grace() -> None:
         await device._execute_disconnect_with_lock()
     assert device._reconnect_since is not None
     device.clear_reconnect_grace()
+
+
+async def test_failed_setup_keeps_outage_open() -> None:
+    """Connect-then-setup-failure loops are one outage, not one flap each.
+
+    Live 2026-10-04: with the nearby proxy gone, Bathroom connected at -98 dBm,
+    failed setup ~300 times in 4 h, and showed 138 separate outages because
+    every bare connect cleared the grace period.
+    """
+    from custom_components.ld2410.api.devices import device as device_mod
+
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    device._reconnect_since -= device_mod.RECONNECT_GRACE  # outage is overdue
+    client = AsyncMock()
+    client.is_connected = True
+    with (
+        patch.object(
+            device_mod, "establish_connection", AsyncMock(return_value=client)
+        ),
+        patch.object(device, "_resolve_characteristics"),
+        patch.object(device, "_start_notify", AsyncMock()),
+        patch.object(device, "_on_connect", AsyncMock(side_effect=OperationError("x"))),
+        pytest.raises(OperationError),
+    ):
+        await device._ensure_connected()
+    device._cancel_disconnect_timer()
+    assert device.is_connected  # momentarily connected...
+    assert device.reconnect_overdue  # ...but still one open outage
+    device.clear_reconnect_grace()
