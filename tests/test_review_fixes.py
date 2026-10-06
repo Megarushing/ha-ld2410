@@ -577,3 +577,114 @@ async def test_concurrent_light_settings_do_not_undo_each_other() -> None:
         device.parsed_data["light_function"],
         device.parsed_data["light_threshold"],
     ) == (1, 50)
+
+
+# Reconnect grace period ------------------------------------------------------
+
+
+async def test_grace_starts_once_per_outage() -> None:
+    """Retries during one outage must not restart the grace period."""
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    first = device._reconnect_since
+    device.schedule_reconnect()  # a failed retry schedules again
+    assert device._reconnect_since == first
+    device.clear_reconnect_grace()
+
+
+async def test_new_connection_clears_grace() -> None:
+    """A successful connect resets the grace period for the next drop."""
+    from custom_components.ld2410.api.devices import device as device_mod
+
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    client = AsyncMock()
+    client.is_connected = True
+    with (
+        patch.object(
+            device_mod, "establish_connection", AsyncMock(return_value=client)
+        ),
+        patch.object(device, "_resolve_characteristics"),
+        patch.object(device, "_start_notify", AsyncMock()),
+        patch.object(device, "_on_connect", AsyncMock()),
+    ):
+        await device._ensure_connected()
+    assert device._reconnect_since is None
+    assert device._grace_timer is None
+    device._cancel_disconnect_timer()
+
+
+async def test_reconnect_refreshes_entities() -> None:
+    """After an outage past the grace period, a reconnect must wake entities.
+
+    Codex review on #103: identical frames never fire callbacks, so a still
+    room stayed "unavailable" after the link came back.
+    """
+    from custom_components.ld2410.api.devices import device as device_mod
+
+    device = _device()
+    fired = []
+    device.subscribe(lambda: fired.append(True))
+    client = AsyncMock()
+    client.is_connected = True
+    with (
+        patch.object(
+            device_mod, "establish_connection", AsyncMock(return_value=client)
+        ),
+        patch.object(device, "_resolve_characteristics"),
+        patch.object(device, "_start_notify", AsyncMock()),
+        patch.object(device, "_on_connect", AsyncMock()),
+    ):
+        await device._ensure_connected()
+    device._cancel_disconnect_timer()
+    assert fired
+
+
+async def test_fallback_reconnect_starts_grace() -> None:
+    """The disconnect fallback path must start the grace period too.
+
+    Codex review on #103: it created the reconnect task directly, so the
+    30 s countdown only began after the first attempt failed.
+    """
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device._client = AsyncMock()
+    device._client.disconnect = AsyncMock(return_value=True)
+    device._read_char = None
+    async with device._connect_lock:
+        await device._execute_disconnect_with_lock()
+    assert device._reconnect_since is not None
+    device.clear_reconnect_grace()
+
+
+async def test_failed_setup_keeps_outage_open() -> None:
+    """Connect-then-setup-failure loops are one outage, not one flap each.
+
+    Live 2026-10-04: with the nearby proxy gone, Bathroom connected at -98 dBm,
+    failed setup ~300 times in 4 h, and showed 138 separate outages because
+    every bare connect cleared the grace period.
+    """
+    from custom_components.ld2410.api.devices import device as device_mod
+
+    device = _device()
+    device._restart_connection = AsyncMock()
+    device.schedule_reconnect()
+    device._reconnect_since -= device_mod.RECONNECT_GRACE  # outage is overdue
+    client = AsyncMock()
+    client.is_connected = True
+    with (
+        patch.object(
+            device_mod, "establish_connection", AsyncMock(return_value=client)
+        ),
+        patch.object(device, "_resolve_characteristics"),
+        patch.object(device, "_start_notify", AsyncMock()),
+        patch.object(device, "_on_connect", AsyncMock(side_effect=OperationError("x"))),
+        pytest.raises(OperationError),
+    ):
+        await device._ensure_connected()
+    device._cancel_disconnect_timer()
+    assert device.is_connected  # momentarily connected...
+    assert device.reconnect_overdue  # ...but still one open outage
+    device.clear_reconnect_grace()

@@ -19,6 +19,7 @@ def coordinator() -> SimpleNamespace:
     device = SimpleNamespace(
         parsed_data={"light_threshold": 10},
         is_reconnecting=False,
+        reconnect_overdue=False,
         is_connected=True,
         subscribe=MagicMock(return_value=lambda: None),
         update=AsyncMock(),

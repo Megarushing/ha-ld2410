@@ -46,6 +46,9 @@ DBUS_ERROR_BACKOFF_TIME = 0.25
 # to wait for additional commands for
 # disconnecting the device.
 DISCONNECT_DELAY = 8.5
+# Seconds a reconnect may take before entities show as unavailable. Most BLE
+# drops reconnect in 5-10 s; without this, each one blinks every entity.
+RECONNECT_GRACE = 30
 
 
 # If the scanner is in passive mode, we
@@ -178,6 +181,13 @@ class BaseDevice:
     def schedule_reconnect(self) -> None:
         """Keep (re)connecting in the background until connected."""
         if self._should_reconnect:
+            if self._reconnect_since is None:
+                self._reconnect_since = time.monotonic()
+                # Nothing else fires while the link is down, so wake the
+                # entities when the grace period ends to show "unavailable".
+                self._grace_timer = self.loop.call_later(
+                    RECONNECT_GRACE, self._fire_callbacks
+                )
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
 
@@ -226,6 +236,8 @@ class BaseDevice:
         self._timed_disconnect_task: asyncio.Task[None] | None = None
         self._restart_connection_tasks: list[asyncio.Task[None]] = []
         self._initial_connect_task: asyncio.Task[None] | None = None
+        self._reconnect_since: float | None = None
+        self._grace_timer: asyncio.TimerHandle | None = None
         self._rssi: int = getattr(device, "rssi", -127) or -127
         self._should_reconnect = self._auto_reconnect
         self._should_wait_for_response = self._default_should_wait_for_response
@@ -396,6 +408,26 @@ class BaseDevice:
         """Return if the device is attempting to reconnect."""
         return not self.is_connected and bool(self._restart_connection_tasks)
 
+    @property
+    def reconnect_overdue(self) -> bool:
+        """Return if recovery has taken longer than RECONNECT_GRACE.
+
+        Recovery ends only when a connection completes _on_connect, so a link
+        that connects but fails setup over and over counts as ONE outage
+        (not one flap per attempt), even while momentarily connected.
+        """
+        return (
+            self._reconnect_since is not None
+            and time.monotonic() - self._reconnect_since >= RECONNECT_GRACE
+        )
+
+    def clear_reconnect_grace(self) -> None:
+        """Forget a reconnect in progress (connected again, or unloading)."""
+        self._reconnect_since = None
+        if self._grace_timer:
+            self._grace_timer.cancel()
+            self._grace_timer = None
+
     async def _ensure_connected(self) -> bool:
         """Ensure connection to device is established and initialized.
 
@@ -468,6 +500,10 @@ class BaseDevice:
                 await self._on_connect()
             finally:
                 IN_ON_CONNECT.reset(token)
+            self.clear_reconnect_grace()  # only once setup fully succeeded
+            # Entities may show "unavailable" from an outage past the grace
+            # period, and identical frames never fire callbacks: refresh now.
+            self._fire_callbacks()
         return new_connection
 
     def _reset_disconnect_timer(self):
@@ -605,9 +641,8 @@ class BaseDevice:
             _LOGGER.debug("%s: Disconnect completed successfully", self.name)
         finally:
             # Some times _on_disconnect isnt triggered, so we call it here to ensure
-            if self._should_reconnect:
-                task = self.loop.create_task(self._restart_connection())
-                self._restart_connection_tasks.append(task)
+            # a reconnect; through schedule_reconnect so the grace period starts.
+            self.schedule_reconnect()
 
     async def _send_command_locked(
         self, raw_command: str, command: bytes, wait_for_response: bool
