@@ -49,6 +49,10 @@ DISCONNECT_DELAY = 8.5
 # Seconds a reconnect may take before entities show as unavailable. Most BLE
 # drops reconnect in 5-10 s; without this, each one blinks every entity.
 RECONNECT_GRACE = 30
+# Reconnect retry delay: starts at the first value, doubles after each failed
+# attempt up to the second, and resets after a fully set-up connection.
+RECONNECT_BACKOFF_MIN = 1
+RECONNECT_BACKOFF_MAX = 30
 
 
 # If the scanner is in passive mode, we
@@ -165,6 +169,9 @@ class BaseDevice:
 
     def start_connecting(self) -> None:
         """Connect in the background without blocking setup."""
+        # Start the grace clock now: until the first setup succeeds the device
+        # has no live data, so entities must not show "available" forever.
+        self._start_reconnect_grace()
         self._initial_connect_task = self.loop.create_task(self._initial_connect())
 
     async def _initial_connect(self) -> None:
@@ -175,21 +182,25 @@ class BaseDevice:
         except Exception as ex:  # noqa: BLE001 - any failure means "try again"
             # Nothing else would retry: reconnects are only scheduled from a
             # disconnect, so the device would stay silently unconnected.
-            _LOGGER.debug("%s: Initial connection failed, retrying: %s", self.name, ex)
+            _LOGGER.debug("%s: Initial connection failed, retrying: %r", self.name, ex)
             self.schedule_reconnect()
 
     def schedule_reconnect(self) -> None:
         """Keep (re)connecting in the background until connected."""
         if self._should_reconnect:
-            if self._reconnect_since is None:
-                self._reconnect_since = time.monotonic()
-                # Nothing else fires while the link is down, so wake the
-                # entities when the grace period ends to show "unavailable".
-                self._grace_timer = self.loop.call_later(
-                    RECONNECT_GRACE, self._fire_callbacks
-                )
+            self._start_reconnect_grace()
             task = self.loop.create_task(self._restart_connection())
             self._restart_connection_tasks.append(task)
+
+    def _start_reconnect_grace(self) -> None:
+        """Start the grace clock of an outage, unless one is running."""
+        if self._reconnect_since is None:
+            self._reconnect_since = time.monotonic()
+            # Nothing else fires while the link is down, so wake the
+            # entities when the grace period ends to show "unavailable".
+            self._grace_timer = self.loop.call_later(
+                RECONNECT_GRACE, self._fire_callbacks
+            )
 
     def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve GATT characteristics used for I/O.
@@ -238,6 +249,8 @@ class BaseDevice:
         self._initial_connect_task: asyncio.Task[None] | None = None
         self._reconnect_since: float | None = None
         self._grace_timer: asyncio.TimerHandle | None = None
+        self._reconnect_delay: float = RECONNECT_BACKOFF_MIN
+        self._setting_up = False
         self._rssi: int = getattr(device, "rssi", -127) or -127
         self._should_reconnect = self._auto_reconnect
         self._should_wait_for_response = self._default_should_wait_for_response
@@ -447,7 +460,6 @@ class BaseDevice:
             )
             self._reset_disconnect_timer()
             return False
-        new_connection = False
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
@@ -458,53 +470,64 @@ class BaseDevice:
                 )
                 self._reset_disconnect_timer()
                 return False
-            _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
-            client: BleakClientWithServiceCache = await establish_connection(
-                BleakClientWithServiceCache,
-                self._device,
-                self.name,
-                self._on_disconnect,
-                use_services_cache=True,
-                ble_device_callback=lambda: self._device,
-            )
-            _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
-            self._client = client
-
+            # Only the task that makes the connection owns the flag, so a
+            # caller that waited on the lock cannot clear it mid-setup.
+            self._setting_up = True
             try:
-                self._resolve_characteristics(client.services)
-            except CharacteristicMissingError as ex:
-                _LOGGER.debug(
-                    "%s: characteristic missing, clearing cache: %s; RSSI: %s",
-                    self.name,
-                    ex,
-                    self.rssi,
-                    exc_info=True,
-                )
-                await client.clear_cache()
-                self._cancel_disconnect_timer()
-                await self._execute_disconnect_with_lock()
+                await self._connect_locked()
+            except BaseException:
+                self._setting_up = False
                 raise
 
-            _LOGGER.debug(
-                "%s: Starting notify and disconnect timer; RSSI: %s",
-                self.name,
-                self.rssi,
-            )
-            self._reset_disconnect_timer()
-            await self._start_notify()
-            new_connection = True
+        token = IN_ON_CONNECT.set(True)
+        try:
+            await self._on_connect()
+        finally:
+            IN_ON_CONNECT.reset(token)
+            self._setting_up = False
+        self.clear_reconnect_grace()  # only once setup fully succeeded
+        self._reconnect_delay = RECONNECT_BACKOFF_MIN
+        # Entities may show "unavailable" from an outage past the grace
+        # period, and identical frames never fire callbacks: refresh now.
+        self._fire_callbacks()
+        return True
 
-        if new_connection:
-            token = IN_ON_CONNECT.set(True)
-            try:
-                await self._on_connect()
-            finally:
-                IN_ON_CONNECT.reset(token)
-            self.clear_reconnect_grace()  # only once setup fully succeeded
-            # Entities may show "unavailable" from an outage past the grace
-            # period, and identical frames never fire callbacks: refresh now.
-            self._fire_callbacks()
-        return new_connection
+    async def _connect_locked(self) -> None:
+        """Connect, resolve characteristics and subscribe (lock held)."""
+        _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
+        client: BleakClientWithServiceCache = await establish_connection(
+            BleakClientWithServiceCache,
+            self._device,
+            self.name,
+            self._on_disconnect,
+            use_services_cache=True,
+            ble_device_callback=lambda: self._device,
+        )
+        _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
+        self._client = client
+
+        try:
+            self._resolve_characteristics(client.services)
+        except CharacteristicMissingError as ex:
+            _LOGGER.debug(
+                "%s: characteristic missing, clearing cache: %s; RSSI: %s",
+                self.name,
+                ex,
+                self.rssi,
+                exc_info=True,
+            )
+            await client.clear_cache()
+            self._cancel_disconnect_timer()
+            await self._execute_disconnect_with_lock()
+            raise
+
+        _LOGGER.debug(
+            "%s: Starting notify and disconnect timer; RSSI: %s",
+            self.name,
+            self.rssi,
+        )
+        self._reset_disconnect_timer()
+        await self._start_notify()
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
@@ -531,9 +554,12 @@ class BaseDevice:
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
-        if self._operation_lock.locked() and self._client.is_connected:
+        busy = self._setting_up or self._operation_lock.locked()
+        if busy and self._client and self._client.is_connected:
+            # During setup, gaps between commands are not a dead stream: on a
+            # slow link they reach 12 s, and each command has its own timeout.
             _LOGGER.debug(
-                "%s: Operation in progress, resetting disconnect timer; RSSI: %s",
+                "%s: Setup or operation in progress, resetting disconnect timer; RSSI: %s",
                 self.name,
                 self.rssi,
             )
@@ -597,9 +623,13 @@ class BaseDevice:
             await self._ensure_connected()
         except asyncio.CancelledError:
             raise  # do not reschedule when cancelled
-        except Exception as ex:  # pragma: no cover - best effort
-            _LOGGER.debug("%s: Reconnect failed: %s", self.name, ex)
-            await asyncio.sleep(1)
+        except Exception as ex:  # noqa: BLE001 - any failure means "try again"
+            delay = self._reconnect_delay
+            self._reconnect_delay = min(delay * 2, RECONNECT_BACKOFF_MAX)
+            _LOGGER.debug(
+                "%s: Reconnect failed: %r; retrying in %ss", self.name, ex, delay
+            )
+            await asyncio.sleep(delay)
             self.schedule_reconnect()
         finally:
             if current in self._restart_connection_tasks:
@@ -629,20 +659,32 @@ class BaseDevice:
             return
         _LOGGER.debug("%s: Disconnecting", self.name)
         try:
-            await client.disconnect()
-        except BLEAK_RETRY_EXCEPTIONS as ex:
-            _LOGGER.warning(
-                "%s: Error disconnecting: %s; RSSI: %s",
-                self.name,
-                ex,
-                self.rssi,
-            )
-        else:
-            _LOGGER.debug("%s: Disconnect completed successfully", self.name)
+            await self._disconnect_client(client)
         finally:
             # Some times _on_disconnect isnt triggered, so we call it here to ensure
             # a reconnect; through schedule_reconnect so the grace period starts.
             self.schedule_reconnect()
+
+    async def _disconnect_client(self, client: BleakClientWithServiceCache) -> None:
+        """Disconnect ``client``, retrying once.
+
+        A disconnect that times out leaves the proxy holding the link (and
+        its connection slot) while we forget it, so ask a second time.
+        """
+        for attempt in (1, 2):
+            try:
+                await client.disconnect()
+            except BLEAK_RETRY_EXCEPTIONS as ex:
+                _LOGGER.warning(
+                    "%s: Error disconnecting (attempt %s/2): %r; RSSI: %s",
+                    self.name,
+                    attempt,
+                    ex,
+                    self.rssi,
+                )
+            else:
+                _LOGGER.debug("%s: Disconnect completed successfully", self.name)
+                return
 
     async def _send_command_locked(
         self, raw_command: str, command: bytes, wait_for_response: bool
@@ -656,7 +698,7 @@ class BaseDevice:
             # Disconnect so we can reset state and try again
             await asyncio.sleep(DBUS_ERROR_BACKOFF_TIME)
             _LOGGER.debug(
-                "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %s",
+                "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %r",
                 self.name,
                 self.rssi,
                 DBUS_ERROR_BACKOFF_TIME,
@@ -667,7 +709,7 @@ class BaseDevice:
         except BLEAK_RETRY_EXCEPTIONS as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
-                "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
+                "%s: RSSI: %s; Disconnecting due to error: %r", self.name, self.rssi, ex
             )
             await self._execute_forced_disconnect()
             raise
