@@ -60,6 +60,7 @@ class GateSensitivityNumber(Entity, NumberEntity):
     def __init__(self, coordinator: DataCoordinator, data_key: str, gate: int) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
+        self._data_keys = (data_key,)
         self._gate = gate
         prefix = "M" if data_key == "move_gate_sensitivity" else "S"
         self._attr_name = f"{prefix}G{gate} Sensitivity"
@@ -83,6 +84,8 @@ class GateSensitivityNumber(Entity, NumberEntity):
 
 class AbsenceDelayNumber(Entity, NumberEntity):
     """Representation of the absence delay configuration."""
+
+    _data_keys = ("absence_delay",)
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_native_min_value = 0
@@ -120,6 +123,7 @@ class MaxGateNumber(Entity, NumberEntity):
     def __init__(self, coordinator: DataCoordinator, data_key: str) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
+        self._data_keys = (data_key,)
         self._attr_translation_key = data_key
         self._attr_unique_id = f"{coordinator.base_unique_id}-{data_key}-number"
 
@@ -137,6 +141,8 @@ class MaxGateNumber(Entity, NumberEntity):
 
 class LightSensitivityNumber(Entity, NumberEntity):
     """Representation of light sensitivity slider."""
+
+    _data_keys = ("light_threshold",)
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_native_min_value = 0

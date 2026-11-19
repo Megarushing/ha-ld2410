@@ -58,6 +58,8 @@ async def async_setup_entry(
 class AutoSensitivityButton(Entity, ButtonEntity):
     """Button to start automatic sensitivity detection."""
 
+    _data_keys = ()
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "auto_sensitivities"
 
@@ -104,6 +106,8 @@ class AutoSensitivityButton(Entity, ButtonEntity):
 class SaveSensitivitiesButton(Entity, ButtonEntity):
     """Button to save sensitivities to config options."""
 
+    _data_keys = ()
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "save_sensitivities"
 
@@ -144,6 +148,8 @@ class SaveSensitivitiesButton(Entity, ButtonEntity):
 class LoadSensitivitiesButton(Entity, ButtonEntity):
     """Button to load sensitivities from config options."""
 
+    _data_keys = ()
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "load_sensitivities"
 
@@ -181,6 +187,8 @@ class LoadSensitivitiesButton(Entity, ButtonEntity):
 
 class ChangePasswordButton(Entity, ButtonEntity):
     """Button to change the bluetooth password."""
+
+    _data_keys = ()
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "change_password"
@@ -242,6 +250,8 @@ class ChangePasswordButton(Entity, ButtonEntity):
 
 class RebootButton(Entity, ButtonEntity):
     """Button to reboot the device."""
+
+    _data_keys = ()
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "reboot"

@@ -30,12 +30,16 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
 
     _device: Device
     _attr_has_entity_name = True
+    # parsed_data keys the state is built from; () = depends on none of them.
+    # None disables the cheap skip in _handle_coordinator_update.
+    _data_keys: tuple[str, ...] | None = None
 
     def __init__(self, coordinator: DataCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self._device = coordinator.device
         self._last_run_success: bool | None = None
+        self._last_snapshot: tuple[Any, ...] | None = None
         self._address = coordinator.ble_device.address
         self._attr_unique_id = coordinator.base_unique_id
         self._attr_device_info = DeviceInfo(
@@ -87,6 +91,20 @@ class Entity(PassiveBluetoothCoordinatorEntity[DataCoordinator]):
 
         if not self.hass or self.entity_id is None:
             return
+
+        if self._data_keys is not None:
+            # Uplink frames arrive several times a second and wake every entity
+            # of the device. Skip before Home Assistant rebuilds the full state
+            # when nothing this entity shows has changed.
+            parsed = self.parsed_data
+            snapshot = (
+                self.available,
+                self._last_run_success,
+                *(parsed.get(key) for key in self._data_keys),
+            )
+            if snapshot == self._last_snapshot:
+                return
+            self._last_snapshot = snapshot
 
         if (current_state := self.hass.states.get(self.entity_id)) is not None:
             new_state, new_attributes, *_ = self._Entity__async_calculate_state()

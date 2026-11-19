@@ -119,3 +119,56 @@ async def test_handle_update_writes_state_on_change(
         await hass.async_block_till_done()
 
     mock_write.assert_called_once()
+
+
+async def test_handle_update_skips_state_rebuild_when_keys_unchanged(
+    hass: HomeAssistant, entity: LightSensitivityNumber, coordinator: SimpleNamespace
+) -> None:
+    """Frames that leave the entity's data keys unchanged skip the state rebuild."""
+
+    entity._handle_coordinator_update()
+    coordinator.device.parsed_data = {"light_threshold": 10, "move_gate_energy": [5]}
+
+    with patch.object(entity, "_Entity__async_calculate_state") as mock_calc:
+        entity._handle_coordinator_update()
+
+    mock_calc.assert_not_called()
+
+
+async def test_handle_update_rebuilds_state_when_availability_changes(
+    hass: HomeAssistant, entity: LightSensitivityNumber, coordinator: SimpleNamespace
+) -> None:
+    """Availability is part of the snapshot, so losing the device still writes."""
+
+    entity._handle_coordinator_update()
+    coordinator.device.reconnect_overdue = True
+
+    with patch.object(entity, "async_write_ha_state") as mock_write:
+        entity._handle_coordinator_update()
+
+    mock_write.assert_called_once()
+
+
+async def test_entity_without_data_keys_only_tracks_availability(
+    hass: HomeAssistant, coordinator: SimpleNamespace
+) -> None:
+    """Buttons and texts ignore frame data but still follow availability."""
+
+    from custom_components.ld2410.button import RebootButton
+
+    button = RebootButton(coordinator)
+    button.hass = hass
+    button.entity_id = "button.test_reboot"
+    button.platform = _DummyPlatform(platform_name="button", domain="button")
+    button.registry_entry = None
+
+    button._handle_coordinator_update()
+    coordinator.device.parsed_data = {"light_threshold": 99}
+    with patch.object(button, "async_write_ha_state") as mock_write:
+        button._handle_coordinator_update()
+    mock_write.assert_not_called()
+
+    coordinator.device.reconnect_overdue = True
+    with patch.object(button, "async_write_ha_state") as mock_write:
+        button._handle_coordinator_update()
+    mock_write.assert_called_once()

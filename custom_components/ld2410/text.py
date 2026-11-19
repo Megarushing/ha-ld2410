@@ -32,6 +32,8 @@ async def async_setup_entry(
 class NewPasswordText(Entity, TextEntity):
     """Text field for providing a new bluetooth password."""
 
+    _data_keys = ()
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_translation_key = "new_password"
     _attr_mode = TextMode.PASSWORD

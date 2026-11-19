@@ -44,6 +44,8 @@ async def async_setup_entry(
 class ResolutionSelect(Entity, SelectEntity):
     """Representation of the distance resolution setting."""
 
+    _data_keys = ("resolution",)
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_options = OPTIONS
     _attr_entity_registry_enabled_default = True
@@ -70,6 +72,8 @@ class ResolutionSelect(Entity, SelectEntity):
 class LightFunctionSelect(Entity, SelectEntity):
     """Representation of light control mode."""
 
+    _data_keys = ("light_function",)
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_options = LIGHT_OPTIONS
     _attr_entity_registry_enabled_default = True
@@ -95,6 +99,8 @@ class LightFunctionSelect(Entity, SelectEntity):
 
 class OutLevelSelect(Entity, SelectEntity):
     """Representation of output default level."""
+
+    _data_keys = ("light_out_level",)
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_options = OUT_LEVEL_OPTIONS

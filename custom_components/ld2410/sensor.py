@@ -152,6 +152,8 @@ class Sensor(Entity, SensorEntity):
         self._sensor = sensor
         self._attr_unique_id = f"{coordinator.base_unique_id}-{sensor}"
         self.entity_description = SENSOR_TYPES[sensor]
+        if self._data_keys is None:
+            self._data_keys = (self.entity_description.key,)
 
     @property
     def native_value(self) -> str | int | None:
@@ -171,6 +173,7 @@ class GateEnergySensor(Entity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._data_key = data_key
+        self._data_keys = (data_key,)
         self._gate = gate
         prefix = "Motion" if data_key == "move_gate_energy" else "Still"
         self.entity_description = SensorEntityDescription(
@@ -194,6 +197,7 @@ class RSSISensor(Sensor):
     """Representation of a RSSI sensor."""
 
     _attr_should_poll = True
+    _data_keys = ()  # Polled; frame callbacks only matter for availability.
 
     async def async_update(self) -> None:
         await self._device.read_rssi()
@@ -214,6 +218,7 @@ class LastFrameSensor(Sensor):
     """
 
     _attr_should_poll = True
+    _data_keys = ()  # Polled; frame callbacks only matter for availability.
 
     async def async_update(self) -> None:
         """Refresh on the poll interval; the value is read in native_value."""
